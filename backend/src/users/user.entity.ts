@@ -1,6 +1,14 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, OneToOne } from 'typeorm';
+import { Expert } from '../experts/expert.entity';
+import { Startup } from '../startups/startup.entity';
 
-@Entity('users')
+export enum UserRole {
+  ADMIN = 'admin',
+  EXPERT = 'expert',
+  STARTUP = 'startup',
+}
+
+@Entity()
 export class User {
   @PrimaryGeneratedColumn()
   id: number;
@@ -8,27 +16,30 @@ export class User {
   @Column()
   nom: string;
 
-  @Column()
-  prenom: string;
-
-  @Column({ nullable: true })
-  tel: string;
-
   @Column({ unique: true })
   email: string;
 
   @Column()
   password: string;
 
-  @Column({ default: 'client' })
-  role: string;
+  @Column({ type: 'enum', enum: UserRole, default: UserRole.STARTUP })
+  role: UserRole;
+
+  // Optionnel : on peut ajouter d'autres champs comme prenom, telephone, etc.
+  @Column({ nullable: true })
+  prenom: string;
 
   @Column({ nullable: true })
-  domaine: string;
+  telephone: string;
 
   @Column({ default: true })
-  isActive: boolean;
+  actif: boolean;
 
-  @CreateDateColumn()
+  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   createdAt: Date;
+@OneToOne(() => Expert, expert => expert.user)
+expertProfile?: Expert;
+
+  @OneToOne(() => Startup, startup => startup.user)
+  startupProfile?: Startup;
 }

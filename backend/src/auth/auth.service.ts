@@ -1,66 +1,54 @@
-import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Injectable, BadRequestException, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import * as bcrypt from 'bcryptjs';
-import { User } from '../users/user.entity';
-import { Expert } from '../experts/expert.entity';
+import * as bcrypt from 'bcrypt';
+import { UsersService } from '../users/users.service';
+import { UserRole } from '../users/user.entity';
+import { ExpertsService } from '../experts/experts.service';
+import { StartupsService } from '../startups/startups.service';
 
 @Injectable()
 export class AuthService {
   constructor(
-    @InjectRepository(User)
-    private userRepository: Repository<User>,
-    @InjectRepository(Expert)
-    private expertRepository: Repository<Expert>,
+    private usersService: UsersService,
     private jwtService: JwtService,
+    private expertsService: ExpertsService,
+    private startupsService: StartupsService,
   ) {}
 
-  async register(
-    nom: string, prenom: string, tel: string,
-    email: string, password: string,
-    role: string, domaine?: string
-  ) {
-    // Vérifier si email existe déjà
-    const existe = await this.userRepository.findOne({ where: { email } });
-    if (existe) throw new ConflictException('Email déjà utilisé');
-
-    // Chiffrer le mot de passe
-    const hash = await bcrypt.hash(password, 10);
-
-    // Sauvegarder dans users
-    const user = this.userRepository.create({
-      nom, prenom, tel, email,
-      password: hash, role, domaine,
-    });
-    const savedUser = await this.userRepository.save(user);
-    console.log('User créé:', savedUser.id);
-
-    // Si expert → sauvegarder dans experts aussi
-    if (role === 'expert') {
-      const expert = this.expertRepository.create({
-        user_id: savedUser.id,
-        domaine: domaine || '',
-        valide: false,
-      });
-      const savedExpert = await this.expertRepository.save(expert);
-      console.log('Expert créé:', savedExpert.id);
+  async validateUser(email: string, password: string): Promise<any> {
+    const user = await this.usersService.findByEmail(email);
+    if (user && (await bcrypt.compare(password, user.password))) {
+      const { password: _pw, ...result } = user;
+      return result;
     }
-
-    return { message: 'Inscription réussie ✅' };
+    return null;
   }
 
   async login(email: string, password: string) {
-    const user = await this.userRepository.findOne({ where: { email } });
-    if (!user) throw new UnauthorizedException('Email incorrect');
-    const valid = await bcrypt.compare(password, user.password);
-    if (!valid) throw new UnauthorizedException('Mot de passe incorrect');
-    const token = this.jwtService.sign({
-      id: user.id,
-      role: user.role,
-      nom: user.nom,
-      prenom: user.prenom,
+    const user = await this.validateUser(email, password);
+    if (!user) throw new UnauthorizedException('Identifiants invalides');
+    const payload = { sub: user.id, email: user.email, role: user.role };
+    return { access_token: this.jwtService.sign(payload), user };
+  }
+
+  async register(userData: any, role: UserRole, profileData?: any) {
+    const existing = await this.usersService.findByEmail(userData.email);
+    if (existing) throw new BadRequestException('Email déjà utilisé');
+
+    const hashedPassword = await bcrypt.hash(userData.password, 10);
+    const user = await this.usersService.create({
+      ...userData,
+      password: hashedPassword,
+      role,
     });
-    return { token, message: 'Connexion réussie ✅' };
+
+    if (role === UserRole.EXPERT) {
+      await this.expertsService.create(user.id, profileData || {});
+    } else if (role === UserRole.STARTUP) {
+      await this.startupsService.create(user.id, profileData || {});
+    }
+
+    const payload = { sub: user.id, email: user.email, role: user.role };
+    return { access_token: this.jwtService.sign(payload), user };
   }
 }

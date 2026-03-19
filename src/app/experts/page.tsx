@@ -9,14 +9,12 @@ import {
   FaCalendarAlt, FaBullhorn,
 } from "react-icons/fa";
 
-/* ══════════════════════════════════════
-   HOOK SCROLL
-══════════════════════════════════════ */
 function useInView(threshold = 0.1) {
   const ref = useRef<HTMLDivElement>(null);
   const [inView, setInView] = useState(false);
   useEffect(() => {
-    const el = ref.current; if (!el) return;
+    const el = ref.current;
+    if (!el) return;
     const obs = new IntersectionObserver(
       ([e]) => { if (e.isIntersecting) { setInView(true); obs.disconnect(); } },
       { threshold }
@@ -27,131 +25,24 @@ function useInView(threshold = 0.1) {
   return [ref, inView] as const;
 }
 
-function FadeUp({ children, delay = 0, className = "" }: {
-  children: React.ReactNode; delay?: number; className?: string;
-}) {
+function FadeUp({ children, delay = 0, className = "" }: { children: React.ReactNode; delay?: number; className?: string }) {
   const [ref, inView] = useInView();
   return (
-    <div ref={ref} className={className} style={{
-      opacity: inView ? 1 : 0,
-      transform: inView ? "translateY(0)" : "translateY(36px)",
-      transition: `opacity .7s cubic-bezier(.22,1,.36,1) ${delay}s, transform .7s cubic-bezier(.22,1,.36,1) ${delay}s`,
-    }}>{children}</div>
+    <div ref={ref} className={className} style={{ opacity: inView ? 1 : 0, transform: inView ? "translateY(0)" : "translateY(36px)", transition: `opacity .7s cubic-bezier(.22,1,.36,1) ${delay}s, transform .7s cubic-bezier(.22,1,.36,1) ${delay}s` }}>
+      {children}
+    </div>
   );
 }
 
-/* ══════════════════════════════════════
-   TYPES & DONNÉES
-══════════════════════════════════════ */
 type Domain = "tous" | "finance" | "marketing" | "management" | "it" | "strategie";
 
-interface Expert {
-  id: number;
-  initials: string;
-  bgColor: string;
-  accentColor: string;
-  name: string;
-  title: string;
-  domain: Domain;
-  domainLabel: string;
-  bio: string;
-  tags: string[];
-  rating: number;
-  reviews: number;
-  missions: number;
-  xp: string;
-  available: boolean;
-}
-
-const EXPERTS: Expert[] = [
-  {
-    id: 1, initials: "SM", bgColor: "#0A2540", accentColor: "#3B82F6",
-    name: "Sofia Mansouri", title: "Expert Finance & Levée de fonds",
-    domain: "finance", domainLabel: "Finance",
-    bio: "Expert en levée de fonds et stratégie financière. Accompagne les startups de la Seed à la Série B avec une approche structurée et orientée résultats.",
-    tags: ["Venture Capital", "M&A", "CFO as a Service"],
-    rating: 5.0, reviews: 61, missions: 67, xp: "12 ans", available: true,
-  },
-  {
-    id: 2, initials: "KB", bgColor: "#1a1a2e", accentColor: "#F7B500",
-    name: "Karim Benali", title: "Expert Marketing Digital",
-    domain: "marketing", domainLabel: "Marketing",
-    bio: "Spécialiste en growth hacking et acquisition client digital. A multiplié par 5 le trafic de +40 startups grâce à des stratégies SEO et social ads ciblées.",
-    tags: ["Growth Hacking", "SEO", "Social Ads"],
-    rating: 4.9, reviews: 38, missions: 42, xp: "8 ans", available: true,
-  },
-  {
-    id: 3, initials: "LO", bgColor: "#0A2540", accentColor: "#22C55E",
-    name: "Leila Osman", title: "Expert RH & Management",
-    domain: "management", domainLabel: "Management",
-    bio: "Consultante RH stratégique spécialisée dans la construction d'équipes performantes et la mise en place d'OKR pour startups en phase de croissance.",
-    tags: ["Recrutement Tech", "OKR", "Culture d'entreprise"],
-    rating: 4.7, reviews: 33, missions: 38, xp: "9 ans", available: true,
-  },
-  {
-    id: 4, initials: "YT", bgColor: "#1a0a2e", accentColor: "#8B5CF6",
-    name: "Youssef Tazi", title: "Expert Tech & Produit",
-    domain: "it", domainLabel: "IT",
-    bio: "CTO freelance spécialisé en architecture SaaS et lancement MVP. A livré +50 produits digitaux de la conception au go-live en mode agile.",
-    tags: ["SaaS Architecture", "MVP", "CTO as a Service"],
-    rating: 4.8, reviews: 49, missions: 55, xp: "10 ans", available: false,
-  },
-  {
-    id: 5, initials: "NB", bgColor: "#0A2540", accentColor: "#06B6D4",
-    name: "Nour Ben Salah", title: "Expert Stratégie & Business",
-    domain: "strategie", domainLabel: "Stratégie",
-    bio: "Ancienne consultante McKinsey reconvertie dans l'accompagnement startup. Aide les fondateurs à clarifier leur vision et exécuter des stratégies go-to-market efficaces.",
-    tags: ["Go-to-Market", "Business Plan", "Board Advisory"],
-    rating: 5.0, reviews: 44, missions: 52, xp: "14 ans", available: true,
-  },
-  {
-    id: 6, initials: "AR", bgColor: "#1a1510", accentColor: "#EF4444",
-    name: "Amine Rhouma", title: "Expert Juridique & Conformité",
-    domain: "strategie", domainLabel: "Stratégie",
-    bio: "Avocat d'affaires spécialisé startup. Accompagne les fondateurs dans leurs structurations juridiques, levées de fonds et contrats SaaS complexes.",
-    tags: ["Droit des sociétés", "RGPD", "Contrats SaaS"],
-    rating: 4.9, reviews: 27, missions: 31, xp: "11 ans", available: true,
-  },
-  {
-    id: 7, initials: "MT", bgColor: "#0A2540", accentColor: "#F59E0B",
-    name: "Mehdi Trabelsi", title: "Expert Business Development",
-    domain: "marketing", domainLabel: "Marketing",
-    bio: "Expert en développement commercial B2B et expansion internationale. A ouvert des marchés Europe, MENA et Afrique subsaharienne pour 25+ startups.",
-    tags: ["Sales Strategy", "Partenariats B2B", "CRM"],
-    rating: 4.6, reviews: 22, missions: 28, xp: "7 ans", available: false,
-  },
-  {
-    id: 8, initials: "SC", bgColor: "#1a0a18", accentColor: "#EC4899",
-    name: "Sana Cherif", title: "Expert Communication & Brand",
-    domain: "marketing", domainLabel: "Marketing",
-    bio: "Spécialiste en stratégie de marque pour startups Tech. Construit la notoriété et l'image de +20 startups depuis leur phase early-stage.",
-    tags: ["Brand Strategy", "Content Marketing", "PR"],
-    rating: 4.8, reviews: 19, missions: 24, xp: "6 ans", available: true,
-  },
-  {
-    id: 9, initials: "HM", bgColor: "#0a1a10", accentColor: "#10B981",
-    name: "Hichem Mrad", title: "Expert Finance & Contrôle de gestion",
-    domain: "finance", domainLabel: "Finance",
-    bio: "Directeur financier de transition pour PME et startups. Expert en modélisation financière, tableaux de bord et optimisation de la trésorerie.",
-    tags: ["Contrôle de gestion", "Trésorerie", "Reporting CFO"],
-    rating: 4.9, reviews: 31, missions: 36, xp: "10 ans", available: true,
-  },
-];
-
-const DOMAINS: { label: string; value: Domain; icon: React.ReactNode; color: string }[] = [
-  { label: "Tous",       value: "tous",       icon: <FaThLarge />,   color: "#0A2540" },
-  { label: "Finance",    value: "finance",    icon: <FaChartLine />, color: "#3B82F6" },
-  { label: "Marketing",  value: "marketing",  icon: <FaBullhorn />,  color: "#F7B500" },
-  { label: "Management", value: "management", icon: <FaUsers />,     color: "#22C55E" },
-  { label: "IT",         value: "it",         icon: <FaCode />,      color: "#8B5CF6" },
-  { label: "Stratégie",  value: "strategie",  icon: <FaLightbulb />, color: "#06B6D4" },
-];
-
-const STATS = [
-  { value: "80+",  label: "Experts certifiés"        },
-  { value: "4.9★", label: "Note moyenne"              },
-  { value: "500+", label: "Missions réalisées"        },
-  { value: "48h",  label: "Mise en relation garantie" },
+const DOMAINS = [
+  { label: "Tous",       value: "tous"       as Domain, icon: <FaThLarge />,   color: "#0A2540" },
+  { label: "Finance",    value: "finance"    as Domain, icon: <FaChartLine />, color: "#3B82F6" },
+  { label: "Marketing",  value: "marketing"  as Domain, icon: <FaBullhorn />,  color: "#F7B500" },
+  { label: "Management", value: "management" as Domain, icon: <FaUsers />,     color: "#22C55E" },
+  { label: "IT",         value: "it"         as Domain, icon: <FaCode />,      color: "#8B5CF6" },
+  { label: "Stratégie",  value: "strategie"  as Domain, icon: <FaLightbulb />, color: "#06B6D4" },
 ];
 
 const navServices = [
@@ -161,79 +52,100 @@ const navServices = [
   { label: "Formations",     slug: "formations"     },
 ];
 
-/* ══════════════════════════════════════
-   PAGE
-══════════════════════════════════════ */
+function mapDomain(domaine: string): Domain {
+  const d = (domaine || "").toLowerCase();
+  if (d.includes("finan"))                            return "finance";
+  if (d.includes("marketing"))                        return "marketing";
+  if (d.includes("manage") || d.includes("rh"))      return "management";
+  if (d.includes("tech") || d.includes("it") || d.includes("info")) return "it";
+  if (d.includes("strat") || d.includes("business")) return "strategie";
+  return "tous";
+}
+
 export default function ExpertsPage() {
   const [servicesOpen, setServicesOpen] = useState(false);
   const [activeDomain, setActiveDomain] = useState<Domain>("tous");
-  const [search, setSearch]             = useState("");
-  const [showModal, setShowModal]       = useState(false);
-  const [selectedExpert, setSelectedExpert] = useState<Expert | null>(null);
+  const [search, setSearch]     = useState("");
+  const [showModal, setShowModal] = useState(false);
+  const [selectedExpert, setSelectedExpert] = useState<any>(null);
+  const [experts, setExperts]   = useState<any[]>([]);
+  const [dispos, setDispos]     = useState<Record<number, any[]>>({});
+  const [loading, setLoading]   = useState(true);
+  const [error, setError]       = useState("");
 
-  const filtered = EXPERTS.filter(e => {
+  useEffect(() => {
+    loadExperts();
+  }, []);
+
+  async function loadExperts() {
+    setLoading(true);
+    setError("");
+    try {
+      // ✅ Route correcte — retourne les experts avec valide: true
+      const res = await fetch("http://localhost:3001/experts");
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+
+      if (!Array.isArray(data)) { setError("Format de données incorrect"); setLoading(false); return; }
+
+      const transformed = data.map((e: any) => ({
+        id:          e.id,
+        initials:    ((e.user?.prenom?.[0] || e.prenom?.[0] || "") + (e.user?.nom?.[0] || e.nom?.[0] || "")).toUpperCase(),
+        name:        `${e.user?.prenom || e.prenom || ""} ${e.user?.nom || e.nom || ""}`.trim(),
+        title:       e.domaine || "",
+        domain:      mapDomain(e.domaine || ""),
+        domainLabel: e.domaine || "",
+        bio:         e.description || "",
+        experience:  e.experience || "",
+        tarif:       e.tarif || "",
+        localisation: e.localisation || "",
+        disponible:  e.disponible,
+        photo:       e.photo || null,
+      }));
+
+      setExperts(transformed);
+
+      // Charger les disponibilités
+      const map: Record<number, any[]> = {};
+      await Promise.allSettled(
+        transformed.map(async (ex) => {
+          const r = await fetch(`http://localhost:3001/disponibilites/expert/${ex.id}`).catch(() => null);
+          map[ex.id] = r && r.ok ? await r.json() : [];
+        })
+      );
+      setDispos(map);
+    } catch (err: any) {
+      setError("Erreur lors du chargement des experts");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const filtered = experts.filter(e => {
     const matchDomain = activeDomain === "tous" || e.domain === activeDomain;
     const q = search.toLowerCase();
-    const matchSearch = !q ||
-      e.name.toLowerCase().includes(q) ||
-      e.title.toLowerCase().includes(q) ||
-      e.tags.some(t => t.toLowerCase().includes(q));
+    const matchSearch = !q || e.name.toLowerCase().includes(q) || e.title.toLowerCase().includes(q) || e.localisation.toLowerCase().includes(q);
     return matchDomain && matchSearch;
   });
 
-  function openModal(expert: Expert) {
-    setSelectedExpert(expert);
-    setShowModal(true);
+  function formatCreneau(d: any) {
+    const date = new Date(d.date);
+    const jour = date.toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
+    return `${jour} ${(d.heureDebut || d.heure || "").slice(0, 5)}`;
   }
 
   return (
-    <div className="font-[Plus_Jakarta_Sans,sans-serif] text-gray-700 min-h-screen bg-[#f7f9fc]">
-
+    <div style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", color: "#374151", minHeight: "100vh", background: "#f7f9fc" }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap');
         *, *::before, *::after { box-sizing: border-box; }
-        body { margin: 0; }
-
-        /* ── Hero bg zoom ── */
-        @keyframes heroExpertZoom {
-          0%   { transform: scale(1.08); }
-          100% { transform: scale(1); }
-        }
-        .hero-expert-bg {
-          animation: heroExpertZoom 2s cubic-bezier(.22,1,.36,1) forwards;
-        }
-
-        /* ── Hero content staggered fade-in ── */
-        @keyframes heroFadeIn {
-          from { opacity: 0; transform: translateY(28px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
-        .hci { animation: heroFadeIn 0.85s cubic-bezier(.22,1,.36,1) both; }
-        .hci-1 { animation-delay: 0.15s; }
-        .hci-2 { animation-delay: 0.28s; }
-        .hci-3 { animation-delay: 0.42s; }
-        .hci-4 { animation-delay: 0.58s; }
-
-        @keyframes fadeIn {
-          from { opacity:0; transform:translateY(-8px); }
-          to   { opacity:1; transform:translateY(0); }
-        }
-        @keyframes modalIn {
-          from { opacity:0; transform:scale(0.92) translateY(20px); }
-          to   { opacity:1; transform:scale(1) translateY(0); }
-        }
-        @keyframes cardIn {
-          from { opacity:0; transform:translateY(24px) scale(0.97); }
-          to   { opacity:1; transform:translateY(0) scale(1); }
-        }
-        @keyframes ping {
-          0%   { transform:scale(1); opacity:.7; }
-          100% { transform:scale(1.9); opacity:0; }
-        }
-
-        .modal-box   { animation: modalIn .32s cubic-bezier(.22,1,.36,1); }
-        .card-appear { animation: cardIn .45s cubic-bezier(.22,1,.36,1) both; }
-
+        @keyframes heroZoom { 0% { transform: scale(1.08); } 100% { transform: scale(1); } }
+        .hero-bg { animation: heroZoom 2s cubic-bezier(.22,1,.36,1) forwards; }
+        @keyframes hfi { from { opacity:0; transform:translateY(28px); } to { opacity:1; transform:translateY(0); } }
+        .hci { animation: hfi .85s cubic-bezier(.22,1,.36,1) both; }
+        .hci-1 { animation-delay:.1s; } .hci-2 { animation-delay:.25s; } .hci-3 { animation-delay:.4s; }
+        @keyframes modalIn { from { opacity:0; transform:scale(.92) translateY(20px); } to { opacity:1; transform:scale(1) translateY(0); } }
+        .modal-box { animation: modalIn .3s cubic-bezier(.22,1,.36,1); }
         .nav-link { color:#0A2540; text-decoration:none; font-size:15px; font-weight:500; transition:color .2s; }
         .nav-link:hover { color:#F7B500; }
         .drop-item { display:block; padding:10px 16px; color:#0A2540; text-decoration:none; font-size:14px; font-weight:600; transition:background .15s; white-space:nowrap; }
@@ -241,250 +153,121 @@ export default function ExpertsPage() {
         .btn-conn { border:2px solid #0A2540; color:#0A2540; background:transparent; padding:9px 22px; border-radius:9px; font-weight:700; font-size:14px; cursor:pointer; transition:all .22s; font-family:inherit; }
         .btn-conn:hover { background:#F7B500; border-color:#F7B500; transform:translateY(-2px); }
         .btn-insc { background:#F7B500; color:#0A2540; border:2px solid #F7B500; padding:9px 22px; border-radius:9px; font-weight:800; font-size:14px; cursor:pointer; transition:all .22s; font-family:inherit; }
-        .btn-insc:hover { background:#e6a800; transform:translateY(-2px); box-shadow:0 8px 22px rgba(247,181,0,0.38); }
-
-        .domain-pill { display:flex; align-items:center; gap:7px; padding:10px 20px; border-radius:99px; font-size:13.5px; font-weight:700; cursor:pointer; border:2px solid rgba(10,37,64,0.10); background:white; color:#374151; transition:all .22s ease; white-space:nowrap; box-shadow:0 2px 8px rgba(10,37,64,0.05); }
-        .domain-pill:hover { border-color:#F7B500; color:#0A2540; background:#FFFBEB; transform:translateY(-2px); box-shadow:0 6px 16px rgba(247,181,0,0.18); }
-        .domain-pill.active { background:#0A2540; color:#F7B500; border-color:#0A2540; box-shadow:0 6px 18px rgba(10,37,64,0.25); transform:translateY(-2px); }
-
-        .expert-card { background:white; border-radius:22px; border:1.5px solid rgba(10,37,64,0.07); box-shadow:0 4px 22px rgba(10,37,64,0.07); overflow:hidden; transition:transform .32s cubic-bezier(.22,1,.36,1), box-shadow .32s ease, border-color .32s ease; display:flex; flex-direction:column; }
-        .expert-card:hover { transform:translateY(-10px); box-shadow:0 24px 56px rgba(10,37,64,0.14); border-color:rgba(247,181,0,0.4); }
-        .expert-card:hover .cta-btn { background:#F7B500 !important; color:#0A2540 !important; }
-
-        .search-box { width:100%; background:white; border:1.5px solid rgba(10,37,64,0.10); border-radius:14px; padding:13px 16px 13px 48px; font-size:15px; color:#0A2540; outline:none; transition:border-color .22s, box-shadow .22s; font-family:'Plus Jakarta Sans',sans-serif; box-shadow:0 2px 10px rgba(10,37,64,0.05); }
+        .btn-insc:hover { background:#e6a800; transform:translateY(-2px); }
+        .domain-pill { display:flex; align-items:center; gap:7px; padding:10px 20px; border-radius:99px; font-size:13.5px; font-weight:700; cursor:pointer; border:2px solid rgba(10,37,64,.10); background:white; color:#374151; transition:all .22s; white-space:nowrap; }
+        .domain-pill:hover { border-color:#F7B500; color:#0A2540; background:#FFFBEB; transform:translateY(-2px); }
+        .domain-pill.active { background:#0A2540; color:#F7B500; border-color:#0A2540; transform:translateY(-2px); }
+        .search-box { width:100%; background:white; border:1.5px solid rgba(10,37,64,.10); border-radius:14px; padding:13px 16px 13px 48px; font-size:15px; color:#0A2540; outline:none; transition:border-color .22s, box-shadow .22s; font-family:inherit; }
         .search-box::placeholder { color:#9CA3AF; }
-        .search-box:focus { border-color:#F7B500; box-shadow:0 0 0 4px rgba(247,181,0,0.12); }
-
+        .search-box:focus { border-color:#F7B500; box-shadow:0 0 0 4px rgba(247,181,0,.12); }
+        .expert-card { background:white; border-radius:22px; border:1.5px solid rgba(10,37,64,.07); box-shadow:0 4px 22px rgba(10,37,64,.07); overflow:hidden; transition:transform .32s cubic-bezier(.22,1,.36,1), box-shadow .32s, border-color .32s; display:flex; flex-direction:column; }
+        .expert-card:hover { transform:translateY(-10px); box-shadow:0 24px 56px rgba(10,37,64,.14); border-color:rgba(247,181,0,.4); }
+        .chip { display:inline-flex; align-items:center; background:#EFF6FF; color:#2563EB; padding:4px 8px; border-radius:6px; font-size:11px; font-weight:500; white-space:nowrap; }
+        @keyframes ping2 { 0%{transform:scale(1);opacity:.7;} 100%{transform:scale(1.9);opacity:0;} }
         .ping-dot { position:relative; }
-        .ping-dot::after { content:''; position:absolute; inset:-3px; border-radius:50%; border:2px solid #22C55E; animation:ping 1.8s ease-out infinite; }
+        .ping-dot::after { content:''; position:absolute; inset:-3px; border-radius:50%; border:2px solid #22C55E; animation:ping2 1.8s ease-out infinite; }
       `}</style>
 
-      {/* ══════════════════════════════
-          MODAL
-      ══════════════════════════════ */}
+      {/* ── MODAL ── */}
       {showModal && (
-        <div
-          className="fixed inset-0 z-[999] flex items-center justify-center p-6"
-          style={{ background: "rgba(10,37,64,0.65)", backdropFilter: "blur(5px)" }}
-          onClick={() => setShowModal(false)}
-        >
-          <div
-            className="modal-box bg-white rounded-3xl w-full max-w-[460px] relative"
-            style={{ padding: "52px 44px", boxShadow: "0 32px 80px rgba(10,37,64,0.28)" }}
-            onClick={e => e.stopPropagation()}
-          >
-            <div
-              className="w-[68px] h-[68px] rounded-full flex items-center justify-center text-[28px] text-[#0A2540] mx-auto mb-6"
-              style={{ background: "linear-gradient(135deg,#F7B500,#e6a800)", boxShadow: "0 10px 28px rgba(247,181,0,0.35)" }}
-            >
-              <FaLock />
-            </div>
-
+        <div style={{ position: "fixed", inset: 0, zIndex: 999, display: "flex", alignItems: "center", justifyContent: "center", padding: 24, background: "rgba(10,37,64,.65)", backdropFilter: "blur(6px)" }} onClick={() => setShowModal(false)}>
+          <div className="modal-box" style={{ background: "white", borderRadius: 28, width: "100%", maxWidth: 460, padding: "48px 44px", position: "relative", boxShadow: "0 32px 80px rgba(10,37,64,.28)" }} onClick={e => e.stopPropagation()}>
+            <div style={{ width: 68, height: 68, borderRadius: "50%", background: "linear-gradient(135deg,#F7B500,#e6a800)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26, color: "#0A2540", margin: "0 auto 20px", boxShadow: "0 10px 28px rgba(247,181,0,.35)" }}><FaLock /></div>
             {selectedExpert && (
-              <div className="flex items-center gap-3 bg-[#f7f9fc] rounded-2xl p-4 mb-6">
-                <div
-                  className="w-12 h-12 rounded-full flex items-center justify-center font-black text-[16px] flex-shrink-0"
-                  style={{ background: selectedExpert.bgColor, color: selectedExpert.accentColor }}
-                >
-                  {selectedExpert.initials}
+              <div style={{ display: "flex", alignItems: "center", gap: 12, background: "#f7f9fc", borderRadius: 14, padding: "14px 16px", marginBottom: 20 }}>
+                <div style={{ width: 46, height: 46, borderRadius: "50%", overflow: "hidden", background: "#0A2540", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", color: "#F7B500", fontWeight: 800, fontSize: 14 }}>
+                  {selectedExpert.photo ? <img src={`http://localhost:3001/uploads/photos/${selectedExpert.photo}`} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : selectedExpert.initials}
                 </div>
                 <div>
-                  <div className="font-black text-[#0A2540] text-[15px]">{selectedExpert.name}</div>
-                  <div className="text-gray-500 text-[12px]">{selectedExpert.title}</div>
+                  <div style={{ fontWeight: 800, color: "#0A2540", fontSize: 15 }}>{selectedExpert.name}</div>
+                  <div style={{ color: "#8A9AB5", fontSize: 12 }}>{selectedExpert.title}</div>
                 </div>
               </div>
             )}
-
-            <h2 className="text-[22px] font-black text-[#0A2540] mb-2 text-center">Inscription requise</h2>
-            <p className="text-gray-500 text-[14px] leading-relaxed mb-8 text-center">
-              Pour consulter ce profil, contacter cet expert ou réserver un rendez-vous, créez un compte gratuit ou connectez-vous.
-            </p>
-
-            <div className="flex flex-col gap-3">
+            <h2 style={{ fontSize: 22, fontWeight: 900, color: "#0A2540", marginBottom: 10, textAlign: "center" }}>Inscription requise</h2>
+            <p style={{ color: "#6B7280", fontSize: 14, lineHeight: 1.75, marginBottom: 28, textAlign: "center" }}>Pour consulter ce profil ou réserver un rendez-vous, créez un compte gratuit ou connectez-vous.</p>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               <Link href="/inscription" onClick={() => setShowModal(false)}>
-                <button
-                  className="w-full bg-[#F7B500] text-[#0A2540] border-none rounded-xl py-3.5 font-black text-[15px] cursor-pointer transition-all duration-200 hover:bg-[#e6a800] hover:-translate-y-0.5"
-                  style={{ fontFamily: "inherit", boxShadow: "0 6px 20px rgba(247,181,0,0.30)" }}
-                >
-                  Créer un compte gratuit
-                </button>
+                <button style={{ width: "100%", background: "#F7B500", color: "#0A2540", border: "none", borderRadius: 12, padding: 14, fontFamily: "inherit", fontWeight: 900, fontSize: 15, cursor: "pointer" }}>Créer un compte gratuit</button>
               </Link>
               <Link href="/connexion" onClick={() => setShowModal(false)}>
-                <button
-                  className="w-full bg-transparent text-[#0A2540] rounded-xl py-3 font-bold text-[15px] cursor-pointer transition-all duration-200 hover:bg-[#0A2540]/[0.05] hover:-translate-y-0.5"
-                  style={{ fontFamily: "inherit", border: "1.5px solid rgba(10,37,64,0.15)" }}
-                >
-                  {"J'ai déjà un compte — Connexion"}
-                </button>
+                <button style={{ width: "100%", background: "transparent", color: "#0A2540", border: "1.5px solid rgba(10,37,64,.15)", borderRadius: 12, padding: 12, fontFamily: "inherit", fontWeight: 700, fontSize: 15, cursor: "pointer" }}>J'ai déjà un compte — Connexion</button>
               </Link>
             </div>
-
-            <button
-              onClick={() => setShowModal(false)}
-              className="absolute top-4 right-5 bg-transparent border-none text-[24px] text-gray-300 cursor-pointer transition-colors hover:text-gray-600 leading-none"
-            >×</button>
+            <button onClick={() => setShowModal(false)} style={{ position: "absolute", top: 14, right: 18, background: "none", border: "none", fontSize: 24, color: "#CBD5E1", cursor: "pointer" }}>×</button>
           </div>
         </div>
       )}
 
-      {/* ══════════════════════════════
-          HEADER
-      ══════════════════════════════ */}
-      <header className="bg-white sticky top-0 z-[100]" style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.07)" }}>
-        <div className="max-w-[1280px] mx-auto px-6 h-[76px] flex items-center justify-between">
-
-          <Link href="/" className="flex items-center gap-3 no-underline">
-            <svg width="44" height="44" viewBox="0 0 46 46" fill="none">
-              <rect width="46" height="46" rx="12" fill="#0A2540"/>
-              <rect x="23" y="7" width="13" height="13" rx="2" transform="rotate(45 23 7)" fill="#F7B500" opacity="0.15"/>
-              <text x="50%" y="55%" dominantBaseline="middle" textAnchor="middle" fill="#F7B500" fontSize="15" fontWeight="900" fontFamily="Arial" letterSpacing="0.5">BEH</text>
-            </svg>
-            <div className="font-black text-[18px] text-[#0A2540] leading-none tracking-[-0.4px]">
-              Business <span className="text-[#F7B500]">Expert</span> Hub
-            </div>
+      {/* ── HEADER ── */}
+      <header style={{ background: "white", position: "sticky", top: 0, zIndex: 100, boxShadow: "0 2px 12px rgba(0,0,0,.07)" }}>
+        <div style={{ maxWidth: 1280, margin: "0 auto", padding: "0 24px", height: 76, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <Link href="/" style={{ display: "flex", alignItems: "center", gap: 12, textDecoration: "none" }}>
+            <svg width="44" height="44" viewBox="0 0 46 46" fill="none"><rect width="46" height="46" rx="12" fill="#0A2540"/><text x="50%" y="55%" dominantBaseline="middle" textAnchor="middle" fill="#F7B500" fontSize="15" fontWeight="900" fontFamily="Arial" letterSpacing="0.5">BEH</text></svg>
+            <span style={{ fontWeight: 900, fontSize: 18, color: "#0A2540" }}>Business <span style={{ color: "#F7B500" }}>Expert</span> Hub</span>
           </Link>
-
-          <nav className="flex gap-7 items-center">
-            <Link href="/"         className="nav-link">Accueil</Link>
+          <nav style={{ display: "flex", gap: 28, alignItems: "center" }}>
+            <Link href="/" className="nav-link">Accueil</Link>
             <Link href="/a-propos" className="nav-link">À propos</Link>
-            <div className="relative" onMouseEnter={() => setServicesOpen(true)} onMouseLeave={() => setServicesOpen(false)}>
-              <Link href="/services" className="nav-link font-semibold">Services ▾</Link>
+            <div style={{ position: "relative" }} onMouseEnter={() => setServicesOpen(true)} onMouseLeave={() => setServicesOpen(false)}>
+              <Link href="/services" className="nav-link" style={{ fontWeight: 600 }}>Services ▾</Link>
               {servicesOpen && (
-                <ul
-                  className="absolute top-[calc(100%+8px)] left-0 bg-white rounded-xl list-none p-[6px_0] m-0 z-[200] min-w-[200px]"
-                  style={{ boxShadow: "0 8px 32px rgba(0,0,0,0.12)", border: "1px solid rgba(10,37,64,0.06)", animation: "fadeIn .2s ease" }}
-                >
-                  {navServices.map(s => (
-                    <li key={s.slug}><Link href={`/services/${s.slug}`} className="drop-item">{s.label}</Link></li>
-                  ))}
+                <ul style={{ position: "absolute", top: "calc(100%+8px)", left: 0, background: "white", borderRadius: 12, listStyle: "none", padding: "6px 0", margin: 0, zIndex: 200, minWidth: 200, boxShadow: "0 8px 32px rgba(0,0,0,.12)", border: "1px solid rgba(10,37,64,.06)" }}>
+                  {navServices.map(s => <li key={s.slug}><Link href={`/services/${s.slug}`} className="drop-item">{s.label}</Link></li>)}
                 </ul>
               )}
             </div>
-            <Link href="/experts" style={{ color: "#F7B500", fontWeight: 700 }} className="nav-link">Experts</Link>
-            <Link href="/blog"    className="nav-link">Blog</Link>
+            <Link href="/experts" className="nav-link" style={{ color: "#F7B500", fontWeight: 700 }}>Experts</Link>
+            <Link href="/blog" className="nav-link">Blog</Link>
             <Link href="/contact" className="nav-link">Contact</Link>
           </nav>
-
-          <div className="flex gap-3">
-            <Link href="/connexion">  <button className="btn-conn">Connexion</button>    </Link>
-            <Link href="/inscription"><button className="btn-insc">{"S'inscrire"}</button></Link>
+          <div style={{ display: "flex", gap: 12 }}>
+            <Link href="/connexion"><button className="btn-conn">Connexion</button></Link>
+            <Link href="/inscription"><button className="btn-insc">S'inscrire</button></Link>
           </div>
         </div>
       </header>
 
-      {/* ══════════════════════════════
-          HERO — expert.png en arrière-plan
-      ══════════════════════════════ */}
-      <section className="relative overflow-hidden text-white" style={{ minHeight: 520 }}>
-
-        {/* Image de fond */}
-        <div className="absolute inset-0 z-0">
-          <Image
-            src="/ex1.jpg"
-            alt="Experts background"
-            fill
-            priority
-            className="hero-expert-bg"
-            style={{ objectFit: "cover", objectPosition: "center top" }}
-            sizes="100vw"
-          />
-          {/* Overlay dégradé : très opaque à gauche → transparent à droite */}
-          <div
-            className="absolute inset-0"
-            style={{
-              background:
-                "linear-gradient(100deg, rgba(10,37,64,0.95) 0%, rgba(10,37,64,0.82) 40%, rgba(10,37,64,0.50) 70%, rgba(10,37,64,0.20) 100%)",
-            }}
-          />
-          {/* Grain subtil */}
-          <div
-            className="absolute inset-0 pointer-events-none"
-            style={{
-              backgroundImage: "radial-gradient(rgba(255,255,255,0.018) 1px,transparent 1px)",
-              backgroundSize: "44px 44px",
-            }}
-          />
-          {/* Lueur dorée */}
-          <div
-            className="absolute top-1/2 left-1/3 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full pointer-events-none"
-            style={{ background: "radial-gradient(circle,rgba(247,181,0,0.07) 0%,transparent 65%)" }}
-          />
+      {/* ── HERO ── */}
+      <section style={{ position: "relative", overflow: "hidden", color: "white", minHeight: 520 }}>
+        <div style={{ position: "absolute", inset: 0, zIndex: 0 }}>
+          <Image src="/ex1.jpg" alt="Experts" fill priority className="hero-bg" style={{ objectFit: "cover", objectPosition: "center top" }} sizes="100vw" />
+          <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to right, rgba(10,37,64,.95) 0%, rgba(10,37,64,.82) 40%, transparent 100%)" }} />
+          <div style={{ position: "absolute", inset: 0, backgroundImage: "radial-gradient(rgba(255,255,255,.018) 1px,transparent 1px)", backgroundSize: "44px 44px", pointerEvents: "none" }} />
         </div>
-
-        {/* Contenu */}
-        <div className="max-w-[1280px] mx-auto px-6 relative z-10" style={{ padding: "88px 24px 110px" }}>
-
-          {/* Breadcrumb */}
-          <div className="hci hci-1 flex items-center gap-2 mb-6 text-[13px] text-white/50">
-            <Link href="/" className="text-white/50 no-underline hover:text-[#F7B500] transition-colors">Accueil</Link>
+        <div style={{ maxWidth: 1280, margin: "0 auto", padding: "88px 24px 110px", position: "relative", zIndex: 10 }}>
+          <div className="hci hci-1" style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 20, fontSize: 13, color: "rgba(255,255,255,.5)" }}>
+            <Link href="/" style={{ color: "rgba(255,255,255,.5)", textDecoration: "none" }}>Accueil</Link>
             <span>›</span>
-            <span className="text-[#F7B500] font-semibold">Nos Experts</span>
+            <span style={{ color: "#F7B500", fontWeight: 600 }}>Nos Experts</span>
           </div>
-
-          <div className="max-w-[680px]">
+          <div style={{ maxWidth: 680 }}>
             <div className="hci hci-2">
-              <span className="inline-block bg-[#F7B500] text-[#0A2540] font-black text-[12px] tracking-[3px] uppercase px-[18px] py-1.5 rounded-full mb-5">
-                Experts certifiés
-              </span>
+              <span style={{ display: "inline-block", background: "#F7B500", color: "#0A2540", fontWeight: 900, fontSize: 12, letterSpacing: 3, textTransform: "uppercase", padding: "6px 18px", borderRadius: 99, marginBottom: 20 }}>Experts certifiés</span>
             </div>
-
-            <h1
-              className="hci hci-3 font-black m-0 mb-5 leading-[1.1]"
-              style={{ fontSize: "clamp(40px,5vw,64px)", textShadow: "0 2px 20px rgba(0,0,0,0.3)" }}
-            >
-              Nos <span className="text-[#F7B500]">Experts</span>
+            <h1 className="hci hci-3" style={{ fontWeight: 900, margin: "0 0 16px", lineHeight: 1.1, fontSize: "clamp(40px,5vw,64px)" }}>
+              Nos <span style={{ color: "#F7B500" }}>Experts</span>
             </h1>
-
-            <p className="hci hci-3 text-[17px] text-white/80 leading-[1.8]">
-              Des professionnels certifiés pour vous accompagner dans chaque domaine. Trouvez l&apos;expert idéal pour votre startup et accélérez votre croissance.
+            <p className="hci hci-3" style={{ fontSize: 17, color: "rgba(255,255,255,.8)", lineHeight: 1.8, margin: 0 }}>
+              Des professionnels validés pour accompagner votre startup dans chaque domaine clé.
             </p>
           </div>
         </div>
       </section>
 
-      {/* ══════════════════════════════
-          FILTRES + SEARCH
-      ══════════════════════════════ */}
-      <section
-        className="bg-white border-b border-[#0A2540]/[0.07] sticky top-[76px] z-50"
-        style={{ boxShadow: "0 4px 20px rgba(10,37,64,0.06)" }}
-      >
-        <div className="max-w-[1280px] mx-auto px-6 py-5">
-          <div className="flex items-center gap-5 flex-wrap">
-
-            <div className="relative flex-1 min-w-[260px]">
-              <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-[14px] pointer-events-none" />
-              <input
-                type="text"
-                placeholder="Rechercher un expert, une compétence…"
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                className="search-box"
-              />
-              {search && (
-                <button
-                  onClick={() => setSearch("")}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700 bg-transparent border-none cursor-pointer text-[14px]"
-                >✕</button>
-              )}
+      {/* ── FILTRES ── */}
+      <section style={{ background: "white", position: "sticky", top: 76, zIndex: 50, boxShadow: "0 4px 20px rgba(10,37,64,.06)", borderBottom: "1px solid rgba(10,37,64,.07)" }}>
+        <div style={{ maxWidth: 1280, margin: "0 auto", padding: "16px 24px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 20, flexWrap: "wrap" }}>
+            <div style={{ position: "relative", flex: 1, minWidth: 260 }}>
+              <FaSearch style={{ position: "absolute", left: 16, top: "50%", transform: "translateY(-50%)", color: "#9CA3AF", fontSize: 13, pointerEvents: "none" }} />
+              <input type="text" placeholder="Rechercher un expert, une compétence…" value={search} onChange={e => setSearch(e.target.value)} className="search-box" />
+              {search && <button onClick={() => setSearch("")} style={{ position: "absolute", right: 14, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "#9CA3AF", cursor: "pointer", fontSize: 13 }}>✕</button>}
             </div>
-
-            <div className="w-px h-8 bg-[#0A2540]/[0.10] hidden sm:block" />
-
-            <div className="flex items-center gap-2.5 flex-wrap">
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               {DOMAINS.map(d => (
-                <button
-                  key={d.value}
-                  onClick={() => setActiveDomain(d.value)}
-                  className={`domain-pill${activeDomain === d.value ? " active" : ""}`}
-                >
-                  <span className="text-[13px]">{d.icon}</span>
-                  {d.label}
-                  {d.value !== "tous" && (
-                    <span className="text-[11px] font-black opacity-60">
-                      ({EXPERTS.filter(e => e.domain === d.value).length})
-                    </span>
-                  )}
+                <button key={d.value} onClick={() => setActiveDomain(d.value)} className={`domain-pill${activeDomain === d.value ? " active" : ""}`}>
+                  <span style={{ fontSize: 12 }}>{d.icon}</span> {d.label}
                 </button>
               ))}
             </div>
@@ -492,219 +275,132 @@ export default function ExpertsPage() {
         </div>
       </section>
 
-      {/* ══════════════════════════════
-          GRILLE EXPERTS
-      ══════════════════════════════ */}
-      <section className="max-w-[1280px] mx-auto px-6 py-16">
-
-        <FadeUp className="flex items-end justify-between mb-10 flex-wrap gap-4">
+      {/* ── GRILLE ── */}
+      <section style={{ maxWidth: 1280, margin: "0 auto", padding: "56px 24px" }}>
+        <FadeUp style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 36, flexWrap: "wrap", gap: 16 }}>
           <div>
-            <h2 className="font-black text-[#0A2540] m-0 mb-1.5" style={{ fontSize: "clamp(22px,3vw,32px)" }}>
+            <h2 style={{ fontWeight: 900, color: "#0A2540", margin: "0 0 6px", fontSize: "clamp(22px,3vw,32px)" }}>
               {activeDomain === "tous" ? "Tous nos experts" : `Experts en ${DOMAINS.find(d => d.value === activeDomain)?.label}`}
             </h2>
-            <p className="text-gray-500 text-[15px] m-0">
-              <span className="font-black text-[#0A2540]">{filtered.length}</span> expert{filtered.length > 1 ? "s" : ""} trouvé{filtered.length > 1 ? "s" : ""}
-              {search && <span> pour &ldquo;<span className="text-[#F7B500] font-bold">{search}</span>&rdquo;</span>}
+            <p style={{ color: "#6B7280", fontSize: 15, margin: 0 }}>
+              {loading ? "Chargement…" : `${filtered.length} expert${filtered.length > 1 ? "s" : ""} trouvé${filtered.length > 1 ? "s" : ""}`}
             </p>
           </div>
           <Link href="/inscription">
-            <button
-              className="inline-flex items-center gap-2 bg-[#0A2540] text-white border-none rounded-xl px-6 py-3 font-bold text-[14px] cursor-pointer transition-all duration-200 hover:bg-[#F7B500] hover:text-[#0A2540] hover:-translate-y-0.5"
-              style={{ fontFamily: "inherit", boxShadow: "0 4px 16px rgba(10,37,64,0.20)" }}
-            >
+            <button style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "#0A2540", color: "white", border: "none", borderRadius: 12, padding: "12px 22px", fontWeight: 700, fontSize: 14, cursor: "pointer", transition: "all .2s", fontFamily: "inherit" }}
+              onMouseEnter={e => { (e.target as any).style.background = "#F7B500"; (e.target as any).style.color = "#0A2540"; }}
+              onMouseLeave={e => { (e.target as any).style.background = "#0A2540"; (e.target as any).style.color = "white"; }}>
               Devenir expert <FaArrowRight size={12} />
             </button>
           </Link>
         </FadeUp>
 
-        {filtered.length === 0 ? (
-          <div className="text-center py-24">
-            <div className="text-[56px] mb-4">🔍</div>
-            <h3 className="text-[20px] font-black text-[#0A2540] mb-2">Aucun expert trouvé</h3>
-            <p className="text-gray-500 text-[15px]">Essayez un autre terme de recherche ou sélectionnez un autre domaine.</p>
-            <button
-              onClick={() => { setSearch(""); setActiveDomain("tous"); }}
-              className="mt-6 inline-flex items-center gap-2 bg-[#F7B500] text-[#0A2540] border-none rounded-xl px-6 py-3 font-bold text-[14px] cursor-pointer"
-              style={{ fontFamily: "inherit" }}
-            >
-              Réinitialiser les filtres
-            </button>
+        {loading ? (
+          <div style={{ textAlign: "center", padding: "96px 0" }}>
+            <div style={{ width: 44, height: 44, border: "3px solid #F7B500", borderTopColor: "transparent", borderRadius: "50%", animation: "spin .8s linear infinite", margin: "0 auto 16px" }} />
+            <p style={{ color: "#8A9AB5", fontSize: 15 }}>Chargement des experts…</p>
+          </div>
+        ) : error ? (
+          <div style={{ textAlign: "center", padding: "80px 0", color: "#DC2626" }}>{error}</div>
+        ) : filtered.length === 0 ? (
+          <div style={{ textAlign: "center", padding: "80px 0" }}>
+            <div style={{ fontSize: 56, marginBottom: 16 }}>🔍</div>
+            <h3 style={{ fontWeight: 900, color: "#0A2540", marginBottom: 8 }}>Aucun expert trouvé</h3>
+            <p style={{ color: "#9CA3AF", fontSize: 15, marginBottom: 24 }}>Essayez un autre terme ou sélectionnez un autre domaine.</p>
+            <button onClick={() => { setSearch(""); setActiveDomain("tous"); }} style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "#F7B500", color: "#0A2540", border: "none", borderRadius: 12, padding: "12px 24px", fontWeight: 700, fontSize: 14, cursor: "pointer", fontFamily: "inherit" }}>Réinitialiser</button>
           </div>
         ) : (
-          <div className="grid grid-cols-3 gap-7">
-            {filtered.map((expert, i) => (
-              <FadeUp key={expert.id} delay={i * 0.08}>
-                <ExpertCard expert={expert} onContact={() => openModal(expert)} />
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 24 }}>
+            {filtered.map((ex, i) => (
+              <FadeUp key={ex.id} delay={i * 0.07}>
+                <div className="expert-card" style={{ height: "100%" }}>
+                  <div style={{ padding: 22, flex: 1, display: "flex", flexDirection: "column" }}>
+
+                    {/* Badge dispo */}
+                    <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>
+                      <span style={{ fontSize: 11.5, fontWeight: 700, padding: "4px 10px", borderRadius: 99, background: ex.disponible ? "#ECFDF5" : "#F9FAFB", color: ex.disponible ? "#059669" : "#9CA3AF" }}>
+                        {ex.disponible ? "● Disponible" : "● Occupé"}
+                      </span>
+                    </div>
+
+                    {/* Avatar + nom */}
+                    <div style={{ display: "flex", alignItems: "flex-start", gap: 14, marginBottom: 14 }}>
+                      <div style={{ width: 64, height: 64, borderRadius: "50%", overflow: "hidden", flexShrink: 0, background: "#0A2540", display: "flex", alignItems: "center", justifyContent: "center", color: "#F7B500", fontWeight: 800, fontSize: 20, border: "2px solid #F7B500" }}>
+                        {ex.photo ? <img src={`http://localhost:3001/uploads/photos/${ex.photo}`} alt={ex.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : ex.initials}
+                      </div>
+                      <div>
+                        <h3 style={{ fontWeight: 800, color: "#0A2540", fontSize: 16, margin: "0 0 4px" }}>{ex.name}</h3>
+                        <span style={{ display: "inline-block", background: "#EFF6FF", color: "#2563EB", borderRadius: 99, padding: "3px 10px", fontSize: 11.5, fontWeight: 700 }}>{ex.domainLabel || "Expert"}</span>
+                      </div>
+                    </div>
+
+                    {/* Infos */}
+                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
+                      {ex.experience && <span style={{ fontSize: 12, color: "#6B7280", background: "#F7F9FC", border: "1px solid #E8EEF6", borderRadius: 6, padding: "3px 8px" }}>💼 {ex.experience}</span>}
+                      {ex.localisation && <span style={{ fontSize: 12, color: "#6B7280", background: "#F7F9FC", border: "1px solid #E8EEF6", borderRadius: 6, padding: "3px 8px" }}>📍 {ex.localisation}</span>}
+                      {ex.tarif && <span style={{ fontSize: 12, color: "#D97706", background: "#FFFBEB", border: "1px solid #FDE68A", borderRadius: 6, padding: "3px 8px" }}>💰 {ex.tarif}</span>}
+                    </div>
+
+                    {/* Bio */}
+                    {ex.bio && <p style={{ fontSize: 13, color: "#6B7280", lineHeight: 1.7, marginBottom: 14, display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden", flex: 1 }}>{ex.bio}</p>}
+
+                    {/* Créneaux */}
+                    {dispos[ex.id] && dispos[ex.id].length > 0 && (
+                      <div style={{ marginBottom: 14 }}>
+                        <p style={{ fontSize: 11, fontWeight: 700, color: "#8A9AB5", textTransform: "uppercase", letterSpacing: 1, marginBottom: 6 }}>Prochains créneaux</p>
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                          {dispos[ex.id].slice(0, 3).map((d, idx) => (
+                            <span key={idx} className="chip"><FaCalendarAlt size={9} style={{ marginRight: 4 }} />{formatCreneau(d)}</span>
+                          ))}
+                          {dispos[ex.id].length > 3 && <span style={{ fontSize: 11, color: "#9CA3AF", alignSelf: "center" }}>+{dispos[ex.id].length - 3}</span>}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Actions */}
+                    <div style={{ display: "flex", gap: 8, marginTop: "auto" }}>
+                      <button onClick={() => { setSelectedExpert(ex); setShowModal(true); }} style={{ flex: 1, background: "#0A2540", color: "white", border: "none", borderRadius: 10, padding: "11px", fontFamily: "inherit", fontWeight: 700, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, transition: "all .2s" }}
+                        onMouseEnter={e => { (e.currentTarget as any).style.background = "#F7B500"; (e.currentTarget as any).style.color = "#0A2540"; }}
+                        onMouseLeave={e => { (e.currentTarget as any).style.background = "#0A2540"; (e.currentTarget as any).style.color = "white"; }}>
+                        Voir le profil <FaArrowRight size={11} />
+                      </button>
+                      <button onClick={() => { setSelectedExpert(ex); setShowModal(true); }} style={{ width: 42, height: 42, background: "#F7F9FC", border: "1px solid #E8EEF6", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#6B7280", transition: "all .2s" }}
+                        onMouseEnter={e => { (e.currentTarget as any).style.background = "#F7B500"; (e.currentTarget as any).style.color = "#0A2540"; }}
+                        onMouseLeave={e => { (e.currentTarget as any).style.background = "#F7F9FC"; (e.currentTarget as any).style.color = "#6B7280"; }}>
+                        <FaCalendarAlt size={13} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </FadeUp>
             ))}
           </div>
         )}
       </section>
 
-      {/* ══════════════════════════════
-          CTA BAS DE PAGE
-      ══════════════════════════════ */}
-      <section className="bg-[#0A2540] py-20 px-6 relative overflow-hidden">
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{ backgroundImage: "radial-gradient(rgba(255,255,255,0.025) 1px,transparent 1px)", backgroundSize: "40px 40px" }}
-        />
-        <div
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full pointer-events-none"
-          style={{ background: "radial-gradient(circle,rgba(247,181,0,0.07) 0%,transparent 65%)" }}
-        />
-
-        <FadeUp className="max-w-[640px] mx-auto text-center relative z-10">
-          <span className="inline-block border border-[#F7B500]/35 text-[#F7B500] font-bold text-[12px] tracking-[3px] uppercase px-[18px] py-1.5 rounded-full mb-6">
-            Rejoignez-nous
-          </span>
-          <h2 className="font-black text-white m-0 mb-4 leading-[1.15]" style={{ fontSize: "clamp(28px,4vw,46px)" }}>
-            Vous êtes expert ?<br />
-            <span className="text-[#F7B500]">Rejoignez notre réseau</span>
+      {/* ── CTA ── */}
+      <section style={{ background: "#0A2540", padding: "80px 24px", position: "relative", overflow: "hidden" }}>
+        <div style={{ position: "absolute", inset: 0, backgroundImage: "radial-gradient(rgba(255,255,255,.022) 1px,transparent 1px)", backgroundSize: "40px 40px", pointerEvents: "none" }} />
+        <FadeUp style={{ maxWidth: 600, margin: "0 auto", textAlign: "center", position: "relative", zIndex: 10 }}>
+          <h2 style={{ fontWeight: 900, color: "white", margin: "0 0 14px", lineHeight: 1.15, fontSize: "clamp(26px,4vw,44px)" }}>
+            Vous êtes expert ?<br /><span style={{ color: "#F7B500" }}>Rejoignez notre réseau</span>
           </h2>
-          <p className="text-white/55 text-[16px] leading-relaxed mb-10">
-            Intégrez la plateforme Business Expert Hub et connectez-vous avec des startups qui ont besoin de vos compétences.
+          <p style={{ color: "rgba(255,255,255,.45)", fontSize: 15, lineHeight: 1.75, marginBottom: 32 }}>
+            Intégrez la plateforme BEH et connectez-vous avec des startups qui ont besoin de vos compétences.
           </p>
-          <div className="flex items-center justify-center gap-4 flex-wrap">
-            <Link href="/inscription">
-              <button
-                className="inline-flex items-center gap-2 bg-[#F7B500] text-[#0A2540] border-none rounded-xl px-8 py-4 font-black text-[15px] cursor-pointer transition-all duration-200 hover:bg-[#e6a800] hover:-translate-y-0.5"
-                style={{ fontFamily: "inherit", boxShadow: "0 8px 24px rgba(247,181,0,0.35)" }}
-              >
-                Candidater comme expert <FaArrowRight size={14} />
-              </button>
-            </Link>
-            <Link href="/contact">
-              <button
-                className="inline-flex items-center gap-2 bg-transparent text-white border border-white/25 rounded-xl px-8 py-4 font-bold text-[15px] cursor-pointer transition-all duration-200 hover:border-white/60 hover:-translate-y-0.5"
-                style={{ fontFamily: "inherit" }}
-              >
-                En savoir plus
-              </button>
-            </Link>
-          </div>
+          <Link href="/inscription">
+            <button style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "#F7B500", color: "#0A2540", border: "none", borderRadius: 12, padding: "16px 32px", fontWeight: 900, fontSize: 15, cursor: "pointer", fontFamily: "inherit", boxShadow: "0 8px 28px rgba(247,181,0,.35)" }}>
+              Candidater comme expert <FaArrowRight size={14} />
+            </button>
+          </Link>
         </FadeUp>
       </section>
 
-      {/* ══════════════════════════════
-          FOOTER
-      ══════════════════════════════ */}
-      <footer className="bg-[#081B33] text-white py-8 px-6 text-center">
-        <p className="m-0 mb-2 text-[14px] font-semibold">© 2026 Business Expert Hub</p>
-        <p className="text-white/40 text-[13px] m-0">Plateforme de mise en relation startups &amp; experts</p>
+      {/* ── FOOTER ── */}
+      <footer style={{ background: "#081B33", color: "white", padding: "28px 24px", textAlign: "center" }}>
+        <p style={{ margin: "0 0 4px", fontSize: 14, fontWeight: 600 }}>© 2026 Business Expert Hub</p>
+        <p style={{ color: "rgba(255,255,255,.35)", fontSize: 13, margin: 0 }}>Plateforme de mise en relation startups &amp; experts</p>
       </footer>
-    </div>
-  );
-}
-
-/* ══════════════════════════════════════
-   COMPOSANT CARTE EXPERT
-══════════════════════════════════════ */
-function ExpertCard({ expert, onContact }: { expert: Expert; onContact: () => void }) {
-  return (
-    <div className="expert-card card-appear h-full">
-
-      <div className="h-[5px]" style={{ background: `linear-gradient(90deg,${expert.accentColor},transparent)` }} />
-
-      <div className="relative px-6 pt-6 pb-5">
-        <div className="absolute top-5 right-5">
-          {expert.available ? (
-            <div className="flex items-center gap-1.5 bg-green-50 border border-green-200 rounded-full px-2.5 py-1">
-              <div className="w-2 h-2 rounded-full bg-green-500 flex-shrink-0 ping-dot" />
-              <span className="text-green-700 text-[11px] font-bold">Disponible</span>
-            </div>
-          ) : (
-            <div className="flex items-center gap-1.5 bg-gray-50 border border-gray-200 rounded-full px-2.5 py-1">
-              <div className="w-2 h-2 rounded-full bg-gray-400 flex-shrink-0" />
-              <span className="text-gray-500 text-[11px] font-bold">Occupé</span>
-            </div>
-          )}
-        </div>
-
-        <div className="flex items-start gap-4">
-          <div
-            className="w-[72px] h-[72px] rounded-2xl flex items-center justify-center font-black text-[22px] flex-shrink-0"
-            style={{
-              background: `linear-gradient(135deg,${expert.bgColor},${expert.bgColor}dd)`,
-              color: expert.accentColor,
-              border: `2px solid ${expert.accentColor}30`,
-            }}
-          >
-            {expert.initials}
-          </div>
-          <div className="min-w-0 pt-1">
-            <h3 className="font-black text-[#0A2540] text-[16px] m-0 mb-0.5 leading-snug">{expert.name}</h3>
-            <p className="text-gray-500 text-[13px] font-semibold m-0 leading-snug">{expert.title}</p>
-            <div className="flex items-center gap-1 mt-2">
-              {[...Array(5)].map((_, i) => (
-                <FaStar key={i} className="text-[10px]" style={{ color: i < Math.round(expert.rating) ? "#F7B500" : "#E5E7EB" }} />
-              ))}
-              <span className="text-[12px] font-bold text-[#0A2540] ml-1">{expert.rating.toFixed(1)}</span>
-              <span className="text-[12px] text-gray-400 ml-0.5">({expert.reviews} avis)</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="px-6 mb-4">
-        <span
-          className="inline-flex items-center gap-1.5 text-[11px] font-bold px-3 py-1.5 rounded-full uppercase tracking-[1px]"
-          style={{ background: `${expert.accentColor}15`, color: expert.accentColor }}
-        >
-          {expert.domainLabel}
-        </span>
-      </div>
-
-      <div className="px-6 flex-1">
-        <p className="text-gray-600 text-[13.5px] leading-[1.7] m-0 mb-5">{expert.bio}</p>
-        <div className="flex flex-wrap gap-1.5 mb-5">
-          {expert.tags.map(t => (
-            <span key={t} className="text-[11px] font-bold px-2.5 py-1 rounded-full text-gray-600"
-              style={{ background: "rgba(10,37,64,0.06)" }}>
-              {t}
-            </span>
-          ))}
-        </div>
-      </div>
-
-      <div className="px-6 pb-6">
-        <div className="grid grid-cols-3 gap-2 mb-5">
-          {[
-            { v: expert.missions, l: "Missions"   },
-            { v: expert.xp,       l: "Expérience" },
-            { v: expert.reviews,  l: "Avis"       },
-          ].map(s => (
-            <div key={s.l} className="bg-[#f7f9fc] rounded-xl py-2.5 text-center border border-[#0A2540]/[0.05]">
-              <div className="font-black text-[#0A2540] text-[14px] leading-none">{s.v}</div>
-              <div className="text-gray-400 text-[10px] font-semibold mt-0.5 uppercase tracking-[0.5px]">{s.l}</div>
-            </div>
-          ))}
-        </div>
-
-        <div className="flex gap-2.5">
-          <button
-            onClick={onContact}
-            className="cta-btn flex-1 bg-[#0A2540] text-white border-none rounded-xl py-[11px] font-bold text-[13px] cursor-pointer flex items-center justify-center gap-2 transition-all duration-250"
-            style={{ fontFamily: "inherit" }}
-          >
-            Voir le profil <FaArrowRight size={11} />
-          </button>
-          <button
-            onClick={onContact}
-            className="w-11 h-11 bg-[#f7f9fc] border border-[#0A2540]/[0.08] rounded-xl flex items-center justify-center text-gray-500 cursor-pointer transition-all duration-200 hover:bg-[#F7B500] hover:text-[#0A2540] hover:border-[#F7B500] flex-shrink-0"
-            title="Contacter"
-          >
-            <FaEnvelope size={13} />
-          </button>
-          <button
-            onClick={onContact}
-            className="w-11 h-11 bg-[#f7f9fc] border border-[#0A2540]/[0.08] rounded-xl flex items-center justify-center text-gray-500 cursor-pointer transition-all duration-200 hover:bg-[#F7B500] hover:text-[#0A2540] hover:border-[#F7B500] flex-shrink-0"
-            title="Prendre rendez-vous"
-          >
-            <FaCalendarAlt size={13} />
-          </button>
-        </div>
-      </div>
     </div>
   );
 }

@@ -1,25 +1,21 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, OneToOne, JoinColumn } from 'typeorm';
+import { User } from '../users/user.entity';
 
-@Entity('startups')
+@Entity()
 export class Startup {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column()
-  user_id: number;
+  @OneToOne(() => User, user => user.startupProfile, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'user_id' })
+  user: User;
 
-  @Column({ nullable: true })
+  @Column()
   secteur: string;
 
-  @Column({ nullable: true })
+  @Column()
   taille: string;
 
-  @Column({ nullable: true })
-  site_web: string;
-
-  @Column({ nullable: true, type: 'text' })
-  description: string;
-
-  @CreateDateColumn()
-  createdAt: Date;
+  @Column({ default: false })
+  valid: boolean; // colonne de validation
 }

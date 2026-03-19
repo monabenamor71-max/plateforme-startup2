@@ -1,484 +1,558 @@
 "use client";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
-const IconUsers = () => (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>);
-const IconExpert = () => (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>);
-const IconStats = () => (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>);
-const IconCheck = () => (<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>);
-const IconX = () => (<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>);
-const IconTrash = () => (<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>);
-const IconLogout = () => (<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>);
-const IconSearch = () => (<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>);
-const IconRefresh = () => (<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>);
-const IconEye = () => (<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>);
-const IconClose = () => (<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>);
+type Tab = "experts" | "startups" | "users" | "temoignages";
 
-export default function DashboardAdmin() {
-  const [user, setUser]             = useState<any>(null);
-  const [activeTab, setActiveTab]   = useState<"stats"|"users"|"experts">("stats");
-  const [users, setUsers]           = useState<any[]>([]);
-  const [experts, setExperts]       = useState<any[]>([]);
-  const [stats, setStats]           = useState<any>(null);
-  const [loading, setLoading]       = useState(false);
-  const [msg, setMsg]               = useState({ text: "", type: "" });
-  const [search, setSearch]         = useState("");
-  const [filterRole, setFilterRole] = useState("tous");
-  const [filterValide, setFilterValide] = useState("tous");
-  const [modalUser, setModalUser]   = useState<any>(null);
+/* ── ICONS ── */
+const I = {
+  experts:      () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,
+  startups:     () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>,
+  users:        () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
+  temoignages:  () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>,
+  check:        () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>,
+  x:            () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>,
+  trash:        () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>,
+  eye:          () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>,
+  logout:       () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>,
+  search:       () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>,
+  ban:          () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>,
+  refresh:      () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>,
+  close:        () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>,
+  globe:        () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>,
+};
+
+function Avatar({ initials, size = 40, color = "#0A2540" }: { initials: string; size?: number; color?: string }) {
+  const colors = ["#0A2540","#1D4ED8","#7C3AED","#059669","#DC2626","#D97706","#0891B2","#BE185D"];
+  const idx = (initials.charCodeAt(0) || 0) % colors.length;
+  const bg = colors[idx];
+  return (
+    <div style={{ width: size, height: size, borderRadius: "50%", background: bg, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 800, fontSize: size * 0.38, flexShrink: 0, letterSpacing: 1 }}>
+      {initials.toUpperCase() || "?"}
+    </div>
+  );
+}
+
+function Badge({ type }: { type: "valide" | "attente" | "refuse" | "actif" | "inactif" }) {
+  const map = {
+    valide:  { bg: "#ECFDF5", color: "#059669", border: "#A7F3D0", label: "Validé" },
+    attente: { bg: "#FFFBEB", color: "#D97706", border: "#FDE68A", label: "En attente" },
+    refuse:  { bg: "#FEF2F2", color: "#DC2626", border: "#FECACA", label: "Refusé" },
+    actif:   { bg: "#EFF6FF", color: "#1D4ED8", border: "#BFDBFE", label: "Actif" },
+    inactif: { bg: "#F9FAFB", color: "#6B7280", border: "#E5E7EB", label: "Inactif" },
+  };
+  const s = map[type];
+  return (
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 5, background: s.bg, color: s.color, border: `1px solid ${s.border}`, borderRadius: 99, padding: "3px 10px", fontSize: 11, fontWeight: 700 }}>
+      <span style={{ width: 6, height: 6, borderRadius: "50%", background: s.color, display: "inline-block" }} />
+      {s.label}
+    </span>
+  );
+}
+
+export default function AdminDashboard() {
+  const router = useRouter();
+  const [admin, setAdmin] = useState<any>(null);
+  const [tab, setTab] = useState<Tab>("experts");
+  const [experts, setExperts] = useState<any[]>([]);
+  const [startups, setStartups] = useState<any[]>([]);
+  const [users, setUsers] = useState<any[]>([]);
+  const [temoignages, setTemoignages] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [filterStatus, setFilterStatus] = useState("tous");
+  const [toast, setToast] = useState({ text: "", ok: true });
+  const [modal, setModal] = useState<any>(null);
 
   useEffect(() => {
-    const userData = localStorage.getItem('user');
-    if (!userData) { window.location.href = '/connexion'; return; }
-    const parsed = JSON.parse(userData);
-    if (parsed.role !== 'admin') { window.location.href = '/'; return; }
-    setUser(parsed);
-    loadStats();
+    const u = localStorage.getItem("user");
+    if (!u) { router.push("/connexion"); return; }
+    const parsed = JSON.parse(u);
+    if (parsed.role !== "admin") { router.push("/"); return; }
+    setAdmin(parsed);
+    loadAll();
   }, []);
 
-  const token = () => localStorage.getItem('token');
+  const tk = () => localStorage.getItem("token") || "";
+  const hdr = () => ({ Authorization: `Bearer ${tk()}` });
+  const hdrJson = () => ({ Authorization: `Bearer ${tk()}`, "Content-Type": "application/json" });
 
-  function showMsg(text: string, type = "success") {
-    setMsg({ text, type });
-    setTimeout(() => setMsg({ text: "", type: "" }), 3500);
+  function notify(text: string, ok = true) {
+    setToast({ text, ok });
+    setTimeout(() => setToast({ text: "", ok: true }), 3500);
   }
 
-  async function loadStats() {
-    try {
-      const res = await fetch('http://localhost:3001/admin/stats', { headers: { 'Authorization': `Bearer ${token()}` } });
-      setStats(await res.json());
-    } catch {}
-  }
-
-  async function loadUsers() {
+  async function loadAll() {
     setLoading(true);
-    try {
-      const res = await fetch('http://localhost:3001/admin/users', { headers: { 'Authorization': `Bearer ${token()}` } });
-      setUsers(await res.json());
-    } catch {}
+    await Promise.allSettled([fetchExperts(), fetchStartups(), fetchUsers(), fetchTemoignages()]);
     setLoading(false);
   }
 
-  async function loadExperts() {
-    setLoading(true);
-    try {
-      const res = await fetch('http://localhost:3001/admin/experts', { headers: { 'Authorization': `Bearer ${token()}` } });
-      setExperts(await res.json());
-    } catch {}
-    setLoading(false);
+  async function fetchExperts() {
+    const r = await fetch("http://localhost:3001/admin/experts", { headers: hdr() });
+    if (r.ok) setExperts(await r.json());
+  }
+  async function fetchStartups() {
+    const r = await fetch("http://localhost:3001/admin/startups", { headers: hdr() }).catch(() => null);
+    if (r && r.ok) setStartups(await r.json());
+  }
+  async function fetchUsers() {
+    const r = await fetch("http://localhost:3001/admin/users", { headers: hdr() });
+    if (r.ok) setUsers(await r.json());
+  }
+  async function fetchTemoignages() {
+    const r = await fetch("http://localhost:3001/admin/temoignages", { headers: hdr() });
+    if (r.ok) {
+      const d = await r.json();
+      setTemoignages(Array.isArray(d) ? d : []);
+    }
   }
 
   async function validerExpert(id: number) {
-    await fetch(`http://localhost:3001/admin/experts/${id}/valider`, { method: 'PUT', headers: { 'Authorization': `Bearer ${token()}` } });
-    showMsg("Expert validé ✅"); loadExperts(); loadStats();
+    const r = await fetch(`http://localhost:3001/admin/experts/${id}/valider`, { method: "PUT", headers: hdr() });
+    r.ok ? notify("Expert validé ✅") : notify("Erreur", false);
+    fetchExperts();
   }
-
   async function refuserExpert(id: number) {
-    await fetch(`http://localhost:3001/admin/experts/${id}/refuser`, { method: 'PUT', headers: { 'Authorization': `Bearer ${token()}` } });
-    showMsg("Expert refusé", "warning"); loadExperts();
+    const r = await fetch(`http://localhost:3001/admin/experts/${id}/refuser`, { method: "PUT", headers: hdr() });
+    r.ok ? notify("Expert retiré") : notify("Erreur", false);
+    fetchExperts();
   }
-
   async function supprimerUser(id: number, nom: string) {
-    if (!confirm(`Supprimer ${nom} ? Cette action est irréversible.`)) return;
-    await fetch(`http://localhost:3001/admin/users/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token()}` } });
-    showMsg("Utilisateur supprimé"); loadUsers(); loadStats(); setModalUser(null);
+    if (!confirm(`Supprimer ${nom} ?`)) return;
+    const r = await fetch(`http://localhost:3001/admin/users/${id}`, { method: "DELETE", headers: hdr() });
+    r.ok ? notify("Utilisateur supprimé") : notify("Erreur", false);
+    loadAll();
+  }
+  async function toggleUser(id: number, actif: boolean) {
+    const route = actif ? "desactiver" : "activer";
+    const r = await fetch(`http://localhost:3001/admin/users/${id}/${route}`, { method: "PUT", headers: hdr() });
+    r.ok ? notify(actif ? "Utilisateur désactivé" : "Utilisateur activé") : notify("Erreur", false);
+    fetchUsers();
+  }
+  async function validerTemo(id: number) {
+    const r = await fetch(`http://localhost:3001/admin/temoignages/${id}/valider`, { method: "PUT", headers: hdrJson() });
+    r.ok ? notify("Témoignage approuvé ✅") : notify("Erreur", false);
+    fetchTemoignages();
+  }
+  async function supprimerTemo(id: number) {
+    if (!confirm("Supprimer ce témoignage ?")) return;
+    const r = await fetch(`http://localhost:3001/admin/temoignages/${id}`, { method: "DELETE", headers: hdr() });
+    r.ok ? notify("Témoignage supprimé") : notify("Erreur", false);
+    fetchTemoignages();
   }
 
-  async function toggleUser(id: number, isActive: boolean) {
-    const route = isActive ? 'desactiver' : 'activer';
-    await fetch(`http://localhost:3001/admin/users/${id}/${route}`, { method: 'PUT', headers: { 'Authorization': `Bearer ${token()}` } });
-    showMsg(isActive ? "Utilisateur désactivé" : "Utilisateur activé ✅"); loadUsers();
+  function initials(prenom?: string, nom?: string) {
+    return ((prenom?.[0] || "") + (nom?.[0] || "")).toUpperCase() || "?";
   }
-
-  function changeTab(tab: "stats"|"users"|"experts") {
-    setActiveTab(tab); setSearch(""); setFilterRole("tous"); setFilterValide("tous");
-    if (tab === "users") loadUsers();
-    if (tab === "experts") loadExperts();
-  }
-
-  function logout() { localStorage.clear(); window.location.href = '/'; }
-
-  const filteredUsers = users.filter(u => {
-    const matchSearch = `${u.nom} ${u.prenom} ${u.email}`.toLowerCase().includes(search.toLowerCase());
-    const matchRole = filterRole === "tous" || u.role === filterRole;
-    return matchSearch && matchRole;
-  });
 
   const filteredExperts = experts.filter(e => {
-    const matchSearch = `${e.domaine || ''} ${e.localisation || ''}`.toLowerCase().includes(search.toLowerCase());
-    const matchValide = filterValide === "tous" || (filterValide === "valide" ? e.valide : !e.valide);
-    return matchSearch && matchValide;
+    const q = search.toLowerCase();
+    const match = !q || `${e.user?.prenom} ${e.user?.nom} ${e.domaine}`.toLowerCase().includes(q);
+    const st = filterStatus === "tous" || (filterStatus === "valide" && e.valide) || (filterStatus === "attente" && !e.valide);
+    return match && st;
   });
 
-  if (!user) return null;
+  const filteredStartups = startups.filter(s => {
+    const q = search.toLowerCase();
+    const match = !q || `${s.user?.prenom} ${s.user?.nom} ${s.secteur}`.toLowerCase().includes(q);
+    return match;
+  });
+
+  const filteredUsers = users.filter(u => {
+    const q = search.toLowerCase();
+    return !q || `${u.prenom} ${u.nom} ${u.email}`.toLowerCase().includes(q);
+  });
+
+  const filteredTemos = temoignages.filter(t => {
+    const q = search.toLowerCase();
+    const match = !q || `${t.user?.prenom} ${t.user?.nom} ${t.texte}`.toLowerCase().includes(q);
+    const st = filterStatus === "tous" || (filterStatus === "valide" && t.statut === "valide") || (filterStatus === "attente" && t.statut !== "valide");
+    return match && st;
+  });
+
+  const tabs = [
+    { id: "experts",     label: "Experts",      count: experts.length,     icon: I.experts },
+    { id: "startups",    label: "Startups",      count: startups.length,    icon: I.startups },
+    { id: "users",       label: "Utilisateurs",  count: users.length,       icon: I.users },
+    { id: "temoignages", label: "Témoignages",   count: temoignages.filter(t => t.statut !== "valide").length + " en attente", icon: I.temoignages },
+  ];
+
+  if (loading) return (
+    <div style={{ minHeight: "100vh", background: "#F2F5F9", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Outfit',sans-serif" }}>
+      <div style={{ textAlign: "center" }}>
+        <div style={{ width: 44, height: 44, border: "3px solid #F7B500", borderTopColor: "transparent", borderRadius: "50%", animation: "spin .8s linear infinite", margin: "0 auto 16px" }} />
+        <p style={{ color: "#8A9AB5", fontSize: 14 }}>Chargement…</p>
+      </div>
+    </div>
+  );
 
   return (
-    <div style={{ minHeight: "100vh", background: "#F0F4F8", fontFamily: "'DM Sans',sans-serif", display: "flex" }}>
+    <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=DM+Sans:wght@300;400;500;600;700&display=swap');
-        * { box-sizing:border-box; margin:0; padding:0; }
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Outfit', sans-serif; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+        .fade { animation: fadeIn .3s ease; }
 
-        .nav-item { display:flex; align-items:center; gap:12px; padding:12px 20px; color:rgba(255,255,255,0.5); font-size:13.5px; font-weight:500; cursor:pointer; transition:all .2s; border:none; background:none; width:100%; text-align:left; font-family:'DM Sans',sans-serif; border-left:3px solid transparent; border-radius:0 10px 10px 0; margin:1px 0; }
-        .nav-item:hover { color:white; background:rgba(255,255,255,0.07); }
-        .nav-item.active { color:#C9A84C; background:rgba(182,139,68,0.12); border-left-color:#C9A84C; }
+        .card {
+          background: #fff;
+          border: 1px solid #E8EEF6;
+          border-radius: 16px;
+          transition: transform .25s, box-shadow .25s, border-color .25s;
+        }
+        .card:hover {
+          transform: translateY(-3px);
+          box-shadow: 0 12px 32px rgba(10,37,64,.1);
+          border-color: rgba(247,181,0,.3);
+        }
 
-        .card { background:white; border-radius:14px; box-shadow:0 1px 3px rgba(0,0,0,0.05), 0 4px 16px rgba(0,0,0,0.04); }
-        .stat-card { background:white; border-radius:14px; padding:22px; box-shadow:0 1px 3px rgba(0,0,0,0.05); transition:all .2s; }
-        .stat-card:hover { transform:translateY(-2px); box-shadow:0 6px 24px rgba(0,0,0,0.08); }
+        .inp {
+          background: #F7F9FC;
+          border: 1.5px solid #DDE4EF;
+          border-radius: 10px;
+          padding: 10px 14px;
+          font-family: 'Outfit', sans-serif;
+          font-size: 13.5px;
+          color: #0A2540;
+          outline: none;
+          transition: border-color .18s, box-shadow .18s;
+        }
+        .inp:focus { border-color: #F7B500; box-shadow: 0 0 0 3px rgba(247,181,0,.1); }
+        .inp::placeholder { color: #B8C4D6; }
 
-        table { width:100%; border-collapse:collapse; }
-        th { padding:12px 16px; text-align:left; font-size:11px; font-weight:700; color:#94A3B8; letter-spacing:0.08em; text-transform:uppercase; background:#F8FAFC; border-bottom:1px solid #E2E8F0; }
-        td { padding:13px 16px; font-size:13px; color:#1E293B; border-bottom:1px solid #F1F5F9; vertical-align:middle; }
-        tr:last-child td { border-bottom:none; }
-        tr:hover td { background:#FAFBFD; }
+        .btn { font-family: 'Outfit', sans-serif; font-weight: 600; border: none; border-radius: 9px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; padding: 8px 14px; transition: all .18s; }
+        .btn-green  { background: #ECFDF5; color: #059669; }
+        .btn-green:hover  { background: #059669; color: #fff; }
+        .btn-red    { background: #FEF2F2; color: #DC2626; }
+        .btn-red:hover    { background: #DC2626; color: #fff; }
+        .btn-amber  { background: #FFFBEB; color: #D97706; }
+        .btn-amber:hover  { background: #D97706; color: #fff; }
+        .btn-slate  { background: #F1F5F9; color: #475569; }
+        .btn-slate:hover  { background: #475569; color: #fff; }
+        .btn-primary { background: #0A2540; color: #fff; }
+        .btn-primary:hover { background: #F7B500; color: #0A2540; }
+        .btn-gold { background: #F7B500; color: #0A2540; }
+        .btn-gold:hover { background: #e6a800; }
 
-        .badge { display:inline-flex; align-items:center; gap:4px; border-radius:20px; padding:3px 10px; font-size:11px; font-weight:700; }
-        .bg { background:#ECFDF5; color:#059669; }
-        .br { background:#FEF2F2; color:#DC2626; }
-        .bo { background:#FFFBEB; color:#D97706; }
-        .bb { background:#EFF6FF; color:#2563EB; }
-        .bp { background:#F5F3FF; color:#7C3AED; }
-        .bgr { background:#F1F5F9; color:#64748B; }
+        .modal-bg { position: fixed; inset: 0; background: rgba(10,37,64,.55); z-index: 200; display: flex; align-items: center; justify-content: center; padding: 24px; backdrop-filter: blur(4px); }
+        .modal { background: #fff; border-radius: 20px; width: 100%; max-width: 540px; max-height: 90vh; overflow-y: auto; box-shadow: 0 24px 80px rgba(10,37,64,.2); }
 
-        .btn { font-family:'DM Sans',sans-serif; border-radius:8px; padding:7px 12px; font-size:12px; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:5px; transition:all .18s; border:1px solid transparent; white-space:nowrap; }
-        .bs { background:#ECFDF5; color:#059669; border-color:#A7F3D0; }
-        .bs:hover { background:#D1FAE5; }
-        .bd { background:#FEF2F2; color:#DC2626; border-color:#FECACA; }
-        .bd:hover { background:#FEE2E2; }
-        .bw { background:#FFFBEB; color:#D97706; border-color:#FDE68A; }
-        .bw:hover { background:#FEF3C7; }
-        .bi { background:#EFF6FF; color:#2563EB; border-color:#BFDBFE; }
-        .bi:hover { background:#DBEAFE; }
-        .bghost { background:white; color:#64748B; border-color:#E2E8F0; }
-        .bghost:hover { background:#F8FAFC; }
-
-        .search-inp { font-family:'DM Sans',sans-serif; padding:10px 14px 10px 38px; border:1.5px solid #E2E8F0; border-radius:10px; font-size:13px; color:#1E293B; outline:none; background:white; width:250px; transition:all .2s; }
-        .search-inp:focus { border-color:rgba(182,139,68,0.5); box-shadow:0 0 0 3px rgba(182,139,68,0.08); }
-
-        .sel { font-family:'DM Sans',sans-serif; padding:10px 14px; border:1.5px solid #E2E8F0; border-radius:10px; font-size:13px; color:#1E293B; outline:none; background:white; cursor:pointer; }
-        .sel:focus { border-color:rgba(182,139,68,0.5); }
-
-        .ftab { font-family:'DM Sans',sans-serif; padding:8px 14px; border-radius:8px; font-size:12.5px; font-weight:600; cursor:pointer; border:1.5px solid #E2E8F0; transition:all .2s; background:white; color:#64748B; }
-        .ftab:hover { border-color:#CBD5E1; color:#1E293B; }
-        .ftab.factive { background:#1E293B; color:white; border-color:#1E293B; }
-
-        .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:100; display:flex; align-items:center; justify-content:center; padding:24px; backdrop-filter:blur(4px); }
-        .modal { background:white; border-radius:18px; padding:28px; max-width:460px; width:100%; box-shadow:0 24px 60px rgba(0,0,0,0.2); }
-
-        .avatar { display:flex; align-items:center; justify-content:center; font-weight:700; font-family:'DM Sans',sans-serif; flex-shrink:0; }
-
-        @keyframes slideIn { from{opacity:0;transform:translateY(-8px);} to{opacity:1;transform:translateY(0);} }
-        .msg-anim { animation:slideIn .25s ease; }
-
-        .btn-logout-side { font-family:'DM Sans',sans-serif; display:flex; align-items:center; gap:10px; color:rgba(255,255,255,0.45); font-size:13px; font-weight:500; background:none; border:none; cursor:pointer; padding:11px 14px; border-radius:10px; width:100%; transition:all .2s; }
-        .btn-logout-side:hover { background:rgba(255,255,255,0.06); color:white; }
+        .tbl { width: 100%; border-collapse: collapse; }
+        .tbl th { background: #F7F9FC; color: #7D8FAA; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; padding: 12px 16px; text-align: left; border-bottom: 1px solid #E8EEF6; }
+        .tbl td { padding: 13px 16px; border-bottom: 1px solid #F1F5F9; font-size: 13.5px; color: #374151; vertical-align: middle; }
+        .tbl tr:last-child td { border-bottom: none; }
+        .tbl tr:hover td { background: #FAFBFE; }
       `}</style>
 
-      {/* ══════════ SIDEBAR ══════════ */}
-      <aside style={{ width: 230, background: "linear-gradient(180deg,#0F172A 0%,#1E293B 100%)", display: "flex", flexDirection: "column", position: "fixed", top: 0, left: 0, bottom: 0, zIndex: 40 }}>
-        {/* Logo */}
-        <div style={{ padding: "24px 20px 18px", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
-            <div style={{ width: 36, height: 36, border: "1px solid rgba(182,139,68,0.4)", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(182,139,68,0.1)", flexShrink: 0 }}>
-              <span style={{ fontFamily: "'Cormorant Garamond',serif", fontWeight: 700, fontSize: 13, color: "#C9A84C" }}>BEH</span>
-            </div>
-            <div>
-              <div style={{ fontFamily: "'Cormorant Garamond',serif", fontWeight: 600, fontSize: 14, color: "white", lineHeight: 1.2 }}>Business Expert Hub</div>
-              <div style={{ fontSize: 9.5, color: "rgba(255,255,255,0.3)", letterSpacing: "0.12em", textTransform: "uppercase", marginTop: 2 }}>Admin</div>
-            </div>
-          </div>
+      {/* ══ TOAST ══ */}
+      {toast.text && (
+        <div className="fade" style={{ position: "fixed", top: 24, right: 24, zIndex: 999, background: toast.ok ? "#ECFDF5" : "#FEF2F2", border: `1px solid ${toast.ok ? "#A7F3D0" : "#FECACA"}`, borderLeft: `3px solid ${toast.ok ? "#059669" : "#DC2626"}`, color: toast.ok ? "#059669" : "#DC2626", borderRadius: 10, padding: "12px 18px", fontWeight: 600, fontSize: 13, boxShadow: "0 8px 24px rgba(0,0,0,.1)" }}>
+          {toast.text}
         </div>
+      )}
 
-        {/* Admin */}
-        <div style={{ padding: "14px 20px", borderBottom: "1px solid rgba(255,255,255,0.06)", display: "flex", alignItems: "center", gap: 10 }}>
-          <div className="avatar" style={{ width: 34, height: 34, borderRadius: "50%", background: "linear-gradient(135deg,#C9A84C,#B6893F)", color: "#0F1923", fontSize: 12 }}>
-            A
-          </div>
-          <div>
-            <div style={{ fontSize: 13, fontWeight: 600, color: "white" }}>Admin BEH</div>
-            <div style={{ fontSize: 11, color: "rgba(255,255,255,0.3)" }}>Administrateur</div>
-          </div>
-        </div>
-
-        {/* Nav */}
-        <nav style={{ flex: 1, padding: "14px 8px" }}>
-          <div style={{ fontSize: 9.5, color: "rgba(255,255,255,0.22)", letterSpacing: "0.12em", textTransform: "uppercase", fontWeight: 600, padding: "6px 14px 8px" }}>
-            Menu
-          </div>
-          <button className={`nav-item ${activeTab === "stats" ? "active" : ""}`} onClick={() => changeTab("stats")}>
-            <IconStats /> Tableau de bord
-          </button>
-          <button className={`nav-item ${activeTab === "users" ? "active" : ""}`} onClick={() => changeTab("users")}>
-            <IconUsers /> Utilisateurs
-            {stats && <span style={{ marginLeft: "auto", background: "rgba(255,255,255,0.1)", borderRadius: 20, padding: "2px 8px", fontSize: 11, color: "rgba(255,255,255,0.5)" }}>{stats.totalUsers}</span>}
-          </button>
-          <button className={`nav-item ${activeTab === "experts" ? "active" : ""}`} onClick={() => changeTab("experts")}>
-            <IconExpert /> Experts
-            {stats?.expertsEnAttente > 0 && <span style={{ marginLeft: "auto", background: "rgba(245,158,11,0.2)", borderRadius: 20, padding: "2px 8px", fontSize: 11, color: "#F59E0B" }}>{stats.expertsEnAttente}</span>}
-          </button>
-        </nav>
-
-        {/* Logout */}
-        <div style={{ padding: "12px", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
-          <button onClick={logout} className="btn-logout-side">
-            <IconLogout /> Déconnexion
-          </button>
-        </div>
-      </aside>
-
-      {/* ══════════ MAIN ══════════ */}
-      <div style={{ marginLeft: 230, flex: 1, display: "flex", flexDirection: "column" }}>
-
-        {/* TOP BAR */}
-        <header style={{ background: "white", padding: "14px 28px", borderBottom: "1px solid #E2E8F0", display: "flex", alignItems: "center", justifyContent: "space-between", position: "sticky", top: 0, zIndex: 30, boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
-          <div>
-            <h1 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 21, fontWeight: 600, color: "#1E293B" }}>
-              {activeTab === "stats" && "Tableau de bord"}
-              {activeTab === "users" && "Gestion des utilisateurs"}
-              {activeTab === "experts" && "Gestion des experts"}
-            </h1>
-            <p style={{ fontSize: 11.5, color: "#94A3B8", marginTop: 1 }}>
-              {new Date().toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-            </p>
-          </div>
-          {(activeTab === "users" || activeTab === "experts") && (
-            <button className="btn bghost" onClick={() => activeTab === "users" ? loadUsers() : loadExperts()}>
-              <IconRefresh /> Actualiser
-            </button>
-          )}
-        </header>
-
-        <div style={{ padding: "24px 28px", flex: 1 }}>
-
-          {/* MESSAGE */}
-          {msg.text && (
-            <div className="msg-anim" style={{ background: msg.type === "warning" ? "#FFFBEB" : "#ECFDF5", border: `1px solid ${msg.type === "warning" ? "#FDE68A" : "#A7F3D0"}`, color: msg.type === "warning" ? "#D97706" : "#059669", borderRadius: 10, padding: "12px 16px", marginBottom: 18, fontWeight: 600, fontSize: 13 }}>
-              {msg.text}
+      {/* ══ MODAL DÉTAIL ══ */}
+      {modal && (
+        <div className="modal-bg" onClick={() => setModal(null)}>
+          <div className="modal" onClick={e => e.stopPropagation()}>
+            <div style={{ padding: "24px 28px", borderBottom: "1px solid #F1F5F9", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <h3 style={{ fontSize: 18, fontWeight: 700, color: "#0A2540" }}>{modal._type === "expert" ? "Profil expert" : "Profil startup"}</h3>
+              <button onClick={() => setModal(null)} className="btn btn-slate" style={{ padding: "6px 8px" }}><I.close /></button>
             </div>
-          )}
-
-          {/* ══ STATS ══ */}
-          {activeTab === "stats" && (
-            <div>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(185px,1fr))", gap: 14, marginBottom: 24 }}>
+            <div style={{ padding: "24px 28px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 24 }}>
+                <Avatar initials={initials(modal.user?.prenom, modal.user?.nom)} size={60} />
+                <div>
+                  <div style={{ fontSize: 18, fontWeight: 700, color: "#0A2540" }}>{modal.user?.prenom} {modal.user?.nom}</div>
+                  <div style={{ fontSize: 13, color: "#8A9AB5", marginTop: 3 }}>{modal.user?.email}</div>
+                  {modal._type === "expert" && <div style={{ marginTop: 6 }}><Badge type={modal.valide ? "valide" : "attente"} /></div>}
+                </div>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                 {[
-                  { label: "Total inscrits",   value: stats?.totalUsers      || 0, icon: "👥", color: "#3B82F6", bg: "#EFF6FF" },
-                  { label: "Experts",          value: stats?.totalExperts    || 0, icon: "💼", color: "#B6893F", bg: "#FEF3C7" },
-                  { label: "Startups",         value: stats?.totalStartups   || 0, icon: "🚀", color: "#10B981", bg: "#ECFDF5" },
-                  { label: "Experts validés",  value: stats?.expertsValides  || 0, icon: "✅", color: "#059669", bg: "#ECFDF5" },
-                  { label: "En attente",       value: stats?.expertsEnAttente || 0, icon: "⏳", color: "#D97706", bg: "#FFFBEB" },
-                ].map((s, i) => (
-                  <div key={i} className="stat-card">
-                    <div style={{ width: 40, height: 40, borderRadius: 10, background: s.bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, marginBottom: 12 }}>{s.icon}</div>
-                    <div style={{ fontSize: 32, fontWeight: 800, color: s.color, fontFamily: "'Cormorant Garamond',serif", lineHeight: 1 }}>{s.value}</div>
-                    <div style={{ fontSize: 12.5, color: "#64748B", marginTop: 5, fontWeight: 500 }}>{s.label}</div>
+                  ["Téléphone", modal.user?.tel || "—"],
+                  modal._type === "expert" ? ["Domaine", modal.domaine || "—"] : ["Secteur", modal.secteur || "—"],
+                  modal._type === "expert" ? ["Expérience", modal.experience || "—"] : ["Taille", modal.taille || "—"],
+                  modal._type === "expert" ? ["Localisation", modal.localisation || "—"] : null,
+                  modal._type === "expert" ? ["Tarif", modal.tarif || "—"] : null,
+                ].filter(Boolean).map(([k, v]: any) => (
+                  <div key={k} style={{ display: "flex", gap: 12 }}>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: "#7D8FAA", textTransform: "uppercase", letterSpacing: 1, minWidth: 110 }}>{k}</span>
+                    <span style={{ fontSize: 13.5, color: "#374151" }}>{v}</span>
                   </div>
                 ))}
-              </div>
-
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
-                <div className="card" style={{ padding: 22 }}>
-                  <h3 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 17, fontWeight: 600, color: "#1E293B", marginBottom: 14 }}>Accès rapide</h3>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                    <button className="btn bi" style={{ justifyContent: "flex-start", padding: "11px 14px", fontSize: 13 }} onClick={() => changeTab("users")}>
-                      <IconUsers /> Gérer les utilisateurs
-                    </button>
-                    <button className="btn bw" style={{ justifyContent: "flex-start", padding: "11px 14px", fontSize: 13 }} onClick={() => changeTab("experts")}>
-                      <IconExpert /> Valider les experts {stats?.expertsEnAttente > 0 && `(${stats.expertsEnAttente})`}
-                    </button>
-                  </div>
-                </div>
-                <div className="card" style={{ padding: 22 }}>
-                  <h3 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 17, fontWeight: 600, color: "#1E293B", marginBottom: 14 }}>Résumé</h3>
-                  {[
-                    { label: "Taux de validation", value: stats?.totalExperts > 0 ? `${Math.round((stats.expertsValides / stats.totalExperts) * 100)}%` : "0%", color: "#059669" },
-                    { label: "Experts en attente", value: stats?.expertsEnAttente || 0, color: "#D97706" },
-                    { label: "Total utilisateurs", value: stats?.totalUsers || 0, color: "#3B82F6" },
-                  ].map((item, i) => (
-                    <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderBottom: i < 2 ? "1px solid #F1F5F9" : "none" }}>
-                      <span style={{ fontSize: 13, color: "#64748B" }}>{item.label}</span>
-                      <span style={{ fontSize: 15, fontWeight: 700, color: item.color }}>{item.value}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* ══ USERS ══ */}
-          {activeTab === "users" && (
-            <div>
-              <div style={{ display: "flex", gap: 10, marginBottom: 18, flexWrap: "wrap", alignItems: "center" }}>
-                <div style={{ position: "relative" }}>
-                  <span style={{ position: "absolute", left: 11, top: "50%", transform: "translateY(-50%)", color: "#94A3B8" }}><IconSearch /></span>
-                  <input className="search-inp" placeholder="Rechercher un utilisateur..." value={search} onChange={e => setSearch(e.target.value)} />
-                </div>
-                <select className="sel" value={filterRole} onChange={e => setFilterRole(e.target.value)}>
-                  <option value="tous">Tous les rôles</option>
-                  <option value="startup">Startup</option>
-                  <option value="expert">Expert</option>
-                  <option value="admin">Admin</option>
-                </select>
-                <span style={{ fontSize: 12.5, color: "#94A3B8" }}>{filteredUsers.length} résultat{filteredUsers.length > 1 ? "s" : ""}</span>
-              </div>
-
-              <div className="card" style={{ overflow: "hidden" }}>
-                {loading ? (
-                  <div style={{ padding: 48, textAlign: "center", color: "#94A3B8" }}>Chargement...</div>
-                ) : (
-                  <div style={{ overflowX: "auto" }}>
-                    <table>
-                      <thead><tr>
-                        <th>Utilisateur</th><th>Email</th><th>Rôle</th><th>Statut</th><th>Date</th><th>Actions</th>
-                      </tr></thead>
-                      <tbody>
-                        {filteredUsers.map(u => (
-                          <tr key={u.id}>
-                            <td>
-                              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                                <div className="avatar" style={{ width: 34, height: 34, borderRadius: 9, background: u.role === 'admin' ? "#FEF2F2" : u.role === 'expert' ? "#EFF6FF" : "#ECFDF5", color: u.role === 'admin' ? "#DC2626" : u.role === 'expert' ? "#2563EB" : "#059669", fontSize: 12 }}>
-                                  {u.prenom?.[0]}{u.nom?.[0]}
-                                </div>
-                                <div>
-                                  <div style={{ fontWeight: 600, fontSize: 13.5 }}>{u.prenom} {u.nom}</div>
-                                  <div style={{ fontSize: 11, color: "#94A3B8" }}>#{u.id}</div>
-                                </div>
-                              </div>
-                            </td>
-                            <td style={{ color: "#64748B" }}>{u.email}</td>
-                            <td><span className={`badge ${u.role === 'admin' ? 'br' : u.role === 'expert' ? 'bb' : 'bg'}`}>{u.role}</span></td>
-                            <td><span className={`badge ${u.isActive ? 'bg' : 'bgr'}`}>{u.isActive ? '● Actif' : '● Inactif'}</span></td>
-                            <td style={{ color: "#94A3B8", fontSize: 12 }}>{new Date(u.createdAt).toLocaleDateString('fr-FR')}</td>
-                            <td>
-                              {u.role !== 'admin' ? (
-                                <div style={{ display: "flex", gap: 5 }}>
-                                  <button className="btn bi" onClick={() => setModalUser(u)}><IconEye /></button>
-                                  <button className={`btn ${u.isActive ? 'bw' : 'bs'}`} onClick={() => toggleUser(u.id, u.isActive)}>
-                                    {u.isActive ? '🔒' : '🔓'}
-                                  </button>
-                                  <button className="btn bd" onClick={() => supprimerUser(u.id, `${u.prenom} ${u.nom}`)}>
-                                    <IconTrash />
-                                  </button>
-                                </div>
-                              ) : <span style={{ fontSize: 11, color: "#CBD5E1" }}>Protégé</span>}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                    {filteredUsers.length === 0 && <div style={{ padding: 48, textAlign: "center", color: "#94A3B8" }}>Aucun utilisateur trouvé</div>}
+                {modal.description && (
+                  <div>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: "#7D8FAA", textTransform: "uppercase", letterSpacing: 1, marginBottom: 6 }}>Description</div>
+                    <div style={{ background: "#F7F9FC", borderRadius: 10, padding: "12px 14px", fontSize: 13.5, color: "#374151", lineHeight: 1.7 }}>{modal.description}</div>
                   </div>
                 )}
               </div>
+              {modal._type === "expert" && (
+                <div style={{ display: "flex", gap: 10, marginTop: 24 }}>
+                  {!modal.valide ? (
+                    <button className="btn btn-green" style={{ flex: 1, justifyContent: "center", padding: "11px" }} onClick={() => { validerExpert(modal.id); setModal(null); }}><I.check /> Valider</button>
+                  ) : (
+                    <button className="btn btn-amber" style={{ flex: 1, justifyContent: "center", padding: "11px" }} onClick={() => { refuserExpert(modal.id); setModal(null); }}><I.ban /> Retirer</button>
+                  )}
+                  <button className="btn btn-red" style={{ flex: 1, justifyContent: "center", padding: "11px" }} onClick={() => { supprimerUser(modal.user?.id, `${modal.user?.prenom} ${modal.user?.nom}`); setModal(null); }}><I.trash /> Supprimer</button>
+                </div>
+              )}
             </div>
-          )}
+          </div>
+        </div>
+      )}
+
+      <div style={{ minHeight: "100vh", background: "#F2F5F9", fontFamily: "'Outfit', sans-serif" }}>
+
+        {/* ══ HEADER ══ */}
+        <header style={{ background: "#0A2540", padding: "0 32px", height: 64, display: "flex", alignItems: "center", justifyContent: "space-between", position: "sticky", top: 0, zIndex: 100, boxShadow: "0 2px 20px rgba(10,37,64,.3)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+            <div style={{ width: 36, height: 36, background: "#F7B500", borderRadius: 9, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 12, color: "#0A2540", letterSpacing: .5 }}>BEH</div>
+            <div>
+              <div style={{ color: "#fff", fontWeight: 700, fontSize: 15 }}>Espace Administrateur</div>
+              <div style={{ color: "rgba(255,255,255,.35)", fontSize: 11, letterSpacing: 1 }}>{admin?.email}</div>
+            </div>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <button className="btn" onClick={loadAll} style={{ background: "rgba(255,255,255,.08)", color: "rgba(255,255,255,.7)", border: "1px solid rgba(255,255,255,.12)" }}>
+              <I.refresh /> Actualiser
+            </button>
+            <button className="btn" onClick={() => { localStorage.clear(); router.push("/"); }} style={{ background: "rgba(255,255,255,.08)", color: "rgba(255,255,255,.7)", border: "1px solid rgba(255,255,255,.12)" }}>
+              <I.logout /> Déconnexion
+            </button>
+          </div>
+        </header>
+
+        <div style={{ maxWidth: 1300, margin: "0 auto", padding: "28px 24px" }}>
+
+          {/* ══ STATS RAPIDES ══ */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 24 }}>
+            {[
+              { label: "Experts",       val: experts.length,                                          sub: `${experts.filter(e => !e.valide).length} en attente`,  color: "#3B82F6" },
+              { label: "Startups",      val: startups.length,                                         sub: "inscrits",                                              color: "#10B981" },
+              { label: "Utilisateurs",  val: users.length,                                            sub: "comptes actifs",                                        color: "#8B5CF6" },
+              { label: "Témoignages",   val: temoignages.filter(t => t.statut !== "valide").length,   sub: "en attente de validation",                             color: "#F7B500" },
+            ].map((s, i) => (
+              <div key={i} className="card" style={{ padding: "20px 22px" }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "#7D8FAA", textTransform: "uppercase", letterSpacing: 1, marginBottom: 8 }}>{s.label}</div>
+                <div style={{ fontSize: 32, fontWeight: 800, color: s.color, lineHeight: 1 }}>{s.val}</div>
+                <div style={{ fontSize: 12, color: "#8A9AB5", marginTop: 6 }}>{s.sub}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* ══ ONGLETS ══ */}
+          <div style={{ display: "flex", gap: 6, background: "#fff", border: "1px solid #E8EEF6", borderRadius: 14, padding: 6, marginBottom: 20 }}>
+            {tabs.map(t => (
+              <button
+                key={t.id}
+                onClick={() => { setTab(t.id as Tab); setSearch(""); setFilterStatus("tous"); }}
+                className="btn"
+                style={{
+                  flex: 1, justifyContent: "center", padding: "10px 16px",
+                  background: tab === t.id ? "#0A2540" : "transparent",
+                  color: tab === t.id ? "#fff" : "#5C7090",
+                  borderRadius: 10, fontWeight: tab === t.id ? 700 : 500,
+                }}
+              >
+                <t.icon />
+                <span>{t.label}</span>
+                <span style={{ background: tab === t.id ? "rgba(255,255,255,.2)" : "#F1F5F9", color: tab === t.id ? "#fff" : "#7D8FAA", borderRadius: 99, padding: "2px 8px", fontSize: 11, fontWeight: 700 }}>
+                  {t.count}
+                </span>
+              </button>
+            ))}
+          </div>
+
+          {/* ══ FILTRES ══ */}
+          <div className="card" style={{ padding: "14px 18px", marginBottom: 20, display: "flex", gap: 12, alignItems: "center" }}>
+            <div style={{ position: "relative", flex: 1 }}>
+              <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#B8C4D6" }}><I.search /></span>
+              <input className="inp" placeholder="Rechercher…" value={search} onChange={e => setSearch(e.target.value)} style={{ width: "100%", paddingLeft: 36 }} />
+            </div>
+            {(tab === "experts" || tab === "temoignages") && (
+              <select className="inp" value={filterStatus} onChange={e => setFilterStatus(e.target.value)} style={{ minWidth: 160, appearance: "none", cursor: "pointer" }}>
+                <option value="tous">Tous les statuts</option>
+                <option value="valide">Validés</option>
+                <option value="attente">En attente</option>
+              </select>
+            )}
+            <div style={{ fontSize: 12, color: "#8A9AB5", whiteSpace: "nowrap" }}>
+              {tab === "experts" && <><strong style={{ color: "#0A2540" }}>{filteredExperts.length}</strong> expert(s)</>}
+              {tab === "startups" && <><strong style={{ color: "#0A2540" }}>{filteredStartups.length}</strong> startup(s)</>}
+              {tab === "users" && <><strong style={{ color: "#0A2540" }}>{filteredUsers.length}</strong> utilisateur(s)</>}
+              {tab === "temoignages" && <><strong style={{ color: "#0A2540" }}>{filteredTemos.length}</strong> témoignage(s)</>}
+            </div>
+          </div>
 
           {/* ══ EXPERTS ══ */}
-          {activeTab === "experts" && (
-            <div>
-              <div style={{ display: "flex", gap: 10, marginBottom: 18, flexWrap: "wrap", alignItems: "center" }}>
-                <div style={{ position: "relative" }}>
-                  <span style={{ position: "absolute", left: 11, top: "50%", transform: "translateY(-50%)", color: "#94A3B8" }}><IconSearch /></span>
-                  <input className="search-inp" placeholder="Rechercher..." value={search} onChange={e => setSearch(e.target.value)} />
-                </div>
-                <div style={{ display: "flex", gap: 6 }}>
-                  <button className={`ftab ${filterValide === 'tous' ? 'factive' : ''}`} onClick={() => setFilterValide('tous')}>Tous ({experts.length})</button>
-                  <button className={`ftab ${filterValide === 'attente' ? 'factive' : ''}`} onClick={() => setFilterValide('attente')}>⏳ En attente ({experts.filter(e => !e.valide).length})</button>
-                  <button className={`ftab ${filterValide === 'valide' ? 'factive' : ''}`} onClick={() => setFilterValide('valide')}>✅ Validés ({experts.filter(e => e.valide).length})</button>
-                </div>
-              </div>
-
-              <div className="card" style={{ overflow: "hidden" }}>
-                {loading ? (
-                  <div style={{ padding: 48, textAlign: "center", color: "#94A3B8" }}>Chargement...</div>
-                ) : (
-                  <div style={{ overflowX: "auto" }}>
-                    <table>
-                      <thead><tr>
-                        <th>ID Expert</th><th>Domaine</th><th>Localisation</th><th>Tarif</th><th>Expérience</th><th>Statut</th><th>Actions</th>
-                      </tr></thead>
-                      <tbody>
-                        {filteredExperts.map(e => (
-                          <tr key={e.id}>
-                            <td>
-                              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                                <div className="avatar" style={{ width: 34, height: 34, borderRadius: 9, background: "#EFF6FF", color: "#2563EB", fontSize: 12 }}>#{e.id}</div>
-                                <div style={{ fontSize: 11.5, color: "#64748B" }}>User #{e.user_id}</div>
-                              </div>
-                            </td>
-                            <td><span style={{ fontWeight: 600 }}>{e.domaine || '—'}</span></td>
-                            <td style={{ color: "#64748B" }}>{e.localisation || '—'}</td>
-                            <td>{e.tarif ? <span className="badge bp">{e.tarif}</span> : <span style={{ color: "#CBD5E1", fontSize: 12 }}>—</span>}</td>
-                            <td style={{ color: "#64748B" }}>{e.experience || '—'}</td>
-                            <td><span className={`badge ${e.valide ? 'bg' : 'bo'}`}>{e.valide ? '✅ Validé' : '⏳ En attente'}</span></td>
-                            <td>
-                              {!e.valide ? (
-                                <button className="btn bs" onClick={() => validerExpert(e.id)}><IconCheck /> Valider</button>
-                              ) : (
-                                <button className="btn bw" onClick={() => refuserExpert(e.id)}><IconX /> Refuser</button>
-                              )}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                    {filteredExperts.length === 0 && <div style={{ padding: 48, textAlign: "center", color: "#94A3B8" }}>Aucun expert trouvé</div>}
+          {tab === "experts" && (
+            <div className="fade" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 16 }}>
+              {filteredExperts.length === 0 ? (
+                <div className="card" style={{ padding: 48, textAlign: "center", color: "#8A9AB5", gridColumn: "1/-1" }}>Aucun expert trouvé</div>
+              ) : filteredExperts.map(ex => (
+                <div key={ex.id} className="card" style={{ padding: 20 }}>
+                  <div style={{ display: "flex", gap: 14, alignItems: "flex-start", marginBottom: 14 }}>
+                    <Avatar initials={initials(ex.user?.prenom, ex.user?.nom)} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontWeight: 700, fontSize: 15, color: "#0A2540" }}>{ex.user?.prenom} {ex.user?.nom}</div>
+                      <div style={{ fontSize: 12.5, color: "#8A9AB5", marginTop: 2 }}>{ex.domaine || "—"}</div>
+                      <div style={{ marginTop: 6 }}><Badge type={ex.valide ? "valide" : "attente"} /></div>
+                    </div>
                   </div>
-                )}
-              </div>
+                  {ex.description && (
+                    <p style={{ fontSize: 13, color: "#6B7280", lineHeight: 1.6, marginBottom: 14, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{ex.description}</p>
+                  )}
+                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 14 }}>
+                    {ex.localisation && <span style={{ fontSize: 11.5, color: "#8A9AB5", background: "#F7F9FC", border: "1px solid #E8EEF6", borderRadius: 6, padding: "3px 8px" }}>📍 {ex.localisation}</span>}
+                    {ex.experience && <span style={{ fontSize: 11.5, color: "#8A9AB5", background: "#F7F9FC", border: "1px solid #E8EEF6", borderRadius: 6, padding: "3px 8px" }}>💼 {ex.experience}</span>}
+                    {ex.tarif && <span style={{ fontSize: 11.5, color: "#8A9AB5", background: "#F7F9FC", border: "1px solid #E8EEF6", borderRadius: 6, padding: "3px 8px" }}>💰 {ex.tarif}</span>}
+                  </div>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    {!ex.valide ? (
+                      <button className="btn btn-green" style={{ flex: 1, justifyContent: "center" }} onClick={() => validerExpert(ex.id)}><I.check /> Valider</button>
+                    ) : (
+                      <button className="btn btn-amber" style={{ flex: 1, justifyContent: "center" }} onClick={() => refuserExpert(ex.id)}><I.ban /> Retirer</button>
+                    )}
+                    <button className="btn btn-slate" onClick={() => setModal({ ...ex, _type: "expert" })}><I.eye /></button>
+                    <button className="btn btn-red" onClick={() => supprimerUser(ex.user?.id, `${ex.user?.prenom} ${ex.user?.nom}`)}><I.trash /></button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* ══ STARTUPS ══ */}
+          {tab === "startups" && (
+            <div className="fade" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 16 }}>
+              {filteredStartups.length === 0 ? (
+                <div className="card" style={{ padding: 48, textAlign: "center", color: "#8A9AB5", gridColumn: "1/-1" }}>Aucune startup trouvée</div>
+              ) : filteredStartups.map(s => (
+                <div key={s.id} className="card" style={{ padding: 20 }}>
+                  <div style={{ display: "flex", gap: 14, alignItems: "flex-start", marginBottom: 14 }}>
+                    <Avatar initials={initials(s.user?.prenom, s.user?.nom)} />
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 700, fontSize: 15, color: "#0A2540" }}>{s.user?.prenom} {s.user?.nom}</div>
+                      <div style={{ fontSize: 12.5, color: "#8A9AB5", marginTop: 2 }}>{s.secteur || "—"}</div>
+                      {s.taille && <div style={{ fontSize: 11.5, color: "#8A9AB5", marginTop: 4 }}>👥 {s.taille}</div>}
+                    </div>
+                  </div>
+                  <div style={{ fontSize: 12.5, color: "#6B7280", marginBottom: 14 }}>📧 {s.user?.email}</div>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <button className="btn btn-slate" style={{ flex: 1, justifyContent: "center" }} onClick={() => setModal({ ...s, _type: "startup" })}><I.eye /> Voir détails</button>
+                    <button className="btn btn-red" onClick={() => supprimerUser(s.user?.id, `${s.user?.prenom} ${s.user?.nom}`)}><I.trash /></button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* ══ UTILISATEURS ══ */}
+          {tab === "users" && (
+            <div className="fade card" style={{ overflow: "hidden" }}>
+              <table className="tbl">
+                <thead>
+                  <tr>
+                    <th>Utilisateur</th>
+                    <th>Email</th>
+                    <th>Rôle</th>
+                    <th>Statut</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredUsers.length === 0 ? (
+                    <tr><td colSpan={5} style={{ textAlign: "center", padding: 48, color: "#8A9AB5" }}>Aucun utilisateur</td></tr>
+                  ) : filteredUsers.map(u => (
+                    <tr key={u.id}>
+                      <td>
+                        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                          <Avatar initials={initials(u.prenom, u.nom)} size={34} />
+                          <span style={{ fontWeight: 600, color: "#0A2540" }}>{u.prenom} {u.nom}</span>
+                        </div>
+                      </td>
+                      <td style={{ color: "#6B7280" }}>{u.email}</td>
+                      <td>
+                        <span style={{ display: "inline-block", background: u.role === "admin" ? "#EDE9FE" : u.role === "expert" ? "#EFF6FF" : "#ECFDF5", color: u.role === "admin" ? "#7C3AED" : u.role === "expert" ? "#1D4ED8" : "#059669", borderRadius: 99, padding: "3px 10px", fontSize: 11, fontWeight: 700 }}>
+                          {u.role}
+                        </span>
+                      </td>
+                      <td><Badge type={u.isActive ? "actif" : "inactif"} /></td>
+                      <td>
+                        <div style={{ display: "flex", gap: 6 }}>
+                          <button className={`btn ${u.isActive ? "btn-amber" : "btn-green"}`} onClick={() => toggleUser(u.id, u.isActive)}>
+                            {u.isActive ? <><I.ban /> Désactiver</> : <><I.check /> Activer</>}
+                          </button>
+                          <button className="btn btn-red" onClick={() => supprimerUser(u.id, `${u.prenom} ${u.nom}`)}><I.trash /></button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* ══ TÉMOIGNAGES ══ */}
+          {tab === "temoignages" && (
+            <div className="fade" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+              {filteredTemos.length === 0 ? (
+                <div className="card" style={{ padding: 48, textAlign: "center", color: "#8A9AB5" }}>Aucun témoignage trouvé</div>
+              ) : filteredTemos.map(t => {
+                const prenom = t.user?.prenom || "—";
+                const nom    = t.user?.nom    || "";
+                const statut = t.statut === "valide" ? "valide" : "attente";
+                return (
+                  <div key={t.id} className="card" style={{ padding: 22, borderLeft: `4px solid ${statut === "valide" ? "#10B981" : "#F7B500"}` }}>
+                    <div style={{ display: "flex", alignItems: "flex-start", gap: 16 }}>
+
+                      {/* Contenu */}
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+                          <Avatar initials={initials(prenom, nom)} size={38} />
+                          <div>
+                            <div style={{ fontWeight: 700, fontSize: 14, color: "#0A2540" }}>{prenom} {nom}</div>
+                            <div style={{ fontSize: 11.5, color: "#8A9AB5" }}>
+                              {t.createdAt ? new Date(t.createdAt).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" }) : "—"}
+                              {t.user?.email && <span style={{ marginLeft: 8 }}>· {t.user.email}</span>}
+                            </div>
+                          </div>
+                          <div style={{ marginLeft: "auto" }}><Badge type={statut} /></div>
+                        </div>
+                        <p style={{ fontSize: 14, color: "#374151", lineHeight: 1.75, fontStyle: "italic", background: "#F7F9FC", borderRadius: 10, padding: "12px 16px", borderLeft: "3px solid #E8EEF6" }}>
+                          "{t.texte}"
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Actions */}
+                    <div style={{ display: "flex", gap: 8, marginTop: 14, justifyContent: "flex-end" }}>
+                      {statut === "attente" && (
+                        <button className="btn btn-green" onClick={() => validerTemo(t.id)} style={{ padding: "9px 18px" }}>
+                          <I.check /> Approuver — publier sur le site
+                        </button>
+                      )}
+                      {statut === "valide" && (
+                        <span style={{ fontSize: 12, color: "#059669", fontWeight: 600, display: "flex", alignItems: "center", gap: 5 }}>
+                          <I.globe /> Publié sur le site
+                        </span>
+                      )}
+                      <button className="btn btn-red" onClick={() => supprimerTemo(t.id)} style={{ padding: "9px 14px" }}>
+                        <I.trash /> Supprimer
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           )}
 
         </div>
       </div>
-
-      {/* ══ MODAL DÉTAILS USER ══ */}
-      {modalUser && (
-        <div className="modal-overlay" onClick={() => setModalUser(null)}>
-          <div className="modal" onClick={e => e.stopPropagation()}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
-              <h2 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 21, fontWeight: 600, color: "#1E293B" }}>Détails utilisateur</h2>
-              <button onClick={() => setModalUser(null)} style={{ background: "#F1F5F9", border: "none", borderRadius: 8, padding: "7px 8px", cursor: "pointer", color: "#64748B", display: "flex" }}><IconClose /></button>
-            </div>
-
-            <div style={{ display: "flex", alignItems: "center", gap: 14, padding: 16, background: "#F8FAFC", borderRadius: 12, marginBottom: 20 }}>
-              <div className="avatar" style={{ width: 48, height: 48, borderRadius: 12, background: "#EFF6FF", color: "#2563EB", fontSize: 16 }}>
-                {modalUser.prenom?.[0]}{modalUser.nom?.[0]}
-              </div>
-              <div>
-                <div style={{ fontWeight: 700, fontSize: 16, color: "#1E293B" }}>{modalUser.prenom} {modalUser.nom}</div>
-                <div style={{ fontSize: 13, color: "#64748B" }}>{modalUser.email}</div>
-              </div>
-              <span className={`badge ${modalUser.role === 'expert' ? 'bb' : 'bg'}`} style={{ marginLeft: "auto" }}>{modalUser.role}</span>
-            </div>
-
-            <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
-              {[
-                { label: "ID",          value: `#${modalUser.id}` },
-                { label: "Téléphone",   value: modalUser.tel || "Non renseigné" },
-                { label: "Domaine",     value: modalUser.domaine || "Non renseigné" },
-                { label: "Statut",      value: modalUser.isActive ? "✅ Actif" : "❌ Inactif" },
-                { label: "Inscription", value: new Date(modalUser.createdAt).toLocaleDateString('fr-FR') },
-              ].map((item, i, arr) => (
-                <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "11px 0", borderBottom: i < arr.length - 1 ? "1px solid #F1F5F9" : "none" }}>
-                  <span style={{ fontSize: 13, color: "#94A3B8" }}>{item.label}</span>
-                  <span style={{ fontSize: 13, fontWeight: 600, color: "#1E293B" }}>{item.value}</span>
-                </div>
-              ))}
-            </div>
-
-            <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
-              <button className={`btn ${modalUser.isActive ? 'bw' : 'bs'}`} style={{ flex: 1, justifyContent: "center", padding: 12 }}
-                onClick={() => { toggleUser(modalUser.id, modalUser.isActive); setModalUser(null); }}>
-                {modalUser.isActive ? '🔒 Désactiver' : '🔓 Activer'}
-              </button>
-              <button className="btn bd" style={{ flex: 1, justifyContent: "center", padding: 12 }}
-                onClick={() => supprimerUser(modalUser.id, `${modalUser.prenom} ${modalUser.nom}`)}>
-                <IconTrash /> Supprimer
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+    </>
   );
 }

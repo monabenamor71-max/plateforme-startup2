@@ -1,4 +1,5 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinColumn, OneToMany } from 'typeorm';
+import { User } from '../users/user.entity';
 
 @Entity('experts')
 export class Expert {
@@ -8,10 +9,14 @@ export class Expert {
   @Column()
   user_id: number;
 
+  @ManyToOne(() => User, { eager: true, onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'user_id' })
+  user: User;
+
   @Column({ nullable: true })
   domaine: string;
 
-  @Column({ nullable: true, type: 'text' })
+  @Column({ type: 'text', nullable: true })
   description: string;
 
   @Column({ nullable: true })
@@ -23,6 +28,19 @@ export class Expert {
   @Column({ nullable: true })
   tarif: string;
 
+  @Column({ nullable: true })
+  cvPath: string;
+
+  @Column({ nullable: true })
+  photo: string;
+
+  @Column({ nullable: true })
+  telephone: string;
+
+  // validation → valide (cohérent avec tout le code)
+  @Column({ default: false })
+  valide: boolean;
+
   @Column({ default: true })
   disponible: boolean;
 
@@ -31,13 +49,4 @@ export class Expert {
 
   @Column({ default: 0 })
   nb_avis: number;
-
-  @Column({ nullable: true })
-  cv_path: string;
-
-  @Column({ default: false })
-  valide: boolean;
-
-  @CreateDateColumn()
-  createdAt: Date;
 }

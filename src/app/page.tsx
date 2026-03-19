@@ -4,808 +4,486 @@ import React, { useState, useEffect, useRef, ReactNode } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import {
-  FaStar,
-  FaQuoteLeft,
-  FaChevronLeft,
-  FaChevronRight,
-  FaEnvelope,
-  FaArrowRight,
-  FaLock,
-  FaCheck,
+  FaQuoteLeft, FaChevronLeft, FaChevronRight,
+  FaEnvelope, FaArrowRight, FaLock, FaCheck,
+  FaCalendarAlt,
 } from "react-icons/fa";
 
-/* ══════════════════════════════════════════
-   TYPES
-══════════════════════════════════════════ */
-interface AdnCard {
-  title: string;
-  desc: string;
-  anchor: string;
-  image: string;
-  icon: string;
-  color: string;
-  number: string;
+interface ExpertAPI {
+  id: number; user_id: number;
+  nom: string; prenom: string;
+  domaine: string; description: string;
+  experience: string; localisation: string;
+  tarif: string; disponible: boolean;
+  note: number; nb_avis: number;
+  photo?: string;
+  user?: { nom: string; prenom: string; email: string };
 }
-interface Expert {
-  name: string;
-  role: string;
-  xp: string;
-  tags: string[];
-  rating: number;
-  missions: number;
-  initials: string;
-}
-interface Partner   { name: string; sector: string; }
-interface Testimony { quote: string; author: string; role: string; rating: number; }
+interface Dispo { id: number; date: string; heure: string; }
 
-/* ══════════════════════════════════════════
-   HOOK
-══════════════════════════════════════════ */
-function useInView(threshold = 0.15): [React.RefObject<HTMLDivElement | null>, boolean] {
+function useInView(threshold = 0.12): [React.RefObject<HTMLDivElement | null>, boolean] {
   const ref = useRef<HTMLDivElement>(null);
   const [inView, setInView] = useState(false);
   useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const obs = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) { setInView(true); obs.disconnect(); }
-      },
-      { threshold }
-    );
-    obs.observe(el);
-    return () => obs.disconnect();
+    const el = ref.current; if (!el) return;
+    const obs = new IntersectionObserver(([e]) => {
+      if (e.isIntersecting) { setInView(true); obs.disconnect(); }
+    }, { threshold });
+    obs.observe(el); return () => obs.disconnect();
   }, [threshold]);
   return [ref, inView];
 }
-
-function FadeUp({
-  children,
-  delay = 0,
-  className = "",
-}: {
-  children: ReactNode;
-  delay?: number;
-  className?: string;
-}) {
+function Reveal({ children, delay = 0 }: { children: ReactNode; delay?: number }) {
   const [ref, inView] = useInView();
   return (
-    <div
-      ref={ref}
-      className={className}
-      style={{
-        opacity: inView ? 1 : 0,
-        transform: inView ? "translateY(0px)" : "translateY(48px)",
-        transition: `opacity 0.75s cubic-bezier(.22,1,.36,1) ${delay}s, transform 0.75s cubic-bezier(.22,1,.36,1) ${delay}s`,
-      }}
-    >
-      {children}
-    </div>
+    <div ref={ref} style={{
+      opacity: inView ? 1 : 0,
+      transform: inView ? "none" : "translateY(40px)",
+      transition: `opacity .9s cubic-bezier(.22,1,.36,1) ${delay}s, transform .9s cubic-bezier(.22,1,.36,1) ${delay}s`,
+    }}>{children}</div>
   );
 }
 
-/* ══════════════════════════════════════════
-   DONNÉES
-══════════════════════════════════════════ */
-const adnCards: AdnCard[] = [
-  {
-    title: "Notre Vision",
-    anchor: "vision",
-    image: "/vision.png",
-    icon: "",
-    color: "#3B82F6",
-    number: "01",
-    desc: "Devenir la référence absolue en accompagnement de startups innovantes, en connectant les meilleurs experts aux projets les plus ambitieux de demain.",
-  },
-  {
-    title: "Notre Mission",
-    anchor: "mission",
-    image: "/mission.png",
-    icon: "",
-    color: "#F7B500",
-    number: "02",
-    desc: "Offrir aux startups un accès privilégié à des experts certifiés pour structurer leur stratégie, accélérer leur croissance et réussir leurs levées de fonds.",
-  },
-  {
-    title: "Nos Valeurs",
-    anchor: "valeurs",
-    image: "/valeurs.png",
-    icon: "",
-    color: "#10B981",
-    number: "03",
-    desc: "Excellence, transparence et engagement humain. Chaque accompagnement est unique et conçu pour maximiser l'impact durable de votre entreprise.",
-  },
+const ADN_CARDS = [
+  { title: "Notre Vision",  anchor: "vision",  image: "/vision.png",  color: "#3B82F6", desc: "Devenir la référence absolue en accompagnement de startups innovantes, en connectant les meilleurs experts aux projets les plus ambitieux de demain." },
+  { title: "Notre Mission", anchor: "mission", image: "/mission.png", color: "#F7B500", desc: "Offrir aux startups un accès privilégié à des experts certifiés pour structurer leur stratégie, accélérer leur croissance et réussir leurs levées de fonds." },
+  { title: "Nos Valeurs",   anchor: "valeurs", image: "/valeurs.png", color: "#10B981", desc: "Excellence, transparence et engagement humain. Chaque accompagnement est unique et conçu pour maximiser l'impact durable de votre entreprise." },
+];
+const PARTNERS = [
+  { name: "TechVentures", sector: "Fonds d'investissement" }, { name: "InnoHub", sector: "Incubateur" },
+  { name: "StartupNation", sector: "Accélérateur" }, { name: "CapitalGrow", sector: "Private Equity" },
+  { name: "AfricaTech", sector: "Réseau startup" }, { name: "EuroFund", sector: "Financement EU" },
+  { name: "DigitalNext", sector: "Transformation digitale" }, { name: "GrowthLab", sector: "Studio de croissance" },
+];
+const TESTIMONIALS = [
+  { quote: "Grâce à Business Expert Hub, nous avons structuré notre stratégie en 3 semaines et levé 500k€ dès le trimestre suivant.", author: "Mehdi Charfi", role: "CEO, Startup ABC" },
+  { quote: "Les experts Business Expert Hub ont transformé notre approche commerciale. Notre CA a doublé en 6 mois.", author: "Amira Khaled", role: "Fondatrice, Startup XYZ" },
+  { quote: "Un accompagnement sur mesure, réactif et vraiment efficace. Business Expert Hub est un vrai partenaire de croissance.", author: "Bilel Trabelsi", role: "CTO, Startup Delta" },
+  { quote: "La mise en relation avec l'expert finance a été déterminante pour notre levée Série A.", author: "Nour Ben Ali", role: "COO, Startup Omega" },
+];
+const NAV_SERVICES = [
+  { label: "Consulting", slug: "consulting" }, { label: "Audit sur site", slug: "audit-sur-site" },
+  { label: "Accompagnement", slug: "accompagnement" }, { label: "Formations", slug: "formations" },
 ];
 
-const experts: Expert[] = [
-  { name: "Karim Benali",   role: "Expert Marketing Digital",        xp: "8 ans",  tags: ["Growth", "SEO", "Branding"], rating: 5, missions: 42, initials: "KB" },
-  { name: "Sofia Mansouri", role: "Expert Finance & Levée de fonds", xp: "12 ans", tags: ["VC", "M&A", "CFO"],          rating: 5, missions: 67, initials: "SM" },
-  { name: "Youssef Tazi",   role: "Expert Tech & Produit",           xp: "10 ans", tags: ["SaaS", "MVP", "Agile"],      rating: 5, missions: 55, initials: "YT" },
-  { name: "Leila Osman",    role: "Expert RH & Management",          xp: "9 ans",  tags: ["Recrutement", "OKR"],        rating: 5, missions: 38, initials: "LO" },
-];
+function getName(ex: ExpertAPI) {
+  const p = ex.user?.prenom || ex.prenom || "";
+  const n = ex.user?.nom    || ex.nom    || "";
+  return `${p} ${n}`.trim() || ex.domaine || "Expert";
+}
+function getIni(ex: ExpertAPI) {
+  const p = ex.user?.prenom || ex.prenom || "";
+  const n = ex.user?.nom    || ex.nom    || "";
+  return ((p[0] || "") + (n[0] || "")).toUpperCase() || "EX";
+}
 
-const partners: Partner[] = [
-  { name: "TechVentures",  sector: "Fonds d'investissement" },
-  { name: "InnoHub",       sector: "Incubateur" },
-  { name: "StartupNation", sector: "Accélérateur" },
-  { name: "CapitalGrow",   sector: "Private Equity" },
-  { name: "AfricaTech",    sector: "Réseau startup" },
-  { name: "EuroFund",      sector: "Financement EU" },
-  { name: "DigitalNext",   sector: "Transformation digitale" },
-  { name: "GrowthLab",     sector: "Studio de croissance" },
-];
-
-const testimonials: Testimony[] = [
-  { quote: "Grâce à Business Expert Hub, nous avons structuré notre stratégie en 3 semaines et levé 500k€ dès le trimestre suivant.", author: "Mehdi Charfi",    role: "CEO, Startup ABC",        rating: 5 },
-  { quote: "Les experts Business Expert Hub ont transformé notre approche commerciale. Notre CA a doublé en 6 mois.",                 author: "Amira Khaled",   role: "Fondatrice, Startup XYZ", rating: 5 },
-  { quote: "Un accompagnement sur mesure, réactif et vraiment efficace. Business Expert Hub est un vrai partenaire de croissance.",   author: "Bilel Trabelsi", role: "CTO, Startup Delta",      rating: 5 },
-  { quote: "La mise en relation avec l'expert finance a été déterminante pour notre levée Série A.",                                  author: "Nour Ben Ali",   role: "COO, Startup Omega",      rating: 5 },
-];
-
-const navServices = [
-  { label: "Consulting",     slug: "consulting"     },
-  { label: "Audit sur site", slug: "audit-sur-site" },
-  { label: "Accompagnement", slug: "accompagnement" },
-  { label: "Formations",     slug: "formations"     },
-];
-
-/* ══════════════════════════════════════════
-   PAGE
-══════════════════════════════════════════ */
 export default function Home() {
-  const [servicesOpen, setServicesOpen] = useState(false);
-  const [active, setActive]             = useState(0);
-  const [animating, setAnimating]       = useState(false);
-  const [email, setEmail]               = useState("");
-  const [submitted, setSubmitted]       = useState(false);
-  const [showModal, setShowModal]       = useState(false);
+  const [servOpen, setServOpen]   = useState(false);
+  const [tActive, setTActive]     = useState(0);
+  const [tAnim, setTAnim]         = useState(false);
+  const [mail, setMail]           = useState("");
+  const [sent, setSent]           = useState(false);
+  const [modal, setModal]         = useState(false);
+  const [experts, setExperts]     = useState<ExpertAPI[]>([]);
+  const [dispos, setDispos]       = useState<Record<number, Dispo[]>>({});
+  const [loading, setLoading]     = useState(true);
 
   useEffect(() => {
-    const t = setInterval(() => {
-      goTo((active + 1) % testimonials.length);
-    }, 5000);
+    fetch("http://localhost:3001/experts")
+      .then(r => r.ok ? r.json() : [])
+      .then(async (d: ExpertAPI[]) => {
+        if (Array.isArray(d) && d.length > 0) {
+          const s = d.slice(0, 4);
+          setExperts(s);
+          const map: Record<number, Dispo[]> = {};
+          await Promise.allSettled(s.map(async ex => {
+            const r = await fetch(`http://localhost:3001/disponibilites/expert/${ex.id}`).catch(() => null);
+            map[ex.id] = r && r.ok ? await r.json() : [];
+          }));
+          setDispos(map);
+        }
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, []);
+
+  useEffect(() => {
+    const t = setInterval(() => goT((tActive + 1) % TESTIMONIALS.length), 5500);
     return () => clearInterval(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [active]);
+  }, [tActive]);
 
-  function goTo(idx: number) {
-    if (animating) return;
-    setAnimating(true);
-    setTimeout(() => { setActive(idx); setAnimating(false); }, 280);
-  }
-
-  function handleNewsletter(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    if (email) { setSubmitted(true); setEmail(""); }
+  function goT(i: number) {
+    if (tAnim) return;
+    setTAnim(true);
+    setTimeout(() => { setTActive(i); setTAnim(false); }, 280);
   }
 
   return (
-    <div className="font-[Plus_Jakarta_Sans,sans-serif] text-gray-700">
-
+    <div style={{ fontFamily: "'Outfit',sans-serif", color: "#2D3748" }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500;1,600;1,700&display=swap');
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-        @keyframes marquee {
-          0%   { transform: translateX(0); }
-          100% { transform: translateX(-50%); }
+        .eyebrow {
+          display: inline-flex; align-items: center; gap: 8px;
+          font-size: 10.5px; font-weight: 800; letter-spacing: 3px;
+          text-transform: uppercase; color: #F7B500;
         }
-        .marquee-track {
-          display: flex;
-          gap: 20px;
-          width: max-content;
-          animation: marquee 26s linear infinite;
-        }
-        .marquee-track:hover { animation-play-state: paused; }
+        .eyebrow::before { content:''; display:block; width:26px; height:2px; background:#F7B500; border-radius:2px; }
 
-        @keyframes heroImageZoom {
-          0%   { transform: scale(1.08); }
-          100% { transform: scale(1); }
+        .sec-title {
+          font-family: 'Cormorant Garamond', serif;
+          font-weight: 700; line-height: 1.1; color: #0A2540;
+          font-size: clamp(34px, 4vw, 58px);
         }
-        .hero-bg-img {
-          animation: heroImageZoom 1.8s cubic-bezier(.22,1,.36,1) forwards;
-        }
-
-        @keyframes heroFadeIn {
-          from { opacity: 0; transform: translateY(32px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
-        .hero-content > * {
-          animation: heroFadeIn 0.85s cubic-bezier(.22,1,.36,1) both;
-        }
-        .hero-content > *:nth-child(1) { animation-delay: 0.1s; }
-        .hero-content > *:nth-child(2) { animation-delay: 0.25s; }
-        .hero-content > *:nth-child(3) { animation-delay: 0.4s; }
-        .hero-content > *:nth-child(4) { animation-delay: 0.55s; }
-
-        @keyframes adnBgZoom {
-          0%   { transform: scale(1.06); }
-          100% { transform: scale(1); }
-        }
-        .adn-bg-img {
-          animation: adnBgZoom 2.2s cubic-bezier(.22,1,.36,1) forwards;
-        }
-
-        @keyframes modalIn {
-          from { opacity: 0; transform: scale(0.92) translateY(20px); }
-          to   { opacity: 1; transform: scale(1) translateY(0); }
-        }
-        .modal-box { animation: modalIn .3s cubic-bezier(.22,1,.36,1); }
-
-        /* ADN Cards — Modern */
-        .card-adn {
-          transition: transform 0.38s cubic-bezier(.22,1,.36,1), box-shadow 0.38s ease;
-          position: relative;
-        }
-        .card-adn:hover {
-          transform: translateY(-10px);
-          box-shadow: 0 32px 72px rgba(10,37,64,0.16) !important;
-        }
-        .card-adn:hover .adn-image {
-          transform: scale(1.08);
-        }
-        .adn-image {
-          transition: transform 0.7s cubic-bezier(.22,1,.36,1);
-        }
-        .card-adn:hover .adn-icon-wrap {
-          transform: scale(1.12) rotate(-6deg);
-        }
-        .adn-icon-wrap {
-          transition: transform 0.4s cubic-bezier(.22,1,.36,1);
-        }
-        .card-adn:hover .adn-num {
-          opacity: 0.12;
-        }
-        .adn-num {
-          transition: opacity 0.3s ease;
-        }
-
-        .card-partner { transition: all 0.3s ease; }
-        .card-partner:hover {
-          border-color: rgba(247,181,0,0.5) !important;
-          background: rgba(247,181,0,0.07) !important;
-        }
-
-        .expert-card { transition: all 0.35s cubic-bezier(.22,1,.36,1); }
-        .expert-card:hover {
-          transform: translateY(-8px);
-          box-shadow: 0 20px 48px rgba(10,37,64,0.12);
-          border-color: rgba(247,181,0,0.4) !important;
-        }
-        .expert-card:hover .expert-btn {
-          background: #F7B500 !important;
-          color: #0A2540 !important;
-        }
-
-        .nav-link {
-          color: #0A2540; text-decoration: none;
-          font-size: 15px; font-weight: 500; transition: color .2s;
-        }
-        .nav-link:hover { color: #F7B500; }
-        .nav-link-active { color: #F7B500 !important; font-weight: 700; }
-
-        .drop-item {
-          display: block; padding: 10px 16px;
-          color: #0A2540; text-decoration: none;
-          font-size: 14px; font-weight: 600;
-          transition: background .15s; white-space: nowrap;
-        }
-        .drop-item:hover { background: #FFFBEB; }
+        .sec-title em { font-style: italic; color: #F7B500; }
+        .sec-title-light { color: white; }
+        .sec-title-light em { color: #F7B500; }
+        .sec-sub { font-size: 15px; line-height: 1.85; color: #64748B; max-width: 520px; }
+        .sec-sub-light { color: rgba(255,255,255,.45); }
 
         .btn-gold {
-          display: inline-flex; align-items: center; gap: 8px;
-          background: #F7B500; color: #0A2540;
-          border: none; border-radius: 10px;
-          padding: 13px 28px; font-weight: 800; font-size: 15px;
-          cursor: pointer; font-family: inherit;
-          transition: transform 0.22s ease, box-shadow 0.22s ease, background 0.22s ease;
-          text-decoration: none;
+          display:inline-flex; align-items:center; gap:9px;
+          background:#F7B500; color:#0A2540;
+          border:none; border-radius:10px;
+          padding:14px 28px; font-family:inherit;
+          font-size:14px; font-weight:800; cursor:pointer;
+          transition:transform .22s,box-shadow .22s,background .22s;
+          text-decoration:none; letter-spacing:.2px;
         }
-        .btn-gold:hover {
-          transform: translateY(-3px);
-          box-shadow: 0 10px 30px rgba(247,181,0,0.38);
-          background: #e6a800;
-        }
+        .btn-gold:hover { background:#e6a800; transform:translateY(-3px); box-shadow:0 14px 36px rgba(247,181,0,.35); }
 
-        .btn-outline {
-          display: inline-flex; align-items: center; gap: 8px;
-          background: transparent; color: #F7B500;
-          border: 2px solid #F7B500; border-radius: 10px;
-          padding: 13px 28px; font-weight: 700; font-size: 15px;
-          cursor: pointer; font-family: inherit;
-          transition: transform 0.22s ease, background 0.22s ease;
-          text-decoration: none;
+        .btn-dark {
+          display:inline-flex; align-items:center; gap:9px;
+          background:#0A2540; color:white;
+          border:none; border-radius:10px;
+          padding:14px 28px; font-family:inherit;
+          font-size:14px; font-weight:700; cursor:pointer;
+          transition:transform .22s,box-shadow .22s,background .22s;
+          text-decoration:none;
         }
-        .btn-outline:hover { transform: translateY(-3px); background: rgba(247,181,0,0.1); }
+        .btn-dark:hover { background:#F7B500; color:#0A2540; transform:translateY(-3px); box-shadow:0 14px 36px rgba(10,37,64,.25); }
 
-        .btn-conn {
-          border: 2px solid #0A2540; color: #0A2540; background: transparent;
-          padding: 9px 22px; border-radius: 9px; font-weight: 700; font-size: 14px;
-          cursor: pointer; transition: all .22s; font-family: inherit;
+        .btn-outline-light {
+          display:inline-flex; align-items:center; gap:9px;
+          background:transparent; color:white;
+          border:1.5px solid rgba(255,255,255,.3); border-radius:10px;
+          padding:14px 28px; font-family:inherit;
+          font-size:14px; font-weight:600; cursor:pointer;
+          transition:all .22s; text-decoration:none;
         }
-        .btn-conn:hover {
-          background: #F7B500; border-color: #F7B500;
-          transform: translateY(-2px);
-          box-shadow: 0 6px 18px rgba(247,181,0,0.30);
-        }
+        .btn-outline-light:hover { border-color:#F7B500; color:#F7B500; transform:translateY(-3px); }
 
-        .btn-insc {
-          background: #F7B500; color: #0A2540; border: 2px solid #F7B500;
-          padding: 9px 22px; border-radius: 9px; font-weight: 800; font-size: 14px;
-          cursor: pointer; transition: all .22s; font-family: inherit;
+        .btn-nav-outline {
+          border:2px solid #0A2540; color:#0A2540; background:transparent;
+          padding:9px 22px; border-radius:9px; font-weight:700;
+          font-size:14px; cursor:pointer; transition:all .22s; font-family:inherit;
         }
-        .btn-insc:hover {
-          background: #e6a800; border-color: #e6a800;
-          transform: translateY(-2px);
-          box-shadow: 0 8px 22px rgba(247,181,0,0.40);
-        }
+        .btn-nav-outline:hover { background:#F7B500; border-color:#F7B500; transform:translateY(-2px); }
 
-        .btn-navy {
-          background: #0A2540; color: white; border: none; border-radius: 9px;
-          padding: 10px 24px; font-weight: 700; cursor: pointer; font-size: 14px;
-          transition: all 0.22s ease; font-family: inherit;
-          display: inline-flex; align-items: center; gap: 6px;
+        .btn-nav-solid {
+          background:#F7B500; color:#0A2540; border:2px solid #F7B500;
+          padding:9px 22px; border-radius:9px; font-weight:800;
+          font-size:14px; cursor:pointer; transition:all .22s; font-family:inherit;
         }
-        .btn-navy:hover {
-          background: #F7B500; color: #0A2540;
-          transform: translateY(-3px);
-          box-shadow: 0 10px 28px rgba(247,181,0,0.3);
-        }
+        .btn-nav-solid:hover { background:#e6a800; transform:translateY(-2px); box-shadow:0 8px 22px rgba(247,181,0,.38); }
 
-        .btn-modal-primary {
-          width: 100%; background: #F7B500; color: #0A2540;
-          border: none; border-radius: 10px;
-          padding: 13px 24px; font-weight: 800; font-size: 15px;
-          cursor: pointer; transition: all .22s; font-family: inherit;
-        }
-        .btn-modal-primary:hover {
-          background: #e6a800; transform: translateY(-2px);
-          box-shadow: 0 8px 22px rgba(247,181,0,0.4);
-        }
+        .nl { color:#0A2540; text-decoration:none; font-size:15px; font-weight:500; transition:color .2s; }
+        .nl:hover { color:#F7B500; }
+        .di { display:block; padding:10px 16px; color:#0A2540; text-decoration:none; font-size:14px; font-weight:600; transition:background .15s; white-space:nowrap; }
+        .di:hover { background:#FFFBEB; }
 
-        .btn-modal-secondary {
-          width: 100%; background: transparent; color: #0A2540;
-          border: 2px solid rgba(10,37,64,0.18); border-radius: 10px;
-          padding: 11px 24px; font-weight: 700; font-size: 15px;
-          cursor: pointer; transition: all .22s; font-family: inherit;
-        }
-        .btn-modal-secondary:hover { border-color: #0A2540; transform: translateY(-2px); }
+        @keyframes hzoom { 0%{transform:scale(1.08)} 100%{transform:scale(1)} }
+        .hero-img { animation:hzoom 2.2s cubic-bezier(.22,1,.36,1) forwards; }
+        @keyframes hfi { from{opacity:0;transform:translateY(28px)} to{opacity:1;transform:translateY(0)} }
+        .hc>* { animation:hfi .9s cubic-bezier(.22,1,.36,1) both; }
+        .hc>*:nth-child(1){animation-delay:.05s} .hc>*:nth-child(2){animation-delay:.18s}
+        .hc>*:nth-child(3){animation-delay:.32s} .hc>*:nth-child(4){animation-delay:.48s}
+        @keyframes mi { from{opacity:0;transform:scale(.92) translateY(20px)} to{opacity:1;transform:scale(1) translateY(0)} }
+        .mbox { animation:mi .32s cubic-bezier(.22,1,.36,1); }
+        @keyframes marquee { 0%{transform:translateX(0)} 100%{transform:translateX(-50%)} }
+        .mq { display:flex; gap:20px; width:max-content; animation:marquee 30s linear infinite; }
+        .mq:hover { animation-play-state:paused; }
+        @keyframes spin { to{transform:rotate(360deg)} }
 
-        .arrow-btn {
-          width: 48px; height: 48px; border-radius: 50%;
-          background: #0A2540; border: none;
-          color: white; font-size: 17px; cursor: pointer;
-          display: flex; align-items: center; justify-content: center;
-          box-shadow: 0 4px 18px rgba(10,37,64,0.22);
-          transition: all 0.22s ease;
-          position: absolute; top: 50%; transform: translateY(-50%);
-          font-family: inherit;
+        .adn-card {
+          background:white; border-radius:24px; overflow:hidden;
+          border:1px solid rgba(10,37,64,.07);
+          box-shadow:0 6px 32px rgba(10,37,64,.08);
+          display:flex; flex-direction:column;
+          transition:transform .4s cubic-bezier(.22,1,.36,1),box-shadow .4s,border-color .4s;
         }
-        .arrow-btn:hover {
-          background: #F7B500; color: #0A2540;
-          transform: translateY(-50%) scale(1.1);
-        }
+        .adn-card:hover { transform:translateY(-14px); box-shadow:0 40px 80px rgba(10,37,64,.16); border-color:rgba(247,181,0,.25); }
+        .adn-card:hover .adn-img { transform:scale(1.06); }
+        .adn-img { transition:transform .8s cubic-bezier(.22,1,.36,1); }
 
-        .newsletter-input {
-          flex: 1; background: rgba(255,255,255,0.08);
-          border: 1px solid rgba(255,255,255,0.15);
-          border-radius: 10px; padding: 14px 20px;
-          color: white; font-size: 15px;
-          outline: none; transition: border-color 0.2s; font-family: inherit;
+        .xc {
+          background:white; border-radius:20px;
+          border:1px solid rgba(10,37,64,.07);
+          box-shadow:0 4px 22px rgba(10,37,64,.07);
+          display:flex; flex-direction:column;
+          transition:transform .35s cubic-bezier(.22,1,.36,1),box-shadow .35s,border-color .35s;
         }
-        .newsletter-input:focus { border-color: rgba(247,181,0,0.6); }
-        .newsletter-input::placeholder { color: rgba(255,255,255,0.4); }
+        .xc:hover { transform:translateY(-10px); box-shadow:0 28px 64px rgba(10,37,64,.14); border-color:rgba(247,181,0,.3); }
+
+        .pc { transition:all .3s; }
+        .pc:hover { border-color:rgba(247,181,0,.5)!important; background:rgba(247,181,0,.06)!important; transform:translateY(-3px); }
+
+        .tab {
+          width:48px; height:48px; border-radius:50%;
+          background:#0A2540; border:none; color:white;
+          font-size:16px; cursor:pointer;
+          display:flex; align-items:center; justify-content:center;
+          box-shadow:0 4px 16px rgba(10,37,64,.2);
+          transition:all .22s; position:absolute; top:50%; transform:translateY(-50%);
+        }
+        .tab:hover { background:#F7B500; color:#0A2540; transform:translateY(-50%) scale(1.1); }
+
+        .nli {
+          flex:1; background:rgba(255,255,255,.08);
+          border:1px solid rgba(255,255,255,.15); border-radius:10px;
+          padding:14px 20px; color:white; font-size:15px;
+          outline:none; transition:border-color .2s; font-family:inherit;
+        }
+        .nli:focus { border-color:rgba(247,181,0,.6); }
+        .nli::placeholder { color:rgba(255,255,255,.35); }
       `}</style>
 
-      {/* ══════════════════════════════════════
-          MODAL
-      ══════════════════════════════════════ */}
-      {showModal && (
-        <div
-          className="fixed inset-0 z-[999] flex items-center justify-center p-6"
-          style={{ background: "rgba(10,37,64,0.65)", backdropFilter: "blur(4px)" }}
-          onClick={() => setShowModal(false)}
-        >
-          <div
-            className="modal-box bg-white rounded-3xl text-center relative w-full max-w-[440px]"
-            style={{ padding: "48px 44px", boxShadow: "0 32px 80px rgba(10,37,64,0.25)" }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div
-              className="w-[72px] h-[72px] rounded-full flex items-center justify-center text-[30px] text-[#0A2540] mx-auto mb-6"
-              style={{ background: "linear-gradient(135deg,#F7B500,#e6a800)", boxShadow: "0 10px 28px rgba(247,181,0,0.35)" }}
-            >
-              <FaLock />
+      {/* ── MODAL ── */}
+      {modal && (
+        <div style={{ position:"fixed", inset:0, zIndex:999, display:"flex", alignItems:"center", justifyContent:"center", padding:24, background:"rgba(10,37,64,.72)", backdropFilter:"blur(8px)" }} onClick={() => setModal(false)}>
+          <div className="mbox" style={{ background:"white", borderRadius:28, padding:"52px 44px", maxWidth:440, width:"100%", textAlign:"center", position:"relative", boxShadow:"0 40px 100px rgba(10,37,64,.3)" }} onClick={e => e.stopPropagation()}>
+            <div style={{ width:72, height:72, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:28, color:"#0A2540", margin:"0 auto 22px", background:"linear-gradient(135deg,#F7B500,#e6a800)", boxShadow:"0 12px 32px rgba(247,181,0,.35)" }}><FaLock /></div>
+            <h2 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:26, fontWeight:700, color:"#0A2540", marginBottom:12 }}>Inscription requise</h2>
+            <p style={{ color:"#64748B", fontSize:14.5, lineHeight:1.75, marginBottom:28 }}>Pour consulter le profil de cet expert ou réserver un rendez-vous, créez un compte gratuit ou connectez-vous.</p>
+            <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+              <Link href="/inscription" onClick={() => setModal(false)}><button style={{ width:"100%", background:"#F7B500", color:"#0A2540", border:"none", borderRadius:11, padding:14, fontFamily:"inherit", fontWeight:800, fontSize:15, cursor:"pointer" }}>Créer un compte gratuitement</button></Link>
+              <Link href="/connexion" onClick={() => setModal(false)}><button style={{ width:"100%", background:"transparent", color:"#0A2540", border:"1.5px solid rgba(10,37,64,.14)", borderRadius:11, padding:12, fontFamily:"inherit", fontWeight:600, fontSize:14, cursor:"pointer" }}>J'ai déjà un compte — Connexion</button></Link>
             </div>
-            <h2 className="text-2xl font-black text-[#0A2540] mb-3">Inscription requise</h2>
-            <p className="text-gray-500 text-[15px] leading-relaxed mb-8">
-              Pour consulter le profil complet de cet expert, vous devez créer un compte ou vous connecter à votre espace Business Expert Hub.
-            </p>
-            <div className="flex flex-col gap-3">
-              <Link href="/inscription" onClick={() => setShowModal(false)}>
-                <button className="btn-modal-primary">Créer un compte gratuitement</button>
-              </Link>
-              <Link href="/connexion" onClick={() => setShowModal(false)}>
-                <button className="btn-modal-secondary">{"J'ai déjà un compte — Connexion"}</button>
-              </Link>
-            </div>
-            <button
-              onClick={() => setShowModal(false)}
-              className="absolute top-4 right-[18px] bg-transparent border-none text-[22px] text-gray-400 cursor-pointer leading-none"
-            >
-              ×
-            </button>
+            <button onClick={() => setModal(false)} style={{ position:"absolute", top:14, right:18, background:"none", border:"none", fontSize:24, color:"#CBD5E1", cursor:"pointer" }}>×</button>
           </div>
         </div>
       )}
 
-      {/* ════════════════════════════════════════
-          HEADER
-      ════════════════════════════════════════ */}
-      <header className="bg-white sticky top-0 z-[100]" style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.07)" }}>
-        <div className="max-w-[1280px] mx-auto px-6 h-[82px] flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-3 no-underline">
-            <svg width="46" height="46" viewBox="0 0 46 46" fill="none">
-              <rect width="46" height="46" rx="12" fill="#0A2540" />
-              <rect x="23" y="7" width="13" height="13" rx="2" transform="rotate(45 23 7)" fill="#F7B500" opacity="0.15" />
-              <text x="50%" y="55%" dominantBaseline="middle" textAnchor="middle" fill="#F7B500" fontSize="15" fontWeight="900" fontFamily="Arial, sans-serif" letterSpacing="0.5">BEH</text>
-            </svg>
-            <div className="flex flex-col leading-none">
-              <span className="font-black text-[18px] text-[#0A2540] tracking-[-0.4px]">
-                Business <span className="text-[#F7B500]">Expert</span> Hub
-              </span>
-            </div>
+      {/* ── HEADER ── */}
+      <header style={{ background:"white", position:"sticky", top:0, zIndex:100, boxShadow:"0 1px 0 rgba(10,37,64,.08),0 4px 20px rgba(10,37,64,.06)" }}>
+        <div style={{ maxWidth:1280, margin:"0 auto", padding:"0 28px", height:78, display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+          <Link href="/" style={{ display:"flex", alignItems:"center", gap:12, textDecoration:"none" }}>
+            <svg width="42" height="42" viewBox="0 0 46 46" fill="none"><rect width="46" height="46" rx="11" fill="#0A2540"/><text x="50%" y="55%" dominantBaseline="middle" textAnchor="middle" fill="#F7B500" fontSize="14" fontWeight="900" fontFamily="Arial" letterSpacing="0.5">BEH</text></svg>
+            <span style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:20, color:"#0A2540", letterSpacing:"-.3px" }}>Business <em style={{ color:"#F7B500" }}>Expert</em> Hub</span>
           </Link>
-
-          <nav className="flex gap-7 items-center">
-            <Link href="/" className="nav-link nav-link-active">Accueil</Link>
-            <Link href="/a-propos" className="nav-link">À propos</Link>
-            <div
-              className="relative"
-              onMouseEnter={() => setServicesOpen(true)}
-              onMouseLeave={() => setServicesOpen(false)}
-            >
-              <Link href="/services" className="nav-link font-semibold">Services ▾</Link>
-              {servicesOpen && (
-                <ul
-                  className="absolute top-[calc(100%+8px)] left-0 bg-white rounded-xl list-none p-[6px_0] m-0 z-[200] min-w-[200px]"
-                  style={{ boxShadow: "0 8px 32px rgba(0,0,0,0.12)", border: "1px solid rgba(10,37,64,0.06)" }}
-                >
-                  {navServices.map((s) => (
-                    <li key={s.slug}>
-                      <Link href={`/services/${s.slug}`} className="drop-item">{s.label}</Link>
-                    </li>
-                  ))}
+          <nav style={{ display:"flex", gap:28, alignItems:"center" }}>
+            <Link href="/" className="nl" style={{ color:"#F7B500", fontWeight:700 }}>Accueil</Link>
+            <Link href="/a-propos" className="nl">À propos</Link>
+            <div style={{ position:"relative" }} onMouseEnter={() => setServOpen(true)} onMouseLeave={() => setServOpen(false)}>
+              <span className="nl" style={{ fontWeight:600, cursor:"pointer" }}>Services ▾</span>
+              {servOpen && (
+                <ul style={{ position:"absolute", top:"calc(100%+10px)", left:0, background:"white", borderRadius:12, listStyle:"none", padding:"8px 0", margin:0, zIndex:200, minWidth:210, boxShadow:"0 12px 40px rgba(0,0,0,.12)", border:"1px solid rgba(10,37,64,.06)" }}>
+                  {NAV_SERVICES.map(s => <li key={s.slug}><Link href={`/services/${s.slug}`} className="di">{s.label}</Link></li>)}
                 </ul>
               )}
             </div>
-            <Link href="/experts" className="nav-link">Experts</Link>
-            <Link href="/blog"    className="nav-link">Blog</Link>
-            <Link href="/contact" className="nav-link">Contact</Link>
+            <Link href="/experts" className="nl">Experts</Link>
+            <Link href="/blog" className="nl">Blog</Link>
+            <Link href="/contact" className="nl">Contact</Link>
           </nav>
-
-          <div className="flex gap-3">
-            <Link href="/connexion">
-              <button className="btn-conn">Connexion</button>
-            </Link>
-            <Link href="/inscription">
-              <button className="btn-insc">{"S'inscrire"}</button>
-            </Link>
+          <div style={{ display:"flex", gap:10 }}>
+            <Link href="/connexion"><button className="btn-nav-outline">Connexion</button></Link>
+            <Link href="/inscription"><button className="btn-nav-solid">S'inscrire</button></Link>
           </div>
         </div>
       </header>
 
-      {/* ════════════════════════════════════════
-          HERO
-      ════════════════════════════════════════ */}
-      <section className="relative text-white overflow-hidden" style={{ minHeight: 620 }}>
-        <div className="absolute inset-0 z-0">
-          <Image
-            src="/image.png"
-            alt="Hero background"
-            fill
-            priority
-            className="hero-bg-img"
-            style={{ objectFit: "cover", objectPosition: "center" }}
-            sizes="100vw"
-          />
-          <div
-            className="absolute inset-0"
-            style={{
-              background:
-                "linear-gradient(100deg, rgba(10,37,64,0.92) 0%, rgba(10,37,64,0.75) 45%, rgba(10,37,64,0.30) 75%, rgba(10,37,64,0.10) 100%)",
-            }}
-          />
-          <div
-            className="absolute inset-0 pointer-events-none"
-            style={{
-              backgroundImage: "radial-gradient(rgba(255,255,255,0.018) 1px,transparent 1px)",
-              backgroundSize: "44px 44px",
-            }}
-          />
+      {/* ── HERO ── */}
+      <section style={{ position:"relative", color:"white", overflow:"hidden", minHeight:660 }}>
+        <div style={{ position:"absolute", inset:0, zIndex:0 }}>
+          <Image src="/image.png" alt="Hero" fill priority className="hero-img" style={{ objectFit:"cover" }} sizes="100vw" />
+          <div style={{ position:"absolute", inset:0, background:"linear-gradient(108deg,rgba(6,14,26,.97) 0%,rgba(10,30,60,.82) 42%,rgba(10,37,64,.2) 100%)" }} />
+          <div style={{ position:"absolute", inset:0, backgroundImage:"radial-gradient(rgba(255,255,255,.025) 1px,transparent 1px)", backgroundSize:"48px 48px", pointerEvents:"none" }} />
         </div>
-
-        <div className="hero-content relative z-10 max-w-[1280px] mx-auto px-8 py-28">
-          <div
-            className="inline-block mb-6 px-5 py-1.5 rounded-full text-[#0A2540] font-black text-[12px] tracking-[3px] uppercase"
-            style={{ background: "#F7B500" }}
-          >
-            Cabinet de consulting &amp; conseil
+        <div className="hc" style={{ position:"relative", zIndex:10, maxWidth:1280, margin:"0 auto", padding:"130px 32px 150px" }}>
+          <div style={{ display:"inline-flex", alignItems:"center", gap:10, marginBottom:28, background:"rgba(247,181,0,.12)", border:"1px solid rgba(247,181,0,.25)", borderRadius:99, padding:"7px 16px 7px 12px" }}>
+            <span style={{ width:8, height:8, borderRadius:"50%", background:"#F7B500", display:"inline-block" }} />
+            <span style={{ fontSize:11, fontWeight:700, letterSpacing:"2.5px", textTransform:"uppercase", color:"#F7B500" }}>Cabinet de consulting & conseil</span>
           </div>
-
-          <h1
-            className="font-black m-0 mb-6 leading-[1.08]"
-            style={{ fontSize: "clamp(44px,6vw,78px)", textShadow: "0 2px 24px rgba(0,0,0,0.25)" }}
-          >
+          <h1 style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, margin:"0 0 24px", lineHeight:1.05, fontSize:"clamp(52px,7vw,90px)", maxWidth:680 }}>
             Propulsez votre{" "}
-            <span className="text-[#F7B500]">startup</span>
-            <br />
-            vers l&apos;excellence
+            <em style={{ color:"#F7B500", fontStyle:"italic" }}>startup</em>
+            <br />vers l'excellence
           </h1>
-
-          <p className="text-[17px] text-white/85 max-w-[560px] leading-[1.85] mb-10">
-            Plateforme d&apos;experts spécialisée dans l&apos;accompagnement stratégique des startups et entreprises
-            en croissance. Nous proposons des services d&apos;expertise, de formations et de suivi personnalisé
-            afin d&apos;optimiser la performance et soutenir votre développement durable.
+          <p style={{ fontSize:17, color:"rgba(255,255,255,.72)", maxWidth:520, lineHeight:1.9, marginBottom:44 }}>
+            Plateforme d'experts spécialisée dans l'accompagnement stratégique des startups et entreprises en croissance.
           </p>
-
-          <div className="flex flex-wrap gap-4">
-            <Link href="/services" className="btn-gold">
-              Découvrir nos services <FaArrowRight size={13} />
-            </Link>
-            <Link href="/contact" className="btn-outline">
-              Contactez-nous <FaArrowRight size={13} />
-            </Link>
+          <div style={{ display:"flex", flexWrap:"wrap", gap:14 }}>
+            <Link href="/services" className="btn-gold">Découvrir nos services <FaArrowRight size={12} /></Link>
+            <Link href="/contact" className="btn-outline-light">Contactez-nous <FaArrowRight size={12} /></Link>
           </div>
         </div>
       </section>
 
-      {/* ════════════════════════════════════════
-          ADN — Vision / Mission / Valeurs
-      ════════════════════════════════════════ */}
-      <section className="py-28 px-6 overflow-hidden relative">
-
-        {/* Arrière-plan */}
-        <div className="absolute inset-0 z-0">
-          <Image
-            src="/image1.png"
-            alt="ADN background"
-            fill
-            className="adn-bg-img"
-            style={{ objectFit: "cover", objectPosition: "center" }}
-            sizes="100vw"
-          />
-          <div
-            className="absolute inset-0"
-            style={{ background: "linear-gradient(160deg, rgba(240,246,255,0.97) 0%, rgba(255,255,255,0.95) 50%, rgba(254,250,240,0.97) 100%)" }}
-          />
+      {/* ── ADN ── */}
+      <section style={{ padding:"120px 28px", overflow:"hidden", position:"relative", background:"#FAFBFC" }}>
+        <div style={{ position:"absolute", inset:0, zIndex:0 }}>
+          <Image src="/image1.png" alt="bg" fill style={{ objectFit:"cover", opacity:.05 }} sizes="100vw" />
         </div>
+        <div style={{ position:"relative", zIndex:10, maxWidth:1200, margin:"0 auto" }}>
+          <Reveal>
+            <div style={{ display:"flex", flexDirection:"column", alignItems:"center", textAlign:"center", marginBottom:80 }}>
+              <span className="eyebrow" style={{ marginBottom:18 }}>Qui sommes-nous</span>
+              <h2 className="sec-title" style={{ marginBottom:16 }}>L'<em>ADN</em> de notre cabinet</h2>
+              
+            </div>
+          </Reveal>
 
-        {/* Glows */}
-        <div className="absolute pointer-events-none rounded-full z-0"
-          style={{ top: -120, right: -80, width: 560, height: 560, background: "radial-gradient(circle,rgba(247,181,0,0.08) 0%,transparent 70%)" }}
-        />
-        <div className="absolute pointer-events-none rounded-full z-0"
-          style={{ bottom: -100, left: -100, width: 480, height: 480, background: "radial-gradient(circle,rgba(10,37,64,0.05) 0%,transparent 70%)" }}
-        />
-
-        <div className="relative z-10 max-w-[1200px] mx-auto">
-
-          {/* Header */}
-          <FadeUp className="text-center mb-20">
-            <span className="inline-block bg-[#F7B500] text-[#0A2540] font-black text-[12px] tracking-[3px] uppercase px-[18px] py-1.5 rounded-full mb-6">
-              Qui sommes-nous
-            </span>
-            <h2
-              className="font-black text-[#0A2540] m-0 mb-4 leading-[1.1]"
-              style={{ fontSize: "clamp(32px,4vw,54px)" }}
-            >
-              Notre <span className="text-[#F7B500]">ADN</span>
-            </h2>
-           
-          </FadeUp>
-
-          {/* Grille 3 colonnes */}
-          <div className="grid grid-cols-3 gap-8">
-            {adnCards.map((card, i) => (
-              <FadeUp key={i} delay={i * 0.15}>
-                <div
-                  className="card-adn bg-white rounded-[28px] overflow-hidden flex flex-col h-full"
-                  style={{
-                    boxShadow: "0 8px 40px rgba(10,37,64,0.09)",
-                    border: "1px solid rgba(10,37,64,0.06)",
-                  }}
-                >
-                  {/* Image top */}
-                  <div className="relative overflow-hidden" style={{ height: 220 }}>
-                    <Image
-                      src={card.image}
-                      alt={card.title}
-                      fill
-                      className="adn-image"
-                      style={{ objectFit: "cover", objectPosition: "center" }}
-                      sizes="400px"
-                    />
-                    {/* Overlay dégradé */}
-                    <div
-                      className="absolute inset-0"
-                      style={{ background: "linear-gradient(180deg, rgba(10,37,64,0.08) 0%, rgba(10,37,64,0.55) 100%)" }}
-                    />
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:28 }}>
+            {ADN_CARDS.map((card, i) => (
+              <Reveal key={i} delay={i * .14}>
+                <div className="adn-card" style={{ height:"100%" }}>
+                  {/* Image sans numéro */}
+                  <div style={{ position:"relative", overflow:"hidden", height:230 }}>
+                    <Image src={card.image} alt={card.title} fill className="adn-img" style={{ objectFit:"cover" }} sizes="400px" />
+                    <div style={{ position:"absolute", inset:0, background:"linear-gradient(180deg,transparent 30%,rgba(10,37,64,.65) 100%)" }} />
+                    {/* Titre sur l'image */}
+                    <div style={{ position:"absolute", bottom:18, left:20, right:20 }}>
+                      <h3 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:26, fontWeight:700, color:"white", margin:0 }}>{card.title}</h3>
+                    </div>
                   </div>
-
-                  {/* Contenu */}
-                  <div className="flex flex-col flex-1 p-7">
-                    <div
-                      className="w-10 h-[3px] rounded-full mb-5"
-                      style={{ background: `linear-gradient(90deg, ${card.color}, ${card.color}55)` }}
-                    />
-                    <h3 className="text-[21px] font-black text-[#0A2540] mb-3 leading-tight">
-                      {card.title}
-                    </h3>
-                    <p className="text-gray-500 leading-[1.85] text-[14px] flex-1 mb-6">
-                      {card.desc}
-                    </p>
-                    <Link href={`/a-propos#${card.anchor}`} className="inline-block self-start">
-                      <button
-                        className="inline-flex items-center gap-2 font-bold text-[13px] px-5 py-2.5 rounded-xl border-none cursor-pointer transition-all duration-200"
-                        style={{
-                          background: `${card.color}18`,
-                          color: card.color,
-                          fontFamily: "inherit",
-                        }}
-                        onMouseEnter={e => {
-                          const b = e.currentTarget as HTMLButtonElement;
-                          b.style.background = card.color;
-                          b.style.color = "white";
-                          b.style.transform = "translateY(-2px)";
-                          b.style.boxShadow = `0 8px 20px ${card.color}44`;
-                        }}
-                        onMouseLeave={e => {
-                          const b = e.currentTarget as HTMLButtonElement;
-                          b.style.background = `${card.color}18`;
-                          b.style.color = card.color;
-                          b.style.transform = "translateY(0)";
-                          b.style.boxShadow = "none";
-                        }}
-                      >
+                  {/* Body */}
+                  <div style={{ padding:"24px 26px 26px", display:"flex", flexDirection:"column", flex:1 }}>
+                    <div style={{ width:36, height:3, borderRadius:2, background:card.color, marginBottom:16 }} />
+                    <p style={{ fontSize:14, color:"#64748B", lineHeight:1.85, flex:1, marginBottom:22 }}>{card.desc}</p>
+                    <Link href={`/a-propos#${card.anchor}`}>
+                      <button style={{ display:"inline-flex", alignItems:"center", gap:7, fontFamily:"inherit", fontWeight:700, fontSize:13, padding:"10px 18px", borderRadius:9, border:"none", cursor:"pointer", background:`${card.color}16`, color:card.color, transition:"all .2s" }}>
                         En savoir plus <FaArrowRight size={10} />
                       </button>
                     </Link>
                   </div>
-
-                  {/* Barre bas colorée */}
-                  <div className="h-1" style={{ background: `linear-gradient(90deg, ${card.color}, ${card.color}22)` }} />
+                  <div style={{ height:3, background:`linear-gradient(90deg,${card.color},${card.color}28)` }} />
                 </div>
-              </FadeUp>
+              </Reveal>
             ))}
           </div>
 
-          <FadeUp delay={0.5} className="text-center mt-16">
-            <Link href="/a-propos" className="btn-gold">
-              En savoir plus sur nous <FaArrowRight size={13} />
-            </Link>
-          </FadeUp>
+          <Reveal delay={.45}>
+            <div style={{ textAlign:"center", marginTop:60 }}>
+              <Link href="/a-propos" className="btn-dark">En savoir plus sur nous <FaArrowRight size={12} /></Link>
+            </div>
+          </Reveal>
         </div>
       </section>
 
-      {/* ════════════════════════════════════════
-          EXPERTS
-      ════════════════════════════════════════ */}
-      <section
-        className="py-24 px-6 relative overflow-hidden"
-        style={{ background: "linear-gradient(160deg,#f0f6ff 0%,#ffffff 100%)" }}
-      >
-        <div className="max-w-[1200px] mx-auto">
-          <FadeUp className="text-center mb-16">
-            <span className="inline-block bg-[#F7B500] text-[#0A2540] font-black text-[12px] tracking-[3px] uppercase px-[18px] py-1.5 rounded-full mb-5">
-              Notre équipe
-            </span>
-            <h2
-              className="font-black text-[#0A2540] m-0 mb-3.5 leading-[1.15]"
-              style={{ fontSize: "clamp(30px,4vw,50px)" }}
-            >
-              Nos <span className="text-[#F7B500]">Experts</span> certifiés
-            </h2>
-            
-          </FadeUp>
+      {/* ── EXPERTS ── */}
+      <section style={{ padding:"104px 28px", position:"relative", overflow:"hidden", background:"linear-gradient(160deg,#060e18 0%,#0b1f3a 50%,#060e18 100%)" }}>
+        <div style={{ position:"absolute", inset:0, backgroundImage:"radial-gradient(rgba(255,255,255,.02) 1px,transparent 1px)", backgroundSize:"44px 44px", pointerEvents:"none" }} />
+        <div style={{ position:"absolute", top:"50%", left:"50%", transform:"translate(-50%,-50%)", width:800, height:800, borderRadius:"50%", background:"radial-gradient(circle,rgba(247,181,0,.04) 0%,transparent 65%)", pointerEvents:"none" }} />
 
-          <div className="grid grid-cols-4 gap-6">
-            {experts.map((ex, i) => (
-              <FadeUp key={i} delay={i * 0.12}>
-                <div
-                  className="expert-card bg-white rounded-[20px] overflow-hidden flex flex-col"
-                  style={{ border: "1.5px solid rgba(10,37,64,0.08)", boxShadow: "0 4px 20px rgba(10,37,64,0.07)" }}
-                >
-                  <div className="h-[5px]" style={{ background: "linear-gradient(90deg,#F7B500,#e6a800)" }} />
-                  <div className="pt-7 px-6 pb-5 text-center flex-1">
-                    <div
-                      className="w-[76px] h-[76px] rounded-full flex items-center justify-center text-2xl font-black text-[#F7B500] mx-auto mb-4"
-                      style={{ background: "linear-gradient(135deg,#0A2540,#1a4080)", border: "3px solid rgba(247,181,0,0.3)" }}
-                    >
-                      {ex.initials}
-                    </div>
-                    <h3 className="text-[17px] font-black text-[#0A2540] mb-1.5 leading-snug">{ex.name}</h3>
-                    <p className="text-[13px] text-gray-500 font-semibold mb-1">{ex.role}</p>
-                    <p className="text-[12px] text-[#F7B500] font-bold mb-4">{ex.xp} d&apos;expérience</p>
-                    <div className="flex flex-wrap gap-1.5 justify-center mb-3">
-                      {ex.tags.slice(0, 2).map((t, j) => (
-                        <span
-                          key={j}
-                          className="text-[11px] font-bold px-2.5 py-[3px] rounded-full text-[#0A2540]"
-                          style={{ background: "rgba(10,37,64,0.07)" }}
-                        >
-                          {t}
-                        </span>
-                      ))}
-                    </div>
-                    <div className="flex items-center justify-center gap-1 text-[#F7B500] text-[13px]">
-                      {"★".repeat(ex.rating)}
-                      <span className="text-gray-400 text-[12px] ml-1">({ex.missions} missions)</span>
-                    </div>
-                  </div>
-                  <div className="px-5 pb-[22px]">
-                    <button
-                      className="expert-btn w-full border-none rounded-[10px] py-[11px] px-4 font-bold text-[14px] cursor-pointer flex items-center justify-center gap-2 transition-all duration-300 text-white"
-                      style={{ background: "#0A2540", fontFamily: "inherit" }}
-                      onClick={() => setShowModal(true)}
-                    >
-                      Voir le profil <FaArrowRight size={12} />
-                    </button>
-                  </div>
-                </div>
-              </FadeUp>
-            ))}
-          </div>
+        <div style={{ maxWidth:1240, margin:"0 auto", position:"relative", zIndex:10 }}>
+          <Reveal>
+            <div style={{ display:"flex", flexDirection:"column", alignItems:"center", textAlign:"center", marginBottom:72 }}>
+              <span className="eyebrow" style={{ marginBottom:18 }}>Notre équipe</span>
+              <h2 className="sec-title sec-title-light" style={{ marginBottom:14 }}>Nos <em>Experts</em> certifiés</h2>
+             
+            </div>
+          </Reveal>
 
-          <FadeUp delay={0.45} className="text-center mt-[52px]">
-            <Link href="/experts" className="btn-gold">
-              Voir tous nos experts <FaArrowRight size={13} />
-            </Link>
-          </FadeUp>
+          {loading ? (
+            <div style={{ textAlign:"center", padding:"72px 0" }}>
+              <div style={{ width:44, height:44, border:"3px solid #F7B500", borderTopColor:"transparent", borderRadius:"50%", animation:"spin .8s linear infinite", margin:"0 auto" }} />
+            </div>
+          ) : experts.length === 0 ? (
+            <div style={{ textAlign:"center", padding:"72px 0", color:"rgba(255,255,255,.25)", fontSize:15 }}>Aucun expert disponible pour le moment.</div>
+          ) : (
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))", gap:22 }}>
+              {experts.map((ex, i) => {
+                const name = getName(ex);
+                const ini  = getIni(ex);
+                const dsp  = dispos[ex.id] || [];
+                return (
+                  <Reveal key={ex.id} delay={i * .1}>
+                    <div className="xc" style={{ height:"100%" }}>
+                      <div style={{ padding:"20px 20px 0" }}>
+                        <div style={{ display:"flex", justifyContent:"flex-end", marginBottom:14 }}>
+                          <span style={{ fontSize:11, fontWeight:700, padding:"3px 10px", borderRadius:99, background:ex.disponible?"#ECFDF5":"#F9FAFB", color:ex.disponible?"#059669":"#9CA3AF" }}>
+                            {ex.disponible ? "● Disponible" : "● Occupé"}
+                          </span>
+                        </div>
+                        <div style={{ display:"flex", alignItems:"flex-start", gap:14, marginBottom:14 }}>
+                          <div style={{ width:60, height:60, borderRadius:"50%", overflow:"hidden", flexShrink:0, background:"#0A2540", display:"flex", alignItems:"center", justifyContent:"center", color:"#F7B500", fontWeight:800, fontSize:19, border:"2px solid rgba(247,181,0,.4)" }}>
+                            {ex.photo ? <img src={`http://localhost:3001/uploads/photos/${ex.photo}`} alt={name} style={{ width:"100%", height:"100%", objectFit:"cover" }} /> : ini}
+                          </div>
+                          <div>
+                            <h3 style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, color:"#0A2540", fontSize:19, margin:"0 0 5px", lineHeight:1.2 }}>{name}</h3>
+                            <span style={{ display:"inline-block", background:"#EFF6FF", color:"#2563EB", borderRadius:99, padding:"3px 10px", fontSize:11, fontWeight:700 }}>{ex.domaine || "Expert"}</span>
+                          </div>
+                        </div>
+                        <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:12 }}>
+                          {ex.experience   && <span style={{ fontSize:11.5, color:"#64748B", background:"#F7F9FC", border:"1px solid #E8EEF6", borderRadius:6, padding:"3px 8px" }}>💼 {ex.experience}</span>}
+                          {ex.localisation && <span style={{ fontSize:11.5, color:"#64748B", background:"#F7F9FC", border:"1px solid #E8EEF6", borderRadius:6, padding:"3px 8px" }}>📍 {ex.localisation}</span>}
+                          {ex.tarif        && <span style={{ fontSize:11.5, color:"#B45309", background:"#FFFBEB", border:"1px solid #FDE68A", borderRadius:6, padding:"3px 8px" }}>💰 {ex.tarif}</span>}
+                        </div>
+                        {ex.description && (
+                          <p style={{ fontSize:13, color:"#64748B", lineHeight:1.7, marginBottom:14, display:"-webkit-box", WebkitLineClamp:2, WebkitBoxOrient:"vertical", overflow:"hidden" }}>{ex.description}</p>
+                        )}
+                        {dsp.length > 0 && (
+                          <div style={{ marginBottom:14 }}>
+                            <p style={{ fontSize:10.5, fontWeight:700, color:"#94A3B8", textTransform:"uppercase", letterSpacing:1, marginBottom:6 }}>Prochains créneaux</p>
+                            <div style={{ display:"flex", flexWrap:"wrap", gap:5 }}>
+                              {dsp.slice(0, 3).map((d, idx) => (
+                                <span key={idx} style={{ fontSize:11, background:"#EFF6FF", color:"#2563EB", padding:"3px 8px", borderRadius:6, fontWeight:500, display:"inline-flex", alignItems:"center", gap:4 }}>
+                                  <FaCalendarAlt size={9} />
+                                  {new Date(d.date).toLocaleDateString("fr-FR", { day:"numeric", month:"short" })} {(d.heure || "").slice(0, 5)}
+                                </span>
+                              ))}
+                              {dsp.length > 3 && <span style={{ fontSize:11, color:"#9CA3AF", alignSelf:"center" }}>+{dsp.length - 3}</span>}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                      <div style={{ padding:"12px 20px 20px", borderTop:"1px solid #F1F5F9", marginTop:"auto", display:"flex", gap:8 }}>
+                        <button onClick={() => setModal(true)} style={{ flex:1, fontFamily:"inherit", fontSize:13, fontWeight:700, background:"#0A2540", color:"#fff", border:"none", borderRadius:10, padding:"11px", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:6, transition:"background .2s,color .2s" }}
+                          onMouseEnter={e => { e.currentTarget.style.background="#F7B500"; e.currentTarget.style.color="#0A2540"; }}
+                          onMouseLeave={e => { e.currentTarget.style.background="#0A2540"; e.currentTarget.style.color="#fff"; }}>
+                          Voir le profil <FaArrowRight size={11} />
+                        </button>
+                        <button onClick={() => setModal(true)} style={{ width:44, height:44, fontFamily:"inherit", background:"#F7F9FC", border:"1px solid #E8EEF6", borderRadius:10, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", color:"#64748B", transition:"all .2s" }}
+                          onMouseEnter={e => { e.currentTarget.style.background="#F7B500"; e.currentTarget.style.color="#0A2540"; }}
+                          onMouseLeave={e => { e.currentTarget.style.background="#F7F9FC"; e.currentTarget.style.color="#64748B"; }}>
+                          <FaCalendarAlt size={13} />
+                        </button>
+                      </div>
+                    </div>
+                  </Reveal>
+                );
+              })}
+            </div>
+          )}
+
+          <Reveal delay={.4}>
+            <div style={{ textAlign:"center", marginTop:56 }}>
+              <Link href="/experts" className="btn-gold">Voir tous nos experts <FaArrowRight size={12} /></Link>
+            </div>
+          </Reveal>
         </div>
       </section>
 
-      {/* ════════════════════════════════════════
-          PARTENAIRES
-      ════════════════════════════════════════ */}
-      <section className="py-20 px-6 bg-[#ffffff] overflow-hidden">
-        <div className="max-w-[1200px] mx-auto">
-          <FadeUp className="text-center mb-14">
-            
-            <h2
-              className="font-black text-white m-0 leading-[1.15]"
-              style={{ fontSize: "clamp(28px,3.5vw,44px)" }}
-            >
-              Nos <span className="text-[rgb(20,20,71)]">Partenaires</span>
-            </h2>
-          </FadeUp>
-
-          <div className="relative overflow-hidden">
-            <div
-              className="absolute left-0 top-0 bottom-0 w-[100px] z-20 pointer-events-none"
-              style={{ background: "linear-gradient(90deg,#081B33,transparent)" }}
-            />
-            <div
-              className="absolute right-0 top-0 bottom-0 w-[100px] z-20 pointer-events-none"
-              style={{ background: "linear-gradient(-90deg,#081B33,transparent)" }}
-            />
-            <div className="marquee-track">
-              {[...partners, ...partners].map((p, i) => (
-                <div
-                  key={i}
-                  className="card-partner flex-shrink-0 min-w-[200px] rounded-[14px] p-[26px_28px] text-center"
-                  style={{
-                    background: "rgba(255,255,255,0.04)",
-                    border: "1px solid rgba(255,255,255,0.07)",
-                  }}
-                >
-                  <div
-                    className="w-[46px] h-[46px] rounded-[10px] flex items-center justify-center mx-auto mb-3 text-[#F7B500] font-black text-[14px]"
-                    style={{ background: "linear-gradient(135deg,#0A2540,#1d4e89)", border: "1px solid rgba(247,181,0,0.2)" }}
-                  >
-                    {p.name.slice(0, 2).toUpperCase()}
-                  </div>
-                  <div className="text-white font-bold text-[14px]">{p.name}</div>
-                  <div className="text-white/40 text-[12px] mt-1">{p.sector}</div>
+      {/* ── PARTENAIRES ── */}
+      <section style={{ padding:"88px 28px", background:"white", overflow:"hidden" }}>
+        <div style={{ maxWidth:1200, margin:"0 auto" }}>
+          <Reveal>
+            <div style={{ textAlign:"center", marginBottom:52 }}>
+              <span className="eyebrow" style={{ justifyContent:"center", marginBottom:14 }}>Ils nous font confiance</span>
+              <h2 className="sec-title">Nos <em>Partenaires</em></h2>
+            </div>
+          </Reveal>
+          <div style={{ position:"relative", overflow:"hidden" }}>
+            <div style={{ position:"absolute", left:0, top:0, bottom:0, width:100, zIndex:20, pointerEvents:"none", background:"linear-gradient(90deg,white,transparent)" }} />
+            <div style={{ position:"absolute", right:0, top:0, bottom:0, width:100, zIndex:20, pointerEvents:"none", background:"linear-gradient(-90deg,white,transparent)" }} />
+            <div className="mq">
+              {[...PARTNERS, ...PARTNERS].map((p, i) => (
+                <div key={i} className="pc" style={{ flexShrink:0, minWidth:200, borderRadius:14, padding:"20px 26px", textAlign:"center", background:"#F8FAFC", border:"1px solid rgba(10,37,64,.07)" }}>
+                  <div style={{ width:42, height:42, borderRadius:10, display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 10px", background:"#0A2540", color:"#F7B500", fontWeight:900, fontSize:13 }}>{p.name.slice(0, 2).toUpperCase()}</div>
+                  <div style={{ color:"#0A2540", fontWeight:700, fontSize:14 }}>{p.name}</div>
+                  <div style={{ color:"#94A3B8", fontSize:12, marginTop:3 }}>{p.sector}</div>
                 </div>
               ))}
             </div>
@@ -813,284 +491,101 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ════════════════════════════════════════
-          TÉMOIGNAGES
-      ════════════════════════════════════════ */}
-      <section
-        className="py-24 px-6 relative overflow-hidden"
-        style={{ background: "linear-gradient(160deg,#0A2540 0%,#0f3060 100%)" }}
-      >
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{ backgroundImage: "radial-gradient(rgba(255,255,255,0.025) 1px,transparent 1px)", backgroundSize: "40px 40px" }}
-        />
-        <div
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] rounded-full pointer-events-none"
-          style={{ background: "radial-gradient(circle,rgba(247,181,0,0.06) 0%,transparent 65%)" }}
-        />
-
-        <div className="max-w-[860px] mx-auto relative z-10">
-          <FadeUp className="text-center mb-16">
-            <span
-              className="inline-block text-[#F7B500] font-bold text-[12px] tracking-[3px] uppercase px-[18px] py-1.5 rounded-full mb-5"
-              style={{ border: "1px solid rgba(247,181,0,0.35)" }}
-            >
-              Ils témoignent
-            </span>
-            <h2
-              className="font-black text-white m-0 mb-3.5 leading-[1.15]"
-              style={{ fontSize: "clamp(30px,4vw,50px)" }}
-            >
-              Ce que disent nos <span className="text-[#F7B500]">clients</span>
-            </h2>
-          </FadeUp>
-
-          <FadeUp delay={0.15} className="relative">
-            <div
-              className="bg-white rounded-3xl relative"
-              style={{
-                padding: "56px 64px",
-                boxShadow: "0 8px 50px rgba(0,0,0,0.25)",
-                opacity: animating ? 0 : 1,
-                transform: animating ? "scale(0.97)" : "scale(1)",
-                transition: "opacity 0.28s ease, transform 0.28s ease",
-              }}
-            >
-              <FaQuoteLeft
-                className="absolute top-8 left-12 text-[36px]"
-                style={{ color: "rgba(247,181,0,0.22)" }}
-              />
-              <div className="flex gap-1.5 justify-center mb-[26px]">
-                {Array.from({ length: testimonials[active].rating }).map((_, i) => (
-                  <FaStar key={i} className="text-[#F7B500] text-[18px]" />
-                ))}
-              </div>
-              <p
-                className="text-gray-700 leading-[1.8] text-center italic mb-9"
-                style={{ fontSize: "clamp(16px,2vw,21px)" }}
-              >
-                &ldquo;{testimonials[active].quote}&rdquo;
-              </p>
-              <div className="text-center">
-                <div
-                  className="w-[52px] h-[52px] rounded-full flex items-center justify-center text-[#F7B500] font-black text-[16px] mx-auto mb-3"
-                  style={{ background: "linear-gradient(135deg,#0A2540,#1a4080)" }}
-                >
-                  {testimonials[active].author.split(" ").map((w) => w[0]).join("")}
-                </div>
-                <div className="font-black text-[#0A2540] text-[16px]">{testimonials[active].author}</div>
-                <div className="text-[#F7B500] text-[14px] font-semibold mt-0.5">{testimonials[active].role}</div>
-              </div>
+      {/* ── TÉMOIGNAGES ── */}
+      <section style={{ padding:"104px 28px", position:"relative", overflow:"hidden", background:"linear-gradient(160deg,#0A2540 0%,#0f3060 100%)" }}>
+        <div style={{ position:"absolute", inset:0, backgroundImage:"radial-gradient(rgba(255,255,255,.025) 1px,transparent 1px)", backgroundSize:"40px 40px", pointerEvents:"none" }} />
+        <div style={{ maxWidth:860, margin:"0 auto", position:"relative", zIndex:10 }}>
+          <Reveal>
+            <div style={{ textAlign:"center", marginBottom:64 }}>
+              <span className="eyebrow" style={{ justifyContent:"center", marginBottom:18 }}>Témoignages</span>
+              <h2 className="sec-title sec-title-light">Ce que disent nos <em>clients</em></h2>
             </div>
-
-            <button
-              className="arrow-btn"
-              style={{ left: -24 }}
-              onClick={() => goTo((active - 1 + testimonials.length) % testimonials.length)}
-            >
-              <FaChevronLeft />
-            </button>
-            <button
-              className="arrow-btn"
-              style={{ right: -24 }}
-              onClick={() => goTo((active + 1) % testimonials.length)}
-            >
-              <FaChevronRight />
-            </button>
-          </FadeUp>
-
-          <div className="flex justify-center gap-2.5 mt-9">
-            {testimonials.map((_, i) => (
-              <button
-                key={i}
-                onClick={() => goTo(i)}
-                className="h-[10px] rounded-full border-none cursor-pointer p-0 transition-all duration-300"
-                style={{
-                  width: i === active ? 30 : 10,
-                  background: i === active ? "#F7B500" : "rgba(255,255,255,0.25)",
-                }}
-              />
+          </Reveal>
+          <Reveal delay={.15}>
+            <div style={{ position:"relative" }}>
+              <div style={{ background:"white", borderRadius:24, padding:"56px 64px", boxShadow:"0 12px 60px rgba(0,0,0,.25)", opacity:tAnim?0:1, transform:tAnim?"scale(.97)":"scale(1)", transition:"opacity .28s ease,transform .28s ease", position:"relative" }}>
+                <FaQuoteLeft style={{ position:"absolute", top:28, left:44, fontSize:40, color:"rgba(247,181,0,.15)" }} />
+                <p style={{ fontFamily:"'Cormorant Garamond',serif", fontStyle:"italic", color:"#334155", lineHeight:1.85, textAlign:"center", marginBottom:36, fontSize:"clamp(17px,2.2vw,23px)", fontWeight:500 }}>
+                  &ldquo;{TESTIMONIALS[tActive].quote}&rdquo;
+                </p>
+                <div style={{ textAlign:"center" }}>
+                  <div style={{ width:52, height:52, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", color:"#F7B500", fontWeight:900, fontSize:16, margin:"0 auto 12px", background:"linear-gradient(135deg,#0A2540,#1a4080)" }}>{TESTIMONIALS[tActive].author.split(" ").map(w => w[0]).join("")}</div>
+                  <div style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, color:"#0A2540", fontSize:17 }}>{TESTIMONIALS[tActive].author}</div>
+                  <div style={{ color:"#F7B500", fontSize:13, fontWeight:600, marginTop:4, letterSpacing:.5 }}>{TESTIMONIALS[tActive].role}</div>
+                </div>
+              </div>
+              <button className="tab" style={{ left:-26 }} onClick={() => goT((tActive - 1 + TESTIMONIALS.length) % TESTIMONIALS.length)}><FaChevronLeft /></button>
+              <button className="tab" style={{ right:-26 }} onClick={() => goT((tActive + 1) % TESTIMONIALS.length)}><FaChevronRight /></button>
+            </div>
+          </Reveal>
+          <div style={{ display:"flex", justifyContent:"center", gap:10, marginTop:36 }}>
+            {TESTIMONIALS.map((_, i) => (
+              <button key={i} onClick={() => goT(i)} style={{ height:9, borderRadius:99, border:"none", cursor:"pointer", padding:0, transition:"all .3s", width:i===tActive?28:9, background:i===tActive?"#F7B500":"rgba(255,255,255,.22)" }} />
             ))}
           </div>
         </div>
       </section>
 
-      {/* ════════════════════════════════════════
-          NEWSLETTER
-      ════════════════════════════════════════ */}
-      <section className="py-[90px] px-6 bg-white relative overflow-hidden">
-        <div
-          className="absolute pointer-events-none rounded-full"
-          style={{ top: -120, right: -120, width: 500, height: 500, background: "radial-gradient(circle,rgba(247,181,0,0.07) 0%,transparent 70%)" }}
-        />
-        <div className="max-w-[1200px] mx-auto relative z-10">
-          <div
-            className="rounded-[28px] overflow-hidden relative"
-            style={{
-              background: "linear-gradient(135deg,#0A2540,#1a4080)",
-              padding: "72px 64px",
-              boxShadow: "0 20px 60px rgba(10,37,64,0.18)",
-            }}
-          >
-            <div
-              className="absolute top-0 right-0 w-[400px] h-[400px] rounded-full pointer-events-none"
-              style={{ background: "radial-gradient(circle,rgba(247,181,0,0.08) 0%,transparent 65%)" }}
-            />
-            <div
-              className="absolute inset-0 pointer-events-none"
-              style={{ backgroundImage: "radial-gradient(rgba(255,255,255,0.02) 1px,transparent 1px)", backgroundSize: "32px 32px" }}
-            />
-            <div className="max-w-[560px] mx-auto relative z-10">
-              <FadeUp className="text-center">
-                <div
-                  className="w-16 h-16 rounded-[18px] flex items-center justify-center mx-auto mb-7 text-[26px] text-[#0A2540]"
-                  style={{ background: "linear-gradient(135deg,#F7B500,#e6a800)", boxShadow: "0 10px 28px rgba(247,181,0,0.3)" }}
-                >
-                  <FaEnvelope />
-                </div>
-                <span
-                  className="inline-block text-[#F7B500] font-bold text-[12px] tracking-[3px] uppercase px-[18px] py-1.5 rounded-full mb-[22px]"
-                  style={{ border: "1px solid rgba(247,181,0,0.35)" }}
-                >
-                  Newsletter
-                </span>
-                <h2
-                  className="font-black text-white m-0 mb-3.5 leading-[1.15]"
-                  style={{ fontSize: "clamp(28px,4vw,46px)" }}
-                >
-                  Restez <span className="text-[#F7B500]">informé</span>
-                </h2>
-                <p className="text-white/50 text-[16px] mb-10 leading-[1.7]">
-                  Recevez nos dernières actualités, conseils et ressources pour accélérer la croissance de votre startup.
-                </p>
-                {submitted ? (
-                  <div
-                    className="rounded-2xl py-7 px-8 text-[#4ade80] text-[18px] font-bold"
-                    style={{ background: "rgba(34,197,94,0.12)", border: "1px solid rgba(34,197,94,0.35)" }}
-                  >
-                    ✅ Merci ! Vous êtes bien inscrit à notre newsletter.
-                  </div>
+      {/* ── NEWSLETTER ── */}
+      <section style={{ padding:"96px 28px", background:"#F8FAFC" }}>
+        <div style={{ maxWidth:1200, margin:"0 auto" }}>
+          <Reveal>
+            <div style={{ borderRadius:28, overflow:"hidden", background:"linear-gradient(135deg,#0A2540 0%,#1a4080 100%)", padding:"80px 64px", boxShadow:"0 24px 64px rgba(10,37,64,.2)", position:"relative" }}>
+              <div style={{ position:"absolute", inset:0, backgroundImage:"radial-gradient(rgba(255,255,255,.025) 1px,transparent 1px)", backgroundSize:"36px 36px", pointerEvents:"none" }} />
+              <div style={{ maxWidth:560, margin:"0 auto", position:"relative", zIndex:10, textAlign:"center" }}>
+                <div style={{ width:60, height:60, borderRadius:16, display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 28px", fontSize:24, color:"#0A2540", background:"linear-gradient(135deg,#F7B500,#e6a800)", boxShadow:"0 8px 24px rgba(247,181,0,.3)" }}><FaEnvelope /></div>
+                <span className="eyebrow" style={{ justifyContent:"center", marginBottom:16 }}>Newsletter</span>
+                <h2 className="sec-title sec-title-light" style={{ marginBottom:14 }}>Restez <em>informé</em></h2>
+                <p style={{ color:"rgba(255,255,255,.45)", fontSize:15, marginBottom:40, lineHeight:1.75 }}>Recevez nos dernières actualités, conseils et ressources pour accélérer la croissance de votre startup.</p>
+                {sent ? (
+                  <div style={{ borderRadius:14, padding:"24px 28px", color:"#4ade80", fontSize:17, fontWeight:700, background:"rgba(34,197,94,.1)", border:"1px solid rgba(34,197,94,.3)" }}>✅ Merci ! Vous êtes bien inscrit.</div>
                 ) : (
-                  <form onSubmit={handleNewsletter} className="flex gap-3 max-w-[500px] mx-auto">
-                    <input
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="Votre adresse email..."
-                      required
-                      className="newsletter-input"
-                    />
-                    <button type="submit" className="btn-gold flex-shrink-0">
-                      {"S'inscrire"}
-                    </button>
+                  <form onSubmit={e => { e.preventDefault(); if (mail) { setSent(true); setMail(""); } }} style={{ display:"flex", gap:10, maxWidth:480, margin:"0 auto" }}>
+                    <input type="email" value={mail} onChange={e => setMail(e.target.value)} placeholder="Votre adresse email..." required className="nli" />
+                    <button type="submit" className="btn-gold" style={{ flexShrink:0, padding:"14px 22px" }}>S'inscrire</button>
                   </form>
                 )}
-                <p className="text-white/[0.28] text-[12px] mt-4">
-                  Pas de spam. Désabonnement en un clic. 🔒
-                </p>
-                <div className="flex items-center justify-center gap-6 mt-8">
-                  {["2 500+ abonnés", "1 email / semaine", "100% gratuit"].map((item, i) => (
-                    <div key={i} className="flex items-center gap-1.5 text-white/40 text-[13px]">
-                      <FaCheck className="text-[#F7B500] text-[10px]" />
-                      {item}
+                <div style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:28, marginTop:28 }}>
+                  {["2 500+ abonnés","1 email / semaine","100% gratuit"].map((item, i) => (
+                    <div key={i} style={{ display:"flex", alignItems:"center", gap:6, color:"rgba(255,255,255,.38)", fontSize:12.5 }}>
+                      <FaCheck style={{ color:"#F7B500", fontSize:9 }} />{item}
                     </div>
                   ))}
                 </div>
-              </FadeUp>
+              </div>
             </div>
-          </div>
+          </Reveal>
         </div>
       </section>
 
-      {/* ════════════════════════════════════════
-          FOOTER
-      ════════════════════════════════════════ */}
-      <footer className="bg-[rgb(3,33,68)] text-white pt-16 pb-8 px-6">
-        <div className="max-w-[1200px] mx-auto">
-          <div className="grid grid-cols-4 gap-10 mb-14">
-            <div className="col-span-1">
-              <Link href="/" className="flex items-center gap-3 no-underline mb-5">
-                <svg width="40" height="40" viewBox="0 0 46 46" fill="none">
-                  <rect width="46" height="46" rx="12" fill="#0A2540" />
-                  <rect x="23" y="7" width="13" height="13" rx="2" transform="rotate(45 23 7)" fill="#F7B500" opacity="0.15" />
-                  <text x="50%" y="55%" dominantBaseline="middle" textAnchor="middle" fill="#F7B500" fontSize="15" fontWeight="900" fontFamily="Arial, sans-serif" letterSpacing="0.5">BEH</text>
-                </svg>
-                <div className="flex flex-col leading-none">
-                  <span className="font-black text-[15px] text-white tracking-[-0.3px]">
-                    Business <span className="text-[#F7B500]">Expert</span> Hub
-                  </span>
-                </div>
+      {/* ── FOOTER ── */}
+      <footer style={{ background:"#060E1C", color:"white", padding:"64px 28px 32px" }}>
+        <div style={{ maxWidth:1200, margin:"0 auto" }}>
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:44, marginBottom:56 }}>
+            <div>
+              <Link href="/" style={{ display:"flex", alignItems:"center", gap:11, textDecoration:"none", marginBottom:18 }}>
+                <svg width="38" height="38" viewBox="0 0 46 46" fill="none"><rect width="46" height="46" rx="10" fill="#0A2540"/><text x="50%" y="55%" dominantBaseline="middle" textAnchor="middle" fill="#F7B500" fontSize="14" fontWeight="900" fontFamily="Arial" letterSpacing="0.5">BEH</text></svg>
+                <span style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:16, color:"white" }}>Business <em style={{ color:"#F7B500" }}>Expert</em> Hub</span>
               </Link>
-              <p className="text-white/40 text-[13px] leading-[1.75]">
-                Plateforme de mise en relation entre startups ambitieuses et experts certifiés.
-              </p>
+              <p style={{ color:"rgba(255,255,255,.3)", fontSize:13, lineHeight:1.85 }}>Plateforme de mise en relation entre startups et experts certifiés.</p>
             </div>
-
-            <div>
-              <h4 className="text-white font-black text-[14px] uppercase tracking-wider mb-5">Navigation</h4>
-              <ul className="list-none p-0 m-0 flex flex-col gap-3">
-                {[
-                  ["Accueil",  "/"],
-                  ["À propos", "/a-propos"],
-                  ["Services", "/services"],
-                  ["Experts",  "/experts"],
-                  ["Blog",     "/blog"],
-                  ["Contact",  "/contact"],
-                ].map(([label, href]) => (
-                  <li key={href}>
-                    <Link href={href} className="text-white/45 text-[14px] no-underline hover:text-[#F7B500] transition-colors">
-                      {label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            <div>
-              <h4 className="text-white font-black text-[14px] uppercase tracking-wider mb-5">Services</h4>
-              <ul className="list-none p-0 m-0 flex flex-col gap-3">
-                {navServices.map((s) => (
-                  <li key={s.slug}>
-                    <Link href={`/services/${s.slug}`} className="text-white/45 text-[14px] no-underline hover:text-[#F7B500] transition-colors">
-                      {s.label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            <div>
-              <h4 className="text-white font-black text-[14px] uppercase tracking-wider mb-5">Contact</h4>
-              <div className="flex flex-col gap-3 text-white/45 text-[14px]">
-                <span>📧 </span>
-                <span>📞 </span>
-                <span>📍 </span>
+            {[
+              { title:"Navigation", links:[["Accueil","/"],["À propos","/a-propos"],["Services","/services"],["Experts","/experts"],["Blog","/blog"],["Contact","/contact"]] },
+              { title:"Services",   links:NAV_SERVICES.map(s => [s.label, `/services/${s.slug}`]) },
+              { title:"Contact",    links:[["📧 contact@beh.com","#"],["📞 +216 00 000 000","#"],["📍 Tunis, Tunisie","#"]] },
+            ].map(col => (
+              <div key={col.title}>
+                <h4 style={{ color:"rgba(255,255,255,.45)", fontWeight:700, fontSize:11, textTransform:"uppercase", letterSpacing:"1.5px", marginBottom:18 }}>{col.title}</h4>
+                <ul style={{ listStyle:"none", padding:0, display:"flex", flexDirection:"column", gap:11 }}>
+                  {col.links.map(([l, h]) => (
+                    <li key={l}><Link href={h} style={{ color:"rgba(255,255,255,.35)", fontSize:14, textDecoration:"none" }}>{l}</Link></li>
+                  ))}
+                </ul>
               </div>
-              <div className="flex gap-3 mt-6">
-                {["in", "tw", "fb"].map((soc) => (
-                  <div
-                    key={soc}
-                    className="w-9 h-9 rounded-[8px] flex items-center justify-center text-[#F7B500] font-black text-[12px] cursor-pointer transition-all hover:scale-110"
-                    style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)" }}
-                  >
-                    {soc.toUpperCase()}
-                  </div>
-                ))}
-              </div>
-            </div>
+            ))}
           </div>
-
-          <div className="border-t border-white/[0.07] pt-8 flex items-center justify-between">
-            <p className="m-0 text-white/30 text-[13px]">
-              © 2026 Business Expert Hub — Tous droits réservés
-            </p>
-            <div className="flex gap-6">
-              {["Mentions légales", "Politique de confidentialité", "CGU"].map((item) => (
-                <Link key={item} href="#" className="text-white/30 text-[12px] no-underline hover:text-[#F7B500] transition-colors">
-                  {item}
-                </Link>
-              ))}
-            </div>
+          <div style={{ borderTop:"1px solid rgba(255,255,255,.06)", paddingTop:28 }}>
+            <p style={{ margin:0, color:"rgba(255,255,255,.2)", fontSize:13 }}>© 2026 Business Expert Hub — Tous droits réservés</p>
           </div>
         </div>
       </footer>

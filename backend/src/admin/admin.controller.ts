@@ -1,56 +1,49 @@
 import { Controller, Get, Put, Delete, Param, UseGuards } from '@nestjs/common';
 import { AdminService } from './admin.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { AdminGuard } from '../auth/admin.guard';
 
 @Controller('admin')
+@UseGuards(JwtAuthGuard, AdminGuard)
 export class AdminController {
-  constructor(private adminService: AdminService) {}
+  constructor(private readonly adminService: AdminService) {}
 
-  @UseGuards(JwtAuthGuard)
   @Get('stats')
-  getStats() {
-    return this.adminService.getStats();
-  }
+  getStats() { return this.adminService.getStats(); }
 
-  @UseGuards(JwtAuthGuard)
   @Get('users')
-  getAllUsers() {
-    return this.adminService.getAllUsers();
-  }
+  getUsers() { return this.adminService.getUsers(); }
 
-  @UseGuards(JwtAuthGuard)
-  @Get('experts')
-  getAllExperts() {
-    return this.adminService.getAllExperts();
-  }
-
-  @UseGuards(JwtAuthGuard)
-  @Put('experts/:id/valider')
-  validerExpert(@Param('id') id: string) {
-    return this.adminService.validerExpert(Number(id));
-  }
-
-  @UseGuards(JwtAuthGuard)
-  @Put('experts/:id/refuser')
-  refuserExpert(@Param('id') id: string) {
-    return this.adminService.refuserExpert(Number(id));
-  }
-
-  @UseGuards(JwtAuthGuard)
   @Put('users/:id/activer')
-  activerUser(@Param('id') id: string) {
-    return this.adminService.activerUser(Number(id));
-  }
+  activerUser(@Param('id') id: string) { return this.adminService.toggleUser(+id, 'activer'); }
 
-  @UseGuards(JwtAuthGuard)
   @Put('users/:id/desactiver')
-  desactiverUser(@Param('id') id: string) {
-    return this.adminService.desactiverUser(Number(id));
-  }
+  desactiverUser(@Param('id') id: string) { return this.adminService.toggleUser(+id, 'desactiver'); }
 
-  @UseGuards(JwtAuthGuard)
   @Delete('users/:id')
-  supprimerUser(@Param('id') id: string) {
-    return this.adminService.supprimerUser(Number(id));
-  }
+  deleteUser(@Param('id') id: string) { return this.adminService.deleteUser(+id); }
+
+  @Get('experts')
+  getExperts() { return this.adminService.getExperts(); }
+
+  @Put('experts/:id/valider')
+  validerExpert(@Param('id') id: string) { return this.adminService.validerExpert(+id); }
+
+  @Put('experts/:id/refuser')
+  refuserExpert(@Param('id') id: string) { return this.adminService.refuserExpert(+id); }
+
+  @Get('startups')
+  getStartups() { return this.adminService.getStartups(); }
+
+  @Put('startups/:id/valider')
+  validerStartup(@Param('id') id: string) { return this.adminService.validerStartup(+id); }
+
+  @Get('temoignages')
+  getTemoignages() { return this.adminService.getTemoignages(); }
+
+  @Put('temoignages/:id/valider')
+  validerTemoignage(@Param('id') id: string) { return this.adminService.validerTemoignage(+id); }
+
+  @Delete('temoignages/:id')
+  deleteTemoignage(@Param('id') id: string) { return this.adminService.deleteTemoignage(+id); }
 }
