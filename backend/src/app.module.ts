@@ -8,19 +8,22 @@ import { AuthModule } from './auth/auth.module';
 import { AdminModule } from './admin/admin.module';
 import { DisponibilitesModule } from './disponibilites/disponibilites.module';
 import { TemoignagesModule } from './temoignages/temoignages.module';
+import { MessagesModule } from './messages/messages.module';
+import { RendezvousModule } from './rendezvous/rendezvous.module';
+
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     TypeOrmModule.forRoot({
       type: 'mysql',
-      host: process.env.DB_HOST || 'localhost',
-      port: process.env.DB_PORT ? parseInt(process.env.DB_PORT, 10) : 3306,
-      username: process.env.DB_USERNAME || 'root',
-      password: process.env.DB_PASSWORD || '123456',
-      database: process.env.DB_DATABASE || 'plateforme_startup',
+      host: 'localhost',
+      port: 3306,
+      username: 'root',
+      password: '',
+      database: 'consulting_platform',
       entities: [__dirname + '/**/*.entity{.ts,.js}'],
       synchronize: true,
-      logging: true,
+      logging: false,
     }),
     UsersModule,
     ExpertsModule,
@@ -29,6 +32,8 @@ import { TemoignagesModule } from './temoignages/temoignages.module';
     AdminModule,
     DisponibilitesModule,
     TemoignagesModule,
+    MessagesModule,
+    RendezvousModule,
   ],
 })
 export class AppModule {}
