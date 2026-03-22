@@ -20,6 +20,14 @@ interface ExpertAPI {
   user?: { nom: string; prenom: string; email: string };
 }
 interface Dispo { id: number; date: string; heure: string; }
+interface TemoAPI {
+  id: number;
+  texte: string;
+  statut: string;
+  user?: { nom: string; prenom: string; role: string };
+  startup?: { nom_startup: string; fonction: string; secteur: string };
+  createdAt: string;
+}
 
 function useInView(threshold = 0.12): [React.RefObject<HTMLDivElement | null>, boolean] {
   const ref = useRef<HTMLDivElement>(null);
@@ -51,27 +59,14 @@ const ADN_CARDS = [
   { title: "Nos Valeurs",   anchor: "valeurs", image: "/valeurs.png", color: "#10B981", desc: "Excellence, transparence et engagement humain. Chaque accompagnement est unique et conçu pour maximiser l'impact durable de votre entreprise." },
 ];
 
-// ─────────────────────────────────────────────────────────
-// LOGOS PARTENAIRES
-// Pour ajouter un nouveau logo : ajoute simplement une ligne
-// Ex: "/logos/partenaire3.png",
-// ─────────────────────────────────────────────────────────
 const LOGOS = [
   "/logos/partenaire1.png",
   "/logos/partenaire2.png",
-    "/logos/partenaire3.png",
-   "/logos/partenaire4.png",
-   "/logos/partenaire5.png",
-   "/logos/partenaire6.png",
-    "/logos/partenaire7.png",
-
-];
-
-const TESTIMONIALS = [
-  { quote: "Grâce à Business Expert Hub, nous avons structuré notre stratégie en 3 semaines et levé 500k€ dès le trimestre suivant.", author: "Mehdi Charfi", role: "CEO, Startup ABC" },
-  { quote: "Les experts Business Expert Hub ont transformé notre approche commerciale. Notre CA a doublé en 6 mois.", author: "Amira Khaled", role: "Fondatrice, Startup XYZ" },
-  { quote: "Un accompagnement sur mesure, réactif et vraiment efficace. Business Expert Hub est un vrai partenaire de croissance.", author: "Bilel Trabelsi", role: "CTO, Startup Delta" },
-  { quote: "La mise en relation avec l'expert finance a été déterminante pour notre levée Série A.", author: "Nour Ben Ali", role: "COO, Startup Omega" },
+  "/logos/partenaire3.png",
+  "/logos/partenaire4.png",
+  "/logos/partenaire5.png",
+  "/logos/partenaire6.png",
+  "/logos/partenaire7.png",
 ];
 
 const NAV_SERVICES = [
@@ -92,16 +87,36 @@ function getIni(ex: ExpertAPI) {
   return ((p[0] || "") + (n[0] || "")).toUpperCase() || "EX";
 }
 
+// Extraire les infos d'un témoignage pour l'affichage
+function getTemoInfo(t: TemoAPI) {
+  const prenom     = t.user?.prenom     || "";
+  const nom        = t.user?.nom        || "";
+  const nomComplet = `${prenom} ${nom}`.trim() || "Client BEH";
+  const ini        = ((prenom[0] || "") + (nom[0] || "")).toUpperCase() || "??";
+  const nomStartup = t.startup?.nom_startup || "";
+  const fonction   = t.startup?.fonction   || (t.user?.role === "expert" ? "Expert BEH" : "");
+  // Ligne affichée sous le nom : "CEO / Fondateur — TechVenture"
+  let subtitle = "";
+  if (fonction && nomStartup)   subtitle = `${fonction} — ${nomStartup}`;
+  else if (fonction)             subtitle = fonction;
+  else if (nomStartup)           subtitle = nomStartup;
+  else if (t.user?.role === "expert") subtitle = "Expert BEH";
+  else                           subtitle = "Startup BEH";
+  return { nomComplet, ini, subtitle };
+}
+
 export default function Home() {
-  const [servOpen, setServOpen] = useState(false);
-  const [tActive, setTActive]   = useState(0);
-  const [tAnim, setTAnim]       = useState(false);
-  const [mail, setMail]         = useState("");
-  const [sent, setSent]         = useState(false);
-  const [modal, setModal]       = useState(false);
-  const [experts, setExperts]   = useState<ExpertAPI[]>([]);
-  const [dispos, setDispos]     = useState<Record<number, Dispo[]>>({});
-  const [loading, setLoading]   = useState(true);
+  const [servOpen, setServOpen]       = useState(false);
+  const [tActive, setTActive]         = useState(0);
+  const [tAnim, setTAnim]             = useState(false);
+  const [mail, setMail]               = useState("");
+  const [sent, setSent]               = useState(false);
+  const [modal, setModal]             = useState(false);
+  const [experts, setExperts]         = useState<ExpertAPI[]>([]);
+  const [dispos, setDispos]           = useState<Record<number, Dispo[]>>({});
+  const [loading, setLoading]         = useState(true);
+  const [temoignages, setTemoignages] = useState<TemoAPI[]>([]);
+  const [temoLoading, setTemoLoading] = useState(true);
 
   useEffect(() => {
     fetch("http://localhost:3001/experts")
@@ -122,19 +137,33 @@ export default function Home() {
       .catch(() => setLoading(false));
   }, []);
 
+  // Charger UNIQUEMENT les témoignages validés par l'admin
   useEffect(() => {
-    const t = setInterval(() => goT((tActive + 1) % TESTIMONIALS.length), 5500);
+    fetch("http://localhost:3001/temoignages/publics")
+      .then(r => r.ok ? r.json() : [])
+      .then((d: TemoAPI[]) => {
+        if (Array.isArray(d)) setTemoignages(d);
+        setTemoLoading(false);
+      })
+      .catch(() => setTemoLoading(false));
+  }, []);
+
+  useEffect(() => {
+    if (temoignages.length === 0) return;
+    const t = setInterval(() => {
+      if (!tAnim) setTActive(p => (p + 1) % temoignages.length);
+    }, 5500);
     return () => clearInterval(t);
-  }, [tActive]);
+  }, [temoignages.length, tAnim]);
 
   function goT(i: number) {
-    if (tAnim) return;
+    if (tAnim || temoignages.length === 0) return;
     setTAnim(true);
     setTimeout(() => { setTActive(i); setTAnim(false); }, 280);
   }
 
-  // Répéter les logos pour le marquee infini
-  const logosLoop = [...LOGOS, ...LOGOS, ...LOGOS, ...LOGOS];
+  const currentTemo = temoignages[tActive % Math.max(temoignages.length, 1)];
+  const temoInfo    = currentTemo ? getTemoInfo(currentTemo) : null;
 
   return (
     <div style={{ fontFamily: "'Outfit',sans-serif", color: "#2D3748" }}>
@@ -152,16 +181,12 @@ export default function Home() {
 
         .btn-gold { display:inline-flex; align-items:center; gap:9px; background:#F7B500; color:#0A2540; border:none; border-radius:10px; padding:14px 28px; font-family:inherit; font-size:14px; font-weight:800; cursor:pointer; transition:transform .22s,box-shadow .22s,background .22s; text-decoration:none; letter-spacing:.2px; }
         .btn-gold:hover { background:#e6a800; transform:translateY(-3px); box-shadow:0 14px 36px rgba(247,181,0,.35); }
-
         .btn-dark { display:inline-flex; align-items:center; gap:9px; background:#0A2540; color:white; border:none; border-radius:10px; padding:14px 28px; font-family:inherit; font-size:14px; font-weight:700; cursor:pointer; transition:transform .22s,box-shadow .22s,background .22s; text-decoration:none; }
         .btn-dark:hover { background:#F7B500; color:#0A2540; transform:translateY(-3px); box-shadow:0 14px 36px rgba(10,37,64,.25); }
-
         .btn-outline-light { display:inline-flex; align-items:center; gap:9px; background:transparent; color:white; border:1.5px solid rgba(255,255,255,.3); border-radius:10px; padding:14px 28px; font-family:inherit; font-size:14px; font-weight:600; cursor:pointer; transition:all .22s; text-decoration:none; }
         .btn-outline-light:hover { border-color:#F7B500; color:#F7B500; transform:translateY(-3px); }
-
         .btn-nav-outline { border:2px solid #0A2540; color:#0A2540; background:transparent; padding:9px 22px; border-radius:9px; font-weight:700; font-size:14px; cursor:pointer; transition:all .22s; font-family:inherit; }
         .btn-nav-outline:hover { background:#F7B500; border-color:#F7B500; transform:translateY(-2px); }
-
         .btn-nav-solid { background:#F7B500; color:#0A2540; border:2px solid #F7B500; padding:9px 22px; border-radius:9px; font-weight:800; font-size:14px; cursor:pointer; transition:all .22s; font-family:inherit; }
         .btn-nav-solid:hover { background:#e6a800; transform:translateY(-2px); box-shadow:0 8px 22px rgba(247,181,0,.38); }
 
@@ -184,34 +209,8 @@ export default function Home() {
         .adn-card:hover { transform:translateY(-14px); box-shadow:0 40px 80px rgba(10,37,64,.16); border-color:rgba(247,181,0,.25); }
         .adn-card:hover .adn-img { transform:scale(1.06); }
         .adn-img { transition:transform .8s cubic-bezier(.22,1,.36,1); }
-
         .xc { background:white; border-radius:20px; border:1px solid rgba(10,37,64,.07); box-shadow:0 4px 22px rgba(10,37,64,.07); display:flex; flex-direction:column; transition:transform .35s cubic-bezier(.22,1,.36,1),box-shadow .35s,border-color .35s; }
         .xc:hover { transform:translateY(-10px); box-shadow:0 28px 64px rgba(10,37,64,.14); border-color:rgba(247,181,0,.3); }
-
-        /* ── Marquee logos ── */
-        @keyframes marquee-logos {
-          0%   { transform: translateX(0); }
-          100% { transform: translateX(-50%); }
-        }
-        .logos-track {
-          display: flex;
-          align-items: center;
-          gap: 60px;
-          width: max-content;
-          animation: marquee-logos 18s linear infinite;
-        }
-        .logos-track:hover { animation-play-state: paused; }
-
-        .logo-img {
-          height: 65px;
-          width: auto;
-          max-width: 180px;
-          object-fit: contain;
-          flex-shrink: 0;
-          transition: transform .3s, opacity .3s;
-          opacity: 1;
-        }
-        .logo-img:hover { transform: scale(1.1); opacity: .85; }
 
         .tab { width:48px; height:48px; border-radius:50%; background:#0A2540; border:none; color:white; font-size:16px; cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 16px rgba(10,37,64,.2); transition:all .22s; position:absolute; top:50%; transform:translateY(-50%); }
         .tab:hover { background:#F7B500; color:#0A2540; transform:translateY(-50%) scale(1.1); }
@@ -427,61 +426,41 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ══ PARTENAIRES — slider avec flèches ══ */}
-<section style={{ padding:"80px 0", background:"white", overflow:"hidden" }}>
-  <div style={{ maxWidth:1200, margin:"0 auto", padding:"0 28px" }}>
-    <Reveal>
-      <div style={{ textAlign:"center", marginBottom:56 }}>
-        <h2 className="sec-title">Nos <em>Partenaires</em></h2>
-      </div>
-    </Reveal>
+      {/* ── PARTENAIRES ── */}
+      <section style={{ padding:"80px 0", background:"white", overflow:"hidden" }}>
+        <div style={{ maxWidth:1200, margin:"0 auto", padding:"0 28px" }}>
+          <Reveal>
+            <div style={{ textAlign:"center", marginBottom:56 }}>
+              <h2 className="sec-title">Nos <em>Partenaires</em></h2>
+            </div>
+          </Reveal>
+          <div style={{ position:"relative", display:"flex", alignItems:"center", gap:12 }}>
+            <button onClick={() => { const el=document.getElementById("logos-slider"); if(el) el.scrollBy({left:-300,behavior:"smooth"}); }}
+              style={{ width:44, height:44, borderRadius:"50%", background:"#0A2540", border:"none", color:"white", fontSize:18, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, boxShadow:"0 4px 16px rgba(10,37,64,.2)", transition:"all .2s" }}
+              onMouseEnter={e=>{e.currentTarget.style.background="#F7B500";e.currentTarget.style.color="#0A2540";}}
+              onMouseLeave={e=>{e.currentTarget.style.background="#0A2540";e.currentTarget.style.color="white";}}>‹</button>
+            <div id="logos-slider" style={{ display:"flex", alignItems:"center", gap:40, overflowX:"auto", scrollbarWidth:"none", flex:1, padding:"10px 0" }}>
+              <style>{`#logos-slider::-webkit-scrollbar{display:none;}`}</style>
+              {LOGOS.map((logo, i) => (
+                <img key={i} src={logo} alt={`Partenaire ${i+1}`}
+                  style={{ height:65, width:"auto", maxWidth:180, objectFit:"contain", flexShrink:0, transition:"transform .3s" }}
+                  onMouseEnter={e=>{(e.currentTarget as HTMLImageElement).style.transform="scale(1.08)";}}
+                  onMouseLeave={e=>{(e.currentTarget as HTMLImageElement).style.transform="scale(1)";}}
+                  onError={e=>{(e.currentTarget as HTMLImageElement).style.display="none";}}
+                />
+              ))}
+            </div>
+            <button onClick={() => { const el=document.getElementById("logos-slider"); if(el) el.scrollBy({left:300,behavior:"smooth"}); }}
+              style={{ width:44, height:44, borderRadius:"50%", background:"#0A2540", border:"none", color:"white", fontSize:18, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, boxShadow:"0 4px 16px rgba(10,37,64,.2)", transition:"all .2s" }}
+              onMouseEnter={e=>{e.currentTarget.style.background="#F7B500";e.currentTarget.style.color="#0A2540";}}
+              onMouseLeave={e=>{e.currentTarget.style.background="#0A2540";e.currentTarget.style.color="white";}}>›</button>
+          </div>
+        </div>
+      </section>
 
-    {/* Slider */}
-    <div style={{ position:"relative", display:"flex", alignItems:"center", gap:12 }}>
-      {/* Flèche gauche */}
-      <button
-        onClick={() => {
-          const el = document.getElementById("logos-slider");
-          if (el) el.scrollBy({ left: -300, behavior: "smooth" });
-        }}
-        style={{ width:44, height:44, borderRadius:"50%", background:"#0A2540", border:"none", color:"white", fontSize:18, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, boxShadow:"0 4px 16px rgba(10,37,64,.2)", transition:"all .2s" }}
-        onMouseEnter={e => { e.currentTarget.style.background="#F7B500"; e.currentTarget.style.color="#0A2540"; }}
-        onMouseLeave={e => { e.currentTarget.style.background="#0A2540"; e.currentTarget.style.color="white"; }}
-      >‹</button>
-
-      {/* Zone logos scrollable */}
-      <div
-        id="logos-slider"
-        style={{ display:"flex", alignItems:"center", gap:40, overflowX:"auto", scrollbarWidth:"none", flex:1, padding:"10px 0" }}
-      >
-        <style>{`#logos-slider::-webkit-scrollbar { display:none; }`}</style>
-        {LOGOS.map((logo, i) => (
-          <img
-            key={i}
-            src={logo}
-            alt={`Partenaire ${i + 1}`}
-            style={{ height:65, width:"auto", maxWidth:180, objectFit:"contain", flexShrink:0, transition:"transform .3s, opacity .3s", opacity:1 }}
-            onMouseEnter={e => { (e.currentTarget as HTMLImageElement).style.transform="scale(1.08)"; }}
-            onMouseLeave={e => { (e.currentTarget as HTMLImageElement).style.transform="scale(1)"; }}
-            onError={e => { (e.currentTarget as HTMLImageElement).style.display="none"; }}
-          />
-        ))}
-      </div>
-
-      {/* Flèche droite */}
-      <button
-        onClick={() => {
-          const el = document.getElementById("logos-slider");
-          if (el) el.scrollBy({ left: 300, behavior: "smooth" });
-        }}
-        style={{ width:44, height:44, borderRadius:"50%", background:"#0A2540", border:"none", color:"white", fontSize:18, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, boxShadow:"0 4px 16px rgba(10,37,64,.2)", transition:"all .2s" }}
-        onMouseEnter={e => { e.currentTarget.style.background="#F7B500"; e.currentTarget.style.color="#0A2540"; }}
-        onMouseLeave={e => { e.currentTarget.style.background="#0A2540"; e.currentTarget.style.color="white"; }}
-      >›</button>
-    </div>
-  </div>
-</section>
-      {/* ── TÉMOIGNAGES ── */}
+      {/* ══════════════════════════════════════════════
+          TÉMOIGNAGES — affiche : Nom, Fonction, Startup
+      ══════════════════════════════════════════════ */}
       <section style={{ padding:"104px 28px", position:"relative", overflow:"hidden", background:"linear-gradient(160deg,#0A2540 0%,#0f3060 100%)" }}>
         <div style={{ position:"absolute", inset:0, backgroundImage:"radial-gradient(rgba(255,255,255,.025) 1px,transparent 1px)", backgroundSize:"40px 40px", pointerEvents:"none" }} />
         <div style={{ maxWidth:860, margin:"0 auto", position:"relative", zIndex:10 }}>
@@ -491,30 +470,72 @@ export default function Home() {
               <h2 className="sec-title sec-title-light">Ce que disent nos <em>clients</em></h2>
             </div>
           </Reveal>
-          <Reveal delay={.15}>
-            <div style={{ position:"relative" }}>
-              <div style={{ background:"white", borderRadius:24, padding:"56px 64px", boxShadow:"0 12px 60px rgba(0,0,0,.25)", opacity:tAnim?0:1, transform:tAnim?"scale(.97)":"scale(1)", transition:"opacity .28s ease,transform .28s ease", position:"relative" }}>
-                <FaQuoteLeft style={{ position:"absolute", top:28, left:44, fontSize:40, color:"rgba(247,181,0,.15)" }} />
-                <p style={{ fontFamily:"'Cormorant Garamond',serif", fontStyle:"italic", color:"#334155", lineHeight:1.85, textAlign:"center", marginBottom:36, fontSize:"clamp(17px,2.2vw,23px)", fontWeight:500 }}>
-                  &ldquo;{TESTIMONIALS[tActive].quote}&rdquo;
-                </p>
-                <div style={{ textAlign:"center" }}>
-                  <div style={{ width:52, height:52, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", color:"#F7B500", fontWeight:900, fontSize:16, margin:"0 auto 12px", background:"linear-gradient(135deg,#0A2540,#1a4080)" }}>
-                    {TESTIMONIALS[tActive].author.split(" ").map(w => w[0]).join("")}
-                  </div>
-                  <div style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, color:"#0A2540", fontSize:17 }}>{TESTIMONIALS[tActive].author}</div>
-                  <div style={{ color:"#F7B500", fontSize:13, fontWeight:600, marginTop:4, letterSpacing:.5 }}>{TESTIMONIALS[tActive].role}</div>
-                </div>
-              </div>
-              <button className="tab" style={{ left:-26 }} onClick={() => goT((tActive - 1 + TESTIMONIALS.length) % TESTIMONIALS.length)}><FaChevronLeft /></button>
-              <button className="tab" style={{ right:-26 }} onClick={() => goT((tActive + 1) % TESTIMONIALS.length)}><FaChevronRight /></button>
+
+          {temoLoading && (
+            <div style={{ textAlign:"center", padding:"40px 0" }}>
+              <div style={{ width:36, height:36, border:"3px solid #F7B500", borderTopColor:"transparent", borderRadius:"50%", animation:"spin .8s linear infinite", margin:"0 auto" }} />
             </div>
-          </Reveal>
-          <div style={{ display:"flex", justifyContent:"center", gap:10, marginTop:36 }}>
-            {TESTIMONIALS.map((_, i) => (
-              <button key={i} onClick={() => goT(i)} style={{ height:9, borderRadius:99, border:"none", cursor:"pointer", padding:0, transition:"all .3s", width:i===tActive?28:9, background:i===tActive?"#F7B500":"rgba(255,255,255,.22)" }} />
-            ))}
-          </div>
+          )}
+
+          {!temoLoading && temoignages.length === 0 && (
+            <div style={{ textAlign:"center", padding:"48px 0" }}>
+              <div style={{ background:"rgba(255,255,255,.06)", border:"1px solid rgba(255,255,255,.1)", borderRadius:20, padding:"40px 32px", display:"inline-block" }}>
+                <div style={{ fontSize:40, marginBottom:16 }}>💬</div>
+                <div style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:22, fontWeight:700, color:"white", marginBottom:10 }}>Aucun témoignage pour l'instant</div>
+                <div style={{ fontSize:14, color:"rgba(255,255,255,.4)", lineHeight:1.7 }}>Les témoignages de nos clients apparaîtront ici après validation.</div>
+              </div>
+            </div>
+          )}
+
+          {!temoLoading && temoignages.length > 0 && temoInfo && (
+            <>
+              <Reveal delay={.15}>
+                <div style={{ position:"relative" }}>
+                  <div style={{ background:"white", borderRadius:24, padding:"52px 64px 44px", boxShadow:"0 12px 60px rgba(0,0,0,.25)", opacity:tAnim?0:1, transform:tAnim?"scale(.97)":"scale(1)", transition:"opacity .28s ease,transform .28s ease", position:"relative", minHeight:200 }}>
+                    <FaQuoteLeft style={{ position:"absolute", top:28, left:44, fontSize:40, color:"rgba(247,181,0,.15)" }} />
+
+                    {/* Texte du témoignage */}
+                    <p style={{ fontFamily:"'Cormorant Garamond',serif", fontStyle:"italic", color:"#334155", lineHeight:1.85, textAlign:"center", marginBottom:36, fontSize:"clamp(17px,2.2vw,22px)", fontWeight:500 }}>
+                      &ldquo;{currentTemo?.texte}&rdquo;
+                    </p>
+
+                    {/* Auteur avec nom, fonction, startup */}
+                    <div style={{ textAlign:"center" }}>
+                      {/* Avatar initiales */}
+                      <div style={{ width:54, height:54, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", color:"#F7B500", fontWeight:900, fontSize:17, margin:"0 auto 14px", background:"linear-gradient(135deg,#0A2540,#1a4080)", boxShadow:"0 4px 16px rgba(10,37,64,.25)" }}>
+                        {temoInfo.ini}
+                      </div>
+
+                      {/* Nom complet */}
+                      <div style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, color:"#0A2540", fontSize:19, marginBottom:6 }}>
+                        {temoInfo.nomComplet}
+                      </div>
+
+                      {/* Fonction — Nom de la startup */}
+                      <div style={{ color:"#F7B500", fontSize:13.5, fontWeight:700, letterSpacing:.5 }}>
+                        {temoInfo.subtitle}
+                      </div>
+                    </div>
+                  </div>
+
+                  {temoignages.length > 1 && (
+                    <>
+                      <button className="tab" style={{ left:-26 }} onClick={() => goT((tActive - 1 + temoignages.length) % temoignages.length)}><FaChevronLeft /></button>
+                      <button className="tab" style={{ right:-26 }} onClick={() => goT((tActive + 1) % temoignages.length)}><FaChevronRight /></button>
+                    </>
+                  )}
+                </div>
+              </Reveal>
+
+              {temoignages.length > 1 && (
+                <div style={{ display:"flex", justifyContent:"center", gap:10, marginTop:36 }}>
+                  {temoignages.map((_, i) => (
+                    <button key={i} onClick={() => goT(i)} style={{ height:9, borderRadius:99, border:"none", cursor:"pointer", padding:0, transition:"all .3s", width:i===tActive?28:9, background:i===tActive?"#F7B500":"rgba(255,255,255,.22)" }} />
+                  ))}
+                </div>
+              )}
+            </>
+          )}
         </div>
       </section>
 

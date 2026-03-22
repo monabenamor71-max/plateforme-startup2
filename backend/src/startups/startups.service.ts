@@ -18,11 +18,17 @@ export class StartupsService {
   }
 
   async findAllValidated(): Promise<Startup[]> {
-    return this.startupRepo.find({ where: { valid: true }, relations: ['user'] });
+    return this.startupRepo.find({
+      where: { valid: true },
+      relations: ['user'],
+    });
   }
 
   async findOne(id: number): Promise<Startup> {
-    const s = await this.startupRepo.findOne({ where: { id }, relations: ['user'] });
+    const s = await this.startupRepo.findOne({
+      where: { id },
+      relations: ['user'],
+    });
     if (!s) throw new NotFoundException('Startup non trouvée');
     return s;
   }
@@ -35,13 +41,39 @@ export class StartupsService {
   }
 
   async create(userId: number, data: any): Promise<Startup> {
-    const startup = this.startupRepo.create({ user_id: userId, ...data } as any);
-    return this.startupRepo.save(startup) as any;
+    console.log('StartupsService.create => userId:', userId, 'data:', data);
+
+    // Utilise QueryBuilder pour éviter les erreurs TypeScript strict
+    const result = await this.startupRepo
+      .createQueryBuilder()
+      .insert()
+      .into(Startup)
+      .values({
+        user_id:     userId,
+        nom_startup: data.nom_startup || '',
+        secteur:     data.secteur     || '',
+        taille:      data.taille      || '',
+        fonction:    data.fonction    || '',
+        valid:       false,
+      } as any)
+      .execute();
+
+    const insertedId = result.identifiers[0]?.id;
+    const saved = await this.startupRepo.findOne({
+      where: { id: insertedId },
+      relations: ['user'],
+    });
+
+    console.log('Startup créée avec id:', insertedId);
+    return saved!;
   }
 
   async update(id: number, data: any): Promise<Startup> {
-    await this.startupRepo.update(id, data);
-    const updated = await this.startupRepo.findOne({ where: { id }, relations: ['user'] });
+    await this.startupRepo.update(id, data as any);
+    const updated = await this.startupRepo.findOne({
+      where: { id },
+      relations: ['user'],
+    });
     if (!updated) throw new NotFoundException('Startup non trouvée');
     return updated;
   }
@@ -54,7 +86,7 @@ export class StartupsService {
     const temo = this.temoignageRepo.create({
       user_id: userId,
       texte,
-      statut: 'en_attente',
+      statut:  'en_attente',
     } as any);
     return this.temoignageRepo.save(temo) as any;
   }
