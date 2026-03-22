@@ -1,21 +1,26 @@
-import { Entity, Column, PrimaryGeneratedColumn, OneToOne, JoinColumn } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinColumn } from 'typeorm';
 import { User } from '../users/user.entity';
 
-@Entity()
+@Entity('startups')
 export class Startup {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @OneToOne(() => User, user => user.startupProfile, { onDelete: 'CASCADE' })
+  @Column()
+  user_id: number;
+
+  @ManyToOne(() => User, { eager: true, onDelete: 'CASCADE' })
   @JoinColumn({ name: 'user_id' })
   user: User;
+  @Column({ nullable: true, default: '' })
+fonction: string;
 
-  @Column()
+  @Column({ nullable: true })
   secteur: string;
 
-  @Column()
+  @Column({ nullable: true })
   taille: string;
 
   @Column({ default: false })
-  valid: boolean; // colonne de validation
+  valid: boolean;
 }

@@ -1,41 +1,49 @@
-import { Controller, Post, Body, UseGuards, Req, Get, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards, Req } from '@nestjs/common';
 import { TemoignagesService } from './temoignages.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { AdminGuard } from '../auth/admin.guard';
 
 @Controller('temoignages')
 export class TemoignagesController {
-  constructor(private readonly temoignagesService: TemoignagesService) {}
+  constructor(private readonly service: TemoignagesService) {}
+
+  @Get('publics')
+  findValides() {
+    return this.service.findValides();
+  }
 
   @Post()
   @UseGuards(JwtAuthGuard)
-  async create(@Body() body: { texte: string }, @Req() req) {
-    return this.temoignagesService.create(req.user.id, body.texte);
+  creer(@Req() req: any, @Body() body: { texte: string }) {
+    return this.service.creer(req.user.id, body.texte);
   }
 
   @Get()
-  @UseGuards(JwtAuthGuard, AdminGuard)
-  async findAll() {
-    return this.temoignagesService.findAll();
+  @UseGuards(JwtAuthGuard)
+  findAll() {
+    return this.service.findAll();
   }
 
   @Get('count-en-attente')
-  @UseGuards(JwtAuthGuard, AdminGuard)
-  async countEnAttente() {
-    const count = await this.temoignagesService.compterEnAttente();
-    return { count };
+  @UseGuards(JwtAuthGuard)
+  countEnAttente() {
+    return this.service.countEnAttente();
   }
 
-  @Post(':id/valider')
-  @UseGuards(JwtAuthGuard, AdminGuard)
-  async valider(@Param('id') id: string) {
-    return this.temoignagesService.valider(+id);
+  @Put(':id/valider')
+  @UseGuards(JwtAuthGuard)
+  valider(@Param('id') id: string) {
+    return this.service.valider(+id);
+  }
+
+  @Put(':id/refuser')
+  @UseGuards(JwtAuthGuard)
+  refuser(@Param('id') id: string) {
+    return this.service.refuser(+id);
   }
 
   @Delete(':id')
-  @UseGuards(JwtAuthGuard, AdminGuard)
-  async supprimer(@Param('id') id: string) {
-    await this.temoignagesService.supprimer(+id);
-    return { message: 'Témoignage supprimé' };
+  @UseGuards(JwtAuthGuard)
+  supprimer(@Param('id') id: string) {
+    return this.service.supprimer(+id);
   }
 }

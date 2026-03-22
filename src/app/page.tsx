@@ -33,6 +33,7 @@ function useInView(threshold = 0.12): [React.RefObject<HTMLDivElement | null>, b
   }, [threshold]);
   return [ref, inView];
 }
+
 function Reveal({ children, delay = 0 }: { children: ReactNode; delay?: number }) {
   const [ref, inView] = useInView();
   return (
@@ -49,21 +50,35 @@ const ADN_CARDS = [
   { title: "Notre Mission", anchor: "mission", image: "/mission.png", color: "#F7B500", desc: "Offrir aux startups un accès privilégié à des experts certifiés pour structurer leur stratégie, accélérer leur croissance et réussir leurs levées de fonds." },
   { title: "Nos Valeurs",   anchor: "valeurs", image: "/valeurs.png", color: "#10B981", desc: "Excellence, transparence et engagement humain. Chaque accompagnement est unique et conçu pour maximiser l'impact durable de votre entreprise." },
 ];
-const PARTNERS = [
-  { name: "TechVentures", sector: "Fonds d'investissement" }, { name: "InnoHub", sector: "Incubateur" },
-  { name: "StartupNation", sector: "Accélérateur" }, { name: "CapitalGrow", sector: "Private Equity" },
-  { name: "AfricaTech", sector: "Réseau startup" }, { name: "EuroFund", sector: "Financement EU" },
-  { name: "DigitalNext", sector: "Transformation digitale" }, { name: "GrowthLab", sector: "Studio de croissance" },
+
+// ─────────────────────────────────────────────────────────
+// LOGOS PARTENAIRES
+// Pour ajouter un nouveau logo : ajoute simplement une ligne
+// Ex: "/logos/partenaire3.png",
+// ─────────────────────────────────────────────────────────
+const LOGOS = [
+  "/logos/partenaire1.png",
+  "/logos/partenaire2.png",
+    "/logos/partenaire3.png",
+   "/logos/partenaire4.png",
+   "/logos/partenaire5.png",
+   "/logos/partenaire6.png",
+    "/logos/partenaire7.png",
+
 ];
+
 const TESTIMONIALS = [
   { quote: "Grâce à Business Expert Hub, nous avons structuré notre stratégie en 3 semaines et levé 500k€ dès le trimestre suivant.", author: "Mehdi Charfi", role: "CEO, Startup ABC" },
   { quote: "Les experts Business Expert Hub ont transformé notre approche commerciale. Notre CA a doublé en 6 mois.", author: "Amira Khaled", role: "Fondatrice, Startup XYZ" },
   { quote: "Un accompagnement sur mesure, réactif et vraiment efficace. Business Expert Hub est un vrai partenaire de croissance.", author: "Bilel Trabelsi", role: "CTO, Startup Delta" },
   { quote: "La mise en relation avec l'expert finance a été déterminante pour notre levée Série A.", author: "Nour Ben Ali", role: "COO, Startup Omega" },
 ];
+
 const NAV_SERVICES = [
-  { label: "Consulting", slug: "consulting" }, { label: "Audit sur site", slug: "audit-sur-site" },
-  { label: "Accompagnement", slug: "accompagnement" }, { label: "Formations", slug: "formations" },
+  { label: "Consulting",     slug: "consulting"     },
+  { label: "Audit sur site", slug: "audit-sur-site" },
+  { label: "Accompagnement", slug: "accompagnement" },
+  { label: "Formations",     slug: "formations"     },
 ];
 
 function getName(ex: ExpertAPI) {
@@ -78,15 +93,15 @@ function getIni(ex: ExpertAPI) {
 }
 
 export default function Home() {
-  const [servOpen, setServOpen]   = useState(false);
-  const [tActive, setTActive]     = useState(0);
-  const [tAnim, setTAnim]         = useState(false);
-  const [mail, setMail]           = useState("");
-  const [sent, setSent]           = useState(false);
-  const [modal, setModal]         = useState(false);
-  const [experts, setExperts]     = useState<ExpertAPI[]>([]);
-  const [dispos, setDispos]       = useState<Record<number, Dispo[]>>({});
-  const [loading, setLoading]     = useState(true);
+  const [servOpen, setServOpen] = useState(false);
+  const [tActive, setTActive]   = useState(0);
+  const [tAnim, setTAnim]       = useState(false);
+  const [mail, setMail]         = useState("");
+  const [sent, setSent]         = useState(false);
+  const [modal, setModal]       = useState(false);
+  const [experts, setExperts]   = useState<ExpertAPI[]>([]);
+  const [dispos, setDispos]     = useState<Record<number, Dispo[]>>({});
+  const [loading, setLoading]   = useState(true);
 
   useEffect(() => {
     fetch("http://localhost:3001/experts")
@@ -118,74 +133,36 @@ export default function Home() {
     setTimeout(() => { setTActive(i); setTAnim(false); }, 280);
   }
 
+  // Répéter les logos pour le marquee infini
+  const logosLoop = [...LOGOS, ...LOGOS, ...LOGOS, ...LOGOS];
+
   return (
     <div style={{ fontFamily: "'Outfit',sans-serif", color: "#2D3748" }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500;1,600;1,700&display=swap');
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-        .eyebrow {
-          display: inline-flex; align-items: center; gap: 8px;
-          font-size: 10.5px; font-weight: 800; letter-spacing: 3px;
-          text-transform: uppercase; color: #F7B500;
-        }
+        .eyebrow { display:inline-flex; align-items:center; gap:8px; font-size:10.5px; font-weight:800; letter-spacing:3px; text-transform:uppercase; color:#F7B500; }
         .eyebrow::before { content:''; display:block; width:26px; height:2px; background:#F7B500; border-radius:2px; }
 
-        .sec-title {
-          font-family: 'Cormorant Garamond', serif;
-          font-weight: 700; line-height: 1.1; color: #0A2540;
-          font-size: clamp(34px, 4vw, 58px);
-        }
-        .sec-title em { font-style: italic; color: #F7B500; }
-        .sec-title-light { color: white; }
-        .sec-title-light em { color: #F7B500; }
-        .sec-sub { font-size: 15px; line-height: 1.85; color: #64748B; max-width: 520px; }
-        .sec-sub-light { color: rgba(255,255,255,.45); }
+        .sec-title { font-family:'Cormorant Garamond',serif; font-weight:700; line-height:1.1; color:#0A2540; font-size:clamp(34px,4vw,58px); }
+        .sec-title em { font-style:italic; color:#F7B500; }
+        .sec-title-light { color:white; }
+        .sec-title-light em { color:#F7B500; }
 
-        .btn-gold {
-          display:inline-flex; align-items:center; gap:9px;
-          background:#F7B500; color:#0A2540;
-          border:none; border-radius:10px;
-          padding:14px 28px; font-family:inherit;
-          font-size:14px; font-weight:800; cursor:pointer;
-          transition:transform .22s,box-shadow .22s,background .22s;
-          text-decoration:none; letter-spacing:.2px;
-        }
+        .btn-gold { display:inline-flex; align-items:center; gap:9px; background:#F7B500; color:#0A2540; border:none; border-radius:10px; padding:14px 28px; font-family:inherit; font-size:14px; font-weight:800; cursor:pointer; transition:transform .22s,box-shadow .22s,background .22s; text-decoration:none; letter-spacing:.2px; }
         .btn-gold:hover { background:#e6a800; transform:translateY(-3px); box-shadow:0 14px 36px rgba(247,181,0,.35); }
 
-        .btn-dark {
-          display:inline-flex; align-items:center; gap:9px;
-          background:#0A2540; color:white;
-          border:none; border-radius:10px;
-          padding:14px 28px; font-family:inherit;
-          font-size:14px; font-weight:700; cursor:pointer;
-          transition:transform .22s,box-shadow .22s,background .22s;
-          text-decoration:none;
-        }
+        .btn-dark { display:inline-flex; align-items:center; gap:9px; background:#0A2540; color:white; border:none; border-radius:10px; padding:14px 28px; font-family:inherit; font-size:14px; font-weight:700; cursor:pointer; transition:transform .22s,box-shadow .22s,background .22s; text-decoration:none; }
         .btn-dark:hover { background:#F7B500; color:#0A2540; transform:translateY(-3px); box-shadow:0 14px 36px rgba(10,37,64,.25); }
 
-        .btn-outline-light {
-          display:inline-flex; align-items:center; gap:9px;
-          background:transparent; color:white;
-          border:1.5px solid rgba(255,255,255,.3); border-radius:10px;
-          padding:14px 28px; font-family:inherit;
-          font-size:14px; font-weight:600; cursor:pointer;
-          transition:all .22s; text-decoration:none;
-        }
+        .btn-outline-light { display:inline-flex; align-items:center; gap:9px; background:transparent; color:white; border:1.5px solid rgba(255,255,255,.3); border-radius:10px; padding:14px 28px; font-family:inherit; font-size:14px; font-weight:600; cursor:pointer; transition:all .22s; text-decoration:none; }
         .btn-outline-light:hover { border-color:#F7B500; color:#F7B500; transform:translateY(-3px); }
 
-        .btn-nav-outline {
-          border:2px solid #0A2540; color:#0A2540; background:transparent;
-          padding:9px 22px; border-radius:9px; font-weight:700;
-          font-size:14px; cursor:pointer; transition:all .22s; font-family:inherit;
-        }
+        .btn-nav-outline { border:2px solid #0A2540; color:#0A2540; background:transparent; padding:9px 22px; border-radius:9px; font-weight:700; font-size:14px; cursor:pointer; transition:all .22s; font-family:inherit; }
         .btn-nav-outline:hover { background:#F7B500; border-color:#F7B500; transform:translateY(-2px); }
 
-        .btn-nav-solid {
-          background:#F7B500; color:#0A2540; border:2px solid #F7B500;
-          padding:9px 22px; border-radius:9px; font-weight:800;
-          font-size:14px; cursor:pointer; transition:all .22s; font-family:inherit;
-        }
+        .btn-nav-solid { background:#F7B500; color:#0A2540; border:2px solid #F7B500; padding:9px 22px; border-radius:9px; font-weight:800; font-size:14px; cursor:pointer; transition:all .22s; font-family:inherit; }
         .btn-nav-solid:hover { background:#e6a800; transform:translateY(-2px); box-shadow:0 8px 22px rgba(247,181,0,.38); }
 
         .nl { color:#0A2540; text-decoration:none; font-size:15px; font-weight:500; transition:color .2s; }
@@ -201,50 +178,45 @@ export default function Home() {
         .hc>*:nth-child(3){animation-delay:.32s} .hc>*:nth-child(4){animation-delay:.48s}
         @keyframes mi { from{opacity:0;transform:scale(.92) translateY(20px)} to{opacity:1;transform:scale(1) translateY(0)} }
         .mbox { animation:mi .32s cubic-bezier(.22,1,.36,1); }
-        @keyframes marquee { 0%{transform:translateX(0)} 100%{transform:translateX(-50%)} }
-        .mq { display:flex; gap:20px; width:max-content; animation:marquee 30s linear infinite; }
-        .mq:hover { animation-play-state:paused; }
         @keyframes spin { to{transform:rotate(360deg)} }
 
-        .adn-card {
-          background:white; border-radius:24px; overflow:hidden;
-          border:1px solid rgba(10,37,64,.07);
-          box-shadow:0 6px 32px rgba(10,37,64,.08);
-          display:flex; flex-direction:column;
-          transition:transform .4s cubic-bezier(.22,1,.36,1),box-shadow .4s,border-color .4s;
-        }
+        .adn-card { background:white; border-radius:24px; overflow:hidden; border:1px solid rgba(10,37,64,.07); box-shadow:0 6px 32px rgba(10,37,64,.08); display:flex; flex-direction:column; transition:transform .4s cubic-bezier(.22,1,.36,1),box-shadow .4s,border-color .4s; }
         .adn-card:hover { transform:translateY(-14px); box-shadow:0 40px 80px rgba(10,37,64,.16); border-color:rgba(247,181,0,.25); }
         .adn-card:hover .adn-img { transform:scale(1.06); }
         .adn-img { transition:transform .8s cubic-bezier(.22,1,.36,1); }
 
-        .xc {
-          background:white; border-radius:20px;
-          border:1px solid rgba(10,37,64,.07);
-          box-shadow:0 4px 22px rgba(10,37,64,.07);
-          display:flex; flex-direction:column;
-          transition:transform .35s cubic-bezier(.22,1,.36,1),box-shadow .35s,border-color .35s;
-        }
+        .xc { background:white; border-radius:20px; border:1px solid rgba(10,37,64,.07); box-shadow:0 4px 22px rgba(10,37,64,.07); display:flex; flex-direction:column; transition:transform .35s cubic-bezier(.22,1,.36,1),box-shadow .35s,border-color .35s; }
         .xc:hover { transform:translateY(-10px); box-shadow:0 28px 64px rgba(10,37,64,.14); border-color:rgba(247,181,0,.3); }
 
-        .pc { transition:all .3s; }
-        .pc:hover { border-color:rgba(247,181,0,.5)!important; background:rgba(247,181,0,.06)!important; transform:translateY(-3px); }
-
-        .tab {
-          width:48px; height:48px; border-radius:50%;
-          background:#0A2540; border:none; color:white;
-          font-size:16px; cursor:pointer;
-          display:flex; align-items:center; justify-content:center;
-          box-shadow:0 4px 16px rgba(10,37,64,.2);
-          transition:all .22s; position:absolute; top:50%; transform:translateY(-50%);
+        /* ── Marquee logos ── */
+        @keyframes marquee-logos {
+          0%   { transform: translateX(0); }
+          100% { transform: translateX(-50%); }
         }
+        .logos-track {
+          display: flex;
+          align-items: center;
+          gap: 60px;
+          width: max-content;
+          animation: marquee-logos 18s linear infinite;
+        }
+        .logos-track:hover { animation-play-state: paused; }
+
+        .logo-img {
+          height: 65px;
+          width: auto;
+          max-width: 180px;
+          object-fit: contain;
+          flex-shrink: 0;
+          transition: transform .3s, opacity .3s;
+          opacity: 1;
+        }
+        .logo-img:hover { transform: scale(1.1); opacity: .85; }
+
+        .tab { width:48px; height:48px; border-radius:50%; background:#0A2540; border:none; color:white; font-size:16px; cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 16px rgba(10,37,64,.2); transition:all .22s; position:absolute; top:50%; transform:translateY(-50%); }
         .tab:hover { background:#F7B500; color:#0A2540; transform:translateY(-50%) scale(1.1); }
 
-        .nli {
-          flex:1; background:rgba(255,255,255,.08);
-          border:1px solid rgba(255,255,255,.15); border-radius:10px;
-          padding:14px 20px; color:white; font-size:15px;
-          outline:none; transition:border-color .2s; font-family:inherit;
-        }
+        .nli { flex:1; background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.15); border-radius:10px; padding:14px 20px; color:white; font-size:15px; outline:none; transition:border-color .2s; font-family:inherit; }
         .nli:focus { border-color:rgba(247,181,0,.6); }
         .nli::placeholder { color:rgba(255,255,255,.35); }
       `}</style>
@@ -278,7 +250,7 @@ export default function Home() {
             <div style={{ position:"relative" }} onMouseEnter={() => setServOpen(true)} onMouseLeave={() => setServOpen(false)}>
               <span className="nl" style={{ fontWeight:600, cursor:"pointer" }}>Services ▾</span>
               {servOpen && (
-                <ul style={{ position:"absolute", top:"calc(100%+10px)", left:0, background:"white", borderRadius:12, listStyle:"none", padding:"8px 0", margin:0, zIndex:200, minWidth:210, boxShadow:"0 12px 40px rgba(0,0,0,.12)", border:"1px solid rgba(10,37,64,.06)" }}>
+                <ul style={{ position:"absolute", top:"calc(100% + 10px)", left:0, background:"white", borderRadius:12, listStyle:"none", padding:"8px 0", margin:0, zIndex:200, minWidth:210, boxShadow:"0 12px 40px rgba(0,0,0,.12)", border:"1px solid rgba(10,37,64,.06)" }}>
                   {NAV_SERVICES.map(s => <li key={s.slug}><Link href={`/services/${s.slug}`} className="di">{s.label}</Link></li>)}
                 </ul>
               )}
@@ -329,26 +301,20 @@ export default function Home() {
         <div style={{ position:"relative", zIndex:10, maxWidth:1200, margin:"0 auto" }}>
           <Reveal>
             <div style={{ display:"flex", flexDirection:"column", alignItems:"center", textAlign:"center", marginBottom:80 }}>
-              <span className="eyebrow" style={{ marginBottom:18 }}>Qui sommes-nous</span>
               <h2 className="sec-title" style={{ marginBottom:16 }}>L'<em>ADN</em> de notre cabinet</h2>
-              
             </div>
           </Reveal>
-
           <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:28 }}>
             {ADN_CARDS.map((card, i) => (
               <Reveal key={i} delay={i * .14}>
                 <div className="adn-card" style={{ height:"100%" }}>
-                  {/* Image sans numéro */}
                   <div style={{ position:"relative", overflow:"hidden", height:230 }}>
                     <Image src={card.image} alt={card.title} fill className="adn-img" style={{ objectFit:"cover" }} sizes="400px" />
                     <div style={{ position:"absolute", inset:0, background:"linear-gradient(180deg,transparent 30%,rgba(10,37,64,.65) 100%)" }} />
-                    {/* Titre sur l'image */}
                     <div style={{ position:"absolute", bottom:18, left:20, right:20 }}>
                       <h3 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:26, fontWeight:700, color:"white", margin:0 }}>{card.title}</h3>
                     </div>
                   </div>
-                  {/* Body */}
                   <div style={{ padding:"24px 26px 26px", display:"flex", flexDirection:"column", flex:1 }}>
                     <div style={{ width:36, height:3, borderRadius:2, background:card.color, marginBottom:16 }} />
                     <p style={{ fontSize:14, color:"#64748B", lineHeight:1.85, flex:1, marginBottom:22 }}>{card.desc}</p>
@@ -363,7 +329,6 @@ export default function Home() {
               </Reveal>
             ))}
           </div>
-
           <Reveal delay={.45}>
             <div style={{ textAlign:"center", marginTop:60 }}>
               <Link href="/a-propos" className="btn-dark">En savoir plus sur nous <FaArrowRight size={12} /></Link>
@@ -376,16 +341,13 @@ export default function Home() {
       <section style={{ padding:"104px 28px", position:"relative", overflow:"hidden", background:"linear-gradient(160deg,#060e18 0%,#0b1f3a 50%,#060e18 100%)" }}>
         <div style={{ position:"absolute", inset:0, backgroundImage:"radial-gradient(rgba(255,255,255,.02) 1px,transparent 1px)", backgroundSize:"44px 44px", pointerEvents:"none" }} />
         <div style={{ position:"absolute", top:"50%", left:"50%", transform:"translate(-50%,-50%)", width:800, height:800, borderRadius:"50%", background:"radial-gradient(circle,rgba(247,181,0,.04) 0%,transparent 65%)", pointerEvents:"none" }} />
-
         <div style={{ maxWidth:1240, margin:"0 auto", position:"relative", zIndex:10 }}>
           <Reveal>
             <div style={{ display:"flex", flexDirection:"column", alignItems:"center", textAlign:"center", marginBottom:72 }}>
               <span className="eyebrow" style={{ marginBottom:18 }}>Notre équipe</span>
               <h2 className="sec-title sec-title-light" style={{ marginBottom:14 }}>Nos <em>Experts</em> certifiés</h2>
-             
             </div>
           </Reveal>
-
           {loading ? (
             <div style={{ textAlign:"center", padding:"72px 0" }}>
               <div style={{ width:44, height:44, border:"3px solid #F7B500", borderTopColor:"transparent", borderRadius:"50%", animation:"spin .8s linear infinite", margin:"0 auto" }} />
@@ -457,7 +419,6 @@ export default function Home() {
               })}
             </div>
           )}
-
           <Reveal delay={.4}>
             <div style={{ textAlign:"center", marginTop:56 }}>
               <Link href="/experts" className="btn-gold">Voir tous nos experts <FaArrowRight size={12} /></Link>
@@ -466,31 +427,60 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── PARTENAIRES ── */}
-      <section style={{ padding:"88px 28px", background:"white", overflow:"hidden" }}>
-        <div style={{ maxWidth:1200, margin:"0 auto" }}>
-          <Reveal>
-            <div style={{ textAlign:"center", marginBottom:52 }}>
-              <span className="eyebrow" style={{ justifyContent:"center", marginBottom:14 }}>Ils nous font confiance</span>
-              <h2 className="sec-title">Nos <em>Partenaires</em></h2>
-            </div>
-          </Reveal>
-          <div style={{ position:"relative", overflow:"hidden" }}>
-            <div style={{ position:"absolute", left:0, top:0, bottom:0, width:100, zIndex:20, pointerEvents:"none", background:"linear-gradient(90deg,white,transparent)" }} />
-            <div style={{ position:"absolute", right:0, top:0, bottom:0, width:100, zIndex:20, pointerEvents:"none", background:"linear-gradient(-90deg,white,transparent)" }} />
-            <div className="mq">
-              {[...PARTNERS, ...PARTNERS].map((p, i) => (
-                <div key={i} className="pc" style={{ flexShrink:0, minWidth:200, borderRadius:14, padding:"20px 26px", textAlign:"center", background:"#F8FAFC", border:"1px solid rgba(10,37,64,.07)" }}>
-                  <div style={{ width:42, height:42, borderRadius:10, display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 10px", background:"#0A2540", color:"#F7B500", fontWeight:900, fontSize:13 }}>{p.name.slice(0, 2).toUpperCase()}</div>
-                  <div style={{ color:"#0A2540", fontWeight:700, fontSize:14 }}>{p.name}</div>
-                  <div style={{ color:"#94A3B8", fontSize:12, marginTop:3 }}>{p.sector}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
+      {/* ══ PARTENAIRES — slider avec flèches ══ */}
+<section style={{ padding:"80px 0", background:"white", overflow:"hidden" }}>
+  <div style={{ maxWidth:1200, margin:"0 auto", padding:"0 28px" }}>
+    <Reveal>
+      <div style={{ textAlign:"center", marginBottom:56 }}>
+        <h2 className="sec-title">Nos <em>Partenaires</em></h2>
+      </div>
+    </Reveal>
 
+    {/* Slider */}
+    <div style={{ position:"relative", display:"flex", alignItems:"center", gap:12 }}>
+      {/* Flèche gauche */}
+      <button
+        onClick={() => {
+          const el = document.getElementById("logos-slider");
+          if (el) el.scrollBy({ left: -300, behavior: "smooth" });
+        }}
+        style={{ width:44, height:44, borderRadius:"50%", background:"#0A2540", border:"none", color:"white", fontSize:18, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, boxShadow:"0 4px 16px rgba(10,37,64,.2)", transition:"all .2s" }}
+        onMouseEnter={e => { e.currentTarget.style.background="#F7B500"; e.currentTarget.style.color="#0A2540"; }}
+        onMouseLeave={e => { e.currentTarget.style.background="#0A2540"; e.currentTarget.style.color="white"; }}
+      >‹</button>
+
+      {/* Zone logos scrollable */}
+      <div
+        id="logos-slider"
+        style={{ display:"flex", alignItems:"center", gap:40, overflowX:"auto", scrollbarWidth:"none", flex:1, padding:"10px 0" }}
+      >
+        <style>{`#logos-slider::-webkit-scrollbar { display:none; }`}</style>
+        {LOGOS.map((logo, i) => (
+          <img
+            key={i}
+            src={logo}
+            alt={`Partenaire ${i + 1}`}
+            style={{ height:65, width:"auto", maxWidth:180, objectFit:"contain", flexShrink:0, transition:"transform .3s, opacity .3s", opacity:1 }}
+            onMouseEnter={e => { (e.currentTarget as HTMLImageElement).style.transform="scale(1.08)"; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLImageElement).style.transform="scale(1)"; }}
+            onError={e => { (e.currentTarget as HTMLImageElement).style.display="none"; }}
+          />
+        ))}
+      </div>
+
+      {/* Flèche droite */}
+      <button
+        onClick={() => {
+          const el = document.getElementById("logos-slider");
+          if (el) el.scrollBy({ left: 300, behavior: "smooth" });
+        }}
+        style={{ width:44, height:44, borderRadius:"50%", background:"#0A2540", border:"none", color:"white", fontSize:18, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, boxShadow:"0 4px 16px rgba(10,37,64,.2)", transition:"all .2s" }}
+        onMouseEnter={e => { e.currentTarget.style.background="#F7B500"; e.currentTarget.style.color="#0A2540"; }}
+        onMouseLeave={e => { e.currentTarget.style.background="#0A2540"; e.currentTarget.style.color="white"; }}
+      >›</button>
+    </div>
+  </div>
+</section>
       {/* ── TÉMOIGNAGES ── */}
       <section style={{ padding:"104px 28px", position:"relative", overflow:"hidden", background:"linear-gradient(160deg,#0A2540 0%,#0f3060 100%)" }}>
         <div style={{ position:"absolute", inset:0, backgroundImage:"radial-gradient(rgba(255,255,255,.025) 1px,transparent 1px)", backgroundSize:"40px 40px", pointerEvents:"none" }} />
@@ -509,7 +499,9 @@ export default function Home() {
                   &ldquo;{TESTIMONIALS[tActive].quote}&rdquo;
                 </p>
                 <div style={{ textAlign:"center" }}>
-                  <div style={{ width:52, height:52, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", color:"#F7B500", fontWeight:900, fontSize:16, margin:"0 auto 12px", background:"linear-gradient(135deg,#0A2540,#1a4080)" }}>{TESTIMONIALS[tActive].author.split(" ").map(w => w[0]).join("")}</div>
+                  <div style={{ width:52, height:52, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", color:"#F7B500", fontWeight:900, fontSize:16, margin:"0 auto 12px", background:"linear-gradient(135deg,#0A2540,#1a4080)" }}>
+                    {TESTIMONIALS[tActive].author.split(" ").map(w => w[0]).join("")}
+                  </div>
                   <div style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, color:"#0A2540", fontSize:17 }}>{TESTIMONIALS[tActive].author}</div>
                   <div style={{ color:"#F7B500", fontSize:13, fontWeight:600, marginTop:4, letterSpacing:.5 }}>{TESTIMONIALS[tActive].role}</div>
                 </div>
@@ -572,7 +564,7 @@ export default function Home() {
             {[
               { title:"Navigation", links:[["Accueil","/"],["À propos","/a-propos"],["Services","/services"],["Experts","/experts"],["Blog","/blog"],["Contact","/contact"]] },
               { title:"Services",   links:NAV_SERVICES.map(s => [s.label, `/services/${s.slug}`]) },
-              { title:"Contact",    links:[["📧 contact@beh.com","#"],["📞 +216 00 000 000","#"],["📍 Tunis, Tunisie","#"]] },
+              { title:"Contact",    links:[["contact@beh.com","#"],["+216 00 000 000","#"],["Tunis, Tunisie","#"]] },
             ].map(col => (
               <div key={col.title}>
                 <h4 style={{ color:"rgba(255,255,255,.45)", fontWeight:700, fontSize:11, textTransform:"uppercase", letterSpacing:"1.5px", marginBottom:18 }}>{col.title}</h4>
