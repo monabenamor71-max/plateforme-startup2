@@ -31,11 +31,11 @@ const COLOR = "#22C55E";
 const COLOR2 = "#EF4444"; // couleur podcasts
 
 const STEPS = [
-  { num:1, icon:"🎯", title:"Analyse des besoins",          desc:"Audit des compétences actuelles, définition des objectifs pédagogiques et du périmètre de la formation." },
-  { num:2, icon:"📐", title:"Conception du programme",      desc:"Élaboration sur mesure du contenu, des supports et des modalités d'évaluation par nos experts certifiés." },
-  { num:3, icon:"🎓", title:"Délivrance de la formation",   desc:"Sessions en présentiel ou distanciel, avec mises en situation réelles et ateliers pratiques interactifs." },
-  { num:4, icon:"📋", title:"Évaluation & certification",   desc:"Tests de compétences, remise des certificats reconnus et rapport d'avancement individuel." },
-  { num:5, icon:"🔄", title:"Suivi post-formation",         desc:"Accompagnement des apprenants à J+30 et J+90 pour ancrer les acquis et mesurer l'impact terrain." },
+  { num:1, icon:"", title:"Analyse des besoins",          desc:"Audit des compétences actuelles, définition des objectifs pédagogiques et du périmètre de la formation." },
+  { num:2, icon:"", title:"Conception du programme",      desc:"Élaboration sur mesure du contenu, des supports et des modalités d'évaluation par nos experts certifiés." },
+  { num:3, icon:"", title:"Délivrance de la formation",   desc:"Sessions en présentiel ou distanciel, avec mises en situation réelles et ateliers pratiques interactifs." },
+  { num:4, icon:"", title:"Évaluation & certification",   desc:"Tests de compétences, remise des certificats reconnus et rapport d'avancement individuel." },
+  { num:5, icon:"", title:"Suivi post-formation",         desc:"Accompagnement des apprenants à J+30 et J+90 pour ancrer les acquis et mesurer l'impact terrain." },
 ];
 
 const PROGRAMMES = [
