@@ -289,34 +289,6 @@ export default function BlogPage() {
         )}
       </div>
 
-      {/* ── NEWSLETTER ── */}
-      <section className="px-6 pb-16">
-        <div className="max-w-[1200px] mx-auto">
-          <FadeUp>
-            <div className="rounded-[22px] overflow-hidden relative px-12 py-12"
-              style={{background:"linear-gradient(135deg,#0A2540,#0d3060)"}}>
-              <div className="absolute top-0 right-0 w-72 h-72 pointer-events-none"
-                style={{background:"radial-gradient(circle,rgba(247,181,0,0.1) 0%,transparent 65%)"}}/>
-              <div className="relative z-10 flex items-center justify-between gap-12">
-                <div>
-                  <div className="text-[11px] font-black uppercase tracking-[2px] text-[#F7B500] mb-3">Newsletter</div>
-                  <h3 className="font-black text-white m-0 mb-2 leading-snug" style={{fontSize:"clamp(20px,2.5vw,28px)"}}>
-                    Une analyse stratégique<br/>chaque semaine
-                  </h3>
-                  <p className="text-white/50 text-[14px] m-0 max-w-[340px]">Moins de bruit, plus de valeur. +1 200 abonnés.</p>
-                </div>
-                <div className="flex gap-3 flex-shrink-0 min-w-[400px]">
-                  <input type="email" placeholder="votre@email.com" className="nl-i"/>
-                  <button className="px-6 py-3 rounded-[10px] font-black text-[14px] text-[#0A2540] flex-shrink-0 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(247,181,0,.4)]"
-                    style={{background:"#F7B500"}}>
-                    S&apos;abonner
-                  </button>
-                </div>
-              </div>
-            </div>
-          </FadeUp>
-        </div>
-      </section>
 
       {/* ── FOOTER ── */}
       <footer className="bg-[#081B33] text-white py-7 px-6 text-center">

@@ -22,7 +22,7 @@ const SERVICES = [
   { slug:"consulting",     icon:<FaChartLine/>,   color:"#3B82F6", badge:"Stratégie",    title:"Consulting",     desc:"Accompagnement personnalisé pour améliorer la performance de votre entreprise grâce à une approche structurée en 5 étapes.", points:["Diagnostic & objectifs","Feuille de route & priorisation","Déploiement & conduite du changement"] },
   { slug:"audit-sur-site", icon:<FaSearchPlus/>,  color:"#8B5CF6", badge:"Terrain",      title:"Audit sur site", desc:"Analyse approfondie de vos processus et installations avec relevés terrain, interviews et rapport de conformité détaillé.",   points:["Brief & cadrage","Visite & audit terrain","Rapport & plan d'actions"] },
   { slug:"accompagnement", icon:<FaHandsHelping/>,color:"#F7B500", badge:"Suivi continu",title:"Accompagnement",  desc:"Suivi personnalisé et continu par des experts dédiés pour soutenir chaque étape de la croissance de votre startup.",        points:["Coaching hebdomadaire","Plans d'action personnalisés","Reporting mensuel"] },
-  { slug:"formations",     icon:<FaGraduationCap/>,color:"#22C55E",badge:"Certif. & Podcasts",title:"Formations", num:"04", desc:"Programmes certifiants sur mesure pour vos équipes + podcasts exclusifs avec des experts et investisseurs.",               points:["Présentiel & distanciel","Certifications reconnues","Podcasts & masterclasses"] },
+  { slug:"formations",     icon:<FaGraduationCap/>,color:"#22C55E",badge:"Certif. & Podcasts",title:"Formations", num:"", desc:"Programmes certifiants sur mesure pour vos équipes + podcasts exclusifs avec des experts et investisseurs.",               points:["Présentiel & distanciel","Certifications reconnues","Podcasts & masterclasses"] },
 ];
 
 export default function ServicesPage() {

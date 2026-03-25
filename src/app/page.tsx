@@ -390,8 +390,8 @@ export default function Home() {
         .ac-card:hover { transform:translateY(-12px); box-shadow:0 36px 72px rgba(10,37,64,.15); border-color:rgba(247,181,0,.3); }
         .ac-card:hover .ai { transform:scale(1.06); }
         .ai  { transition:transform .8s cubic-bezier(.22,1,.36,1); }
-        .ec  { background:#fff; border-radius:18px; border:1px solid rgba(10,37,64,.07); box-shadow:0 4px 20px rgba(10,37,64,.06); display:flex; flex-direction:column; transition:transform .32s cubic-bezier(.22,1,.36,1),box-shadow .32s,border-color .32s; }
-        .ec:hover { transform:translateY(-8px); box-shadow:0 24px 60px rgba(10,37,64,.13); border-color:rgba(247,181,0,.3); }
+        .ec  { background:#fff; border-radius:16px; border:1px solid #EEF2F7; box-shadow:0 2px 12px rgba(10,37,64,.05); display:flex; flex-direction:column; transition:transform .32s cubic-bezier(.22,1,.36,1),box-shadow .32s,border-color .32s; }
+        .ec:hover { transform:translateY(-6px); box-shadow:0 20px 48px rgba(10,37,64,.11); border-color:rgba(247,181,0,.35); }
         .sb  { width:42px; height:42px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:15px; text-decoration:none; transition:all .22s; border:none; cursor:pointer; }
         .sb:hover { transform:translateY(-4px); box-shadow:0 10px 24px rgba(0,0,0,.25); }
         @keyframes marqueeLeft  { 0%{transform:translateX(0)}    100%{transform:translateX(-50%)} }
@@ -501,8 +501,8 @@ export default function Home() {
             <span style={{ fontSize:11, fontWeight:700, letterSpacing:"2.5px", textTransform:"uppercase", color:"#F7B500" }}>Cabinet de consulting & conseil</span>
           </div>
           <h1 style={{ fontSize:"clamp(36px,5vw,56px)", fontWeight:700, marginBottom:24, lineHeight:1.1 }}>
-  Propulsez votre <span style={{ color:"#F7B500" }}>startup</span><br />vers l'excellence
-</h1>
+            Propulsez votre <span style={{ color:"#F7B500" }}>startup</span><br />vers l'excellence
+          </h1>
           <p style={{ fontSize:16.5, color:"rgba(255,255,255,.7)", maxWidth:500, lineHeight:1.9, marginBottom:44 }}>
             Plateforme d&apos;experts spécialisée dans l&apos;accompagnement stratégique des startups et entreprises en croissance.
           </p>
@@ -521,10 +521,9 @@ export default function Home() {
         <div style={{ position:"relative", zIndex:10, maxWidth:1200, margin:"0 auto" }}>
           <Reveal>
             <div style={{ textAlign:"center", marginBottom:72 }}>
-              
               <h2 className="text-center font-bold text-5xl leading-tight mb-6 text-[#0A2540]">
-  L'<span className="text-[#F7B500]">ADN</span> de notre cabinet
-</h2>
+                <span className="text-[#F7B500]">Notre </span> ADN
+              </h2>
             </div>
           </Reveal>
           <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:24 }}>
@@ -567,11 +566,12 @@ export default function Home() {
           <Reveal>
             <div style={{ textAlign:"center", marginBottom:68 }}>
               <span className="ey" style={{ justifyContent:"center", marginBottom:16 }}>Notre équipe</span>
-        <h2 className="text-center font-bold text-5xl leading-tight mb-6 text-[#0A2540]">
-  Nos <span className="text-[#F7B500]">Experts</span> certifiés
-</h2>
+              <h2 className="text-center font-bold text-5xl leading-tight mb-6 text-[#0A2540]">
+                Nos <span className="text-[#F7B500]">Experts</span> certifiés
+              </h2>
             </div>
           </Reveal>
+
           {loading ? (
             <div style={{ textAlign:"center", padding:"72px 0" }}>
               <div style={{ width:42, height:42, border:"3px solid #F7B500", borderTopColor:"transparent", borderRadius:"50%", animation:"spin .8s linear infinite", margin:"0 auto" }} />
@@ -584,55 +584,109 @@ export default function Home() {
                 const name = getName(ex); const ini = getIni(ex); const dsp = dispos[ex.id] || [];
                 return (
                   <Reveal key={ex.id} delay={i * .09}>
-                    <div className="ec" style={{ height:"100%" }}>
-                      <div style={{ padding:"18px 18px 0" }}>
-                        <div style={{ display:"flex", justifyContent:"flex-end", marginBottom:12 }}>
-                          <span style={{ fontSize:11, fontWeight:700, padding:"3px 10px", borderRadius:99, background:ex.disponible?"#ECFDF5":"#F9FAFB", color:ex.disponible?"#059669":"#9CA3AF" }}>
-                            {ex.disponible ? "● Disponible" : "● Occupé"}
+                    <div className="ec" style={{ height:"100%", borderRadius:16, overflow:"hidden", display:"flex", flexDirection:"column" }}>
+
+                      {/* Bande colorée supérieure — verte si dispo, grise sinon */}
+                      <div style={{ height:3, background: ex.disponible ? "linear-gradient(90deg,#0A2540,#F7B500)" : "#E2E8F0", flexShrink:0 }} />
+
+                      <div style={{ padding:"24px 24px 0", flex:1, display:"flex", flexDirection:"column" }}>
+
+                        {/* En-tête : avatar + nom + badge dispo */}
+                        <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", marginBottom:18 }}>
+
+                          <div style={{ display:"flex", alignItems:"center", gap:13 }}>
+                            {/* Avatar carré, initiales ou photo */}
+                            <div style={{ width:48, height:48, borderRadius:10, overflow:"hidden", flexShrink:0, background:"#0A2540", display:"flex", alignItems:"center", justifyContent:"center", color:"#F7B500", fontWeight:700, fontSize:15, letterSpacing:.5 }}>
+                              {ex.photo
+                                ? <img src={`http://localhost:3001/uploads/photos/${ex.photo}`} alt={name} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
+                                : ini}
+                            </div>
+                            <div>
+                              <h3 style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, color:"#0A2540", fontSize:18, margin:"0 0 4px", lineHeight:1.2 }}>{name}</h3>
+                              <span style={{ fontSize:11, fontWeight:600, color:"#92400E", background:"#FEF3C7", borderRadius:5, padding:"2px 8px", letterSpacing:.2 }}>
+                                {ex.domaine || "Expert"}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Badge disponibilité — texte seul, sobre */}
+                          <span style={{
+                            fontSize:10.5, fontWeight:600, padding:"3px 9px", borderRadius:5, flexShrink:0, marginTop:2,
+                            background: ex.disponible ? "#F0FDF4" : "#F8FAFC",
+                            color:      ex.disponible ? "#15803D"  : "#94A3B8",
+                            border:    `1px solid ${ex.disponible ? "#BBF7D0" : "#E2E8F0"}`
+                          }}>
+                            {ex.disponible ? "Disponible" : "Occupé"}
                           </span>
                         </div>
-                        <div style={{ display:"flex", alignItems:"flex-start", gap:13, marginBottom:13 }}>
-                          <div style={{ width:56, height:56, borderRadius:"50%", overflow:"hidden", flexShrink:0, background:"#0A2540", display:"flex", alignItems:"center", justifyContent:"center", color:"#F7B500", fontWeight:800, fontSize:18, border:"2px solid rgba(247,181,0,.38)" }}>
-                            {ex.photo ? <img src={`http://localhost:3001/uploads/photos/${ex.photo}`} alt={name} style={{ width:"100%", height:"100%", objectFit:"cover" }} /> : ini}
+
+                        {/* Séparateur fin */}
+                        <div style={{ height:"0.5px", background:"#F1F5F9", marginBottom:16 }} />
+
+                        {/* Description courte */}
+                        {ex.description && (
+                          <p style={{ fontSize:13, color:"#64748B", lineHeight:1.75, marginBottom:16, display:"-webkit-box", WebkitLineClamp:2, WebkitBoxOrient:"vertical", overflow:"hidden" }}>
+                            {ex.description}
+                          </p>
+                        )}
+
+                        {/* Méta données : tableau clé / valeur, propre et lisible */}
+                        {(ex.experience || ex.localisation || ex.tarif) && (
+                          <div style={{ display:"flex", flexDirection:"column", gap:8, marginBottom:16 }}>
+                            {ex.experience && (
+                              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                                <span style={{ fontSize:11.5, color:"#94A3B8", fontWeight:500 }}>Expérience</span>
+                                <span style={{ fontSize:12, color:"#334155", fontWeight:600 }}>{ex.experience}</span>
+                              </div>
+                            )}
+                            {ex.localisation && (
+                              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                                <span style={{ fontSize:11.5, color:"#94A3B8", fontWeight:500 }}>Localisation</span>
+                                <span style={{ fontSize:12, color:"#334155", fontWeight:600 }}>{ex.localisation}</span>
+                              </div>
+                            )}
+                            {ex.tarif && (
+                              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                                <span style={{ fontSize:11.5, color:"#94A3B8", fontWeight:500 }}>Tarif</span>
+                                <span style={{ fontSize:12, color:"#0A2540", fontWeight:700 }}>{ex.tarif}</span>
+                              </div>
+                            )}
                           </div>
-                          <div>
-                            <h3 style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, color:"#0A2540", fontSize:18, margin:"0 0 4px", lineHeight:1.2 }}>{name}</h3>
-                            <span style={{ display:"inline-block", background:"#EFF6FF", color:"#2563EB", borderRadius:99, padding:"2px 9px", fontSize:11, fontWeight:700 }}>{ex.domaine || "Expert"}</span>
-                          </div>
-                        </div>
-                        <div style={{ display:"flex", gap:5, flexWrap:"wrap", marginBottom:11 }}>
-                          {ex.experience   && <span style={{ fontSize:11, color:"#64748B", background:"#F7F9FC", border:"1px solid #E8EEF6", borderRadius:6, padding:"3px 8px" }}>💼 {ex.experience}</span>}
-                          {ex.localisation && <span style={{ fontSize:11, color:"#64748B", background:"#F7F9FC", border:"1px solid #E8EEF6", borderRadius:6, padding:"3px 8px" }}>📍 {ex.localisation}</span>}
-                          {ex.tarif        && <span style={{ fontSize:11, color:"#B45309", background:"#FFFBEB", border:"1px solid #FDE68A", borderRadius:6, padding:"3px 8px" }}>💰 {ex.tarif}</span>}
-                        </div>
-                        {ex.description && <p style={{ fontSize:12.5, color:"#64748B", lineHeight:1.7, marginBottom:12, display:"-webkit-box", WebkitLineClamp:2, WebkitBoxOrient:"vertical", overflow:"hidden" }}>{ex.description}</p>}
+                        )}
+
+                        {/* Créneaux disponibles */}
                         {dsp.length > 0 && (
-                          <div style={{ marginBottom:12 }}>
-                            <p style={{ fontSize:10, fontWeight:700, color:"#94A3B8", textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>Prochains créneaux</p>
-                            <div style={{ display:"flex", flexWrap:"wrap", gap:4 }}>
+                          <div style={{ marginBottom:16 }}>
+                            <p style={{ fontSize:10, fontWeight:700, color:"#CBD5E1", textTransform:"uppercase", letterSpacing:"1.5px", marginBottom:7 }}>Prochains créneaux</p>
+                            <div style={{ display:"flex", flexWrap:"wrap", gap:5 }}>
                               {dsp.slice(0, 3).map((d, idx) => (
-                                <span key={idx} style={{ fontSize:10.5, background:"#EFF6FF", color:"#2563EB", padding:"3px 7px", borderRadius:5, fontWeight:500, display:"inline-flex", alignItems:"center", gap:3 }}>
-                                  <FaCalendarAlt size={8} />
-                                  {new Date(d.date).toLocaleDateString("fr-FR", { day:"numeric", month:"short" })} {(d.heure || "").slice(0, 5)}
+                                <span key={idx} style={{ fontSize:11, background:"#F8FAFC", color:"#475569", padding:"4px 9px", borderRadius:5, fontWeight:500, border:"1px solid #E2E8F0" }}>
+                                  {new Date(d.date).toLocaleDateString("fr-FR", { day:"numeric", month:"short" })} · {(d.heure || "").slice(0, 5)}
                                 </span>
                               ))}
-                              {dsp.length > 3 && <span style={{ fontSize:10.5, color:"#9CA3AF", alignSelf:"center" }}>+{dsp.length - 3}</span>}
+                              {dsp.length > 3 && (
+                                <span style={{ fontSize:11, color:"#94A3B8", alignSelf:"center" }}>+{dsp.length - 3}</span>
+                              )}
                             </div>
                           </div>
                         )}
                       </div>
-                      <div style={{ padding:"11px 18px 18px", borderTop:"1px solid #F1F5F9", marginTop:"auto", display:"flex", gap:7 }}>
-                        <button onClick={() => setModal(true)}
-                          style={{ flex:1, fontFamily:"inherit", fontSize:12.5, fontWeight:700, background:"#0A2540", color:"#fff", border:"none", borderRadius:9, padding:"10px", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:5, transition:"all .2s" }}
+
+                      {/* Footer de la carte : deux boutons textuels */}
+                      <div style={{ padding:"14px 24px 22px", display:"flex", gap:8, marginTop:"auto" }}>
+                        <button
+                          onClick={() => setModal(true)}
+                          style={{ flex:1, fontFamily:"inherit", fontSize:13, fontWeight:700, background:"#0A2540", color:"#fff", border:"none", borderRadius:9, padding:"11px 16px", cursor:"pointer", letterSpacing:.2, transition:"background .22s, color .22s" }}
                           onMouseEnter={e => { e.currentTarget.style.background="#F7B500"; e.currentTarget.style.color="#0A2540"; }}
                           onMouseLeave={e => { e.currentTarget.style.background="#0A2540"; e.currentTarget.style.color="#fff"; }}>
-                          Voir le profil <FaArrowRight size={10} />
+                          Voir le profil
                         </button>
-                        <button onClick={() => setModal(true)}
-                          style={{ width:40, height:40, background:"#F7F9FC", border:"1px solid #E8EEF6", borderRadius:9, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", color:"#64748B", transition:"all .2s", flexShrink:0 }}
-                          onMouseEnter={e => { e.currentTarget.style.background="#F7B500"; e.currentTarget.style.color="#0A2540"; }}
-                          onMouseLeave={e => { e.currentTarget.style.background="#F7F9FC"; e.currentTarget.style.color="#64748B"; }}>
-                          <FaCalendarAlt size={13} />
+                        <button
+                          onClick={() => setModal(true)}
+                          style={{ padding:"11px 18px", background:"transparent", border:"1.5px solid #E2E8F0", borderRadius:9, fontFamily:"inherit", fontSize:13, fontWeight:600, color:"#334155", cursor:"pointer", whiteSpace:"nowrap", transition:"border-color .22s, color .22s" }}
+                          onMouseEnter={e => { e.currentTarget.style.borderColor="#0A2540"; e.currentTarget.style.color="#0A2540"; }}
+                          onMouseLeave={e => { e.currentTarget.style.borderColor="#E2E8F0"; e.currentTarget.style.color="#334155"; }}>
+                          Réserver
                         </button>
                       </div>
                     </div>
@@ -641,6 +695,7 @@ export default function Home() {
               })}
             </div>
           )}
+
           <Reveal delay={.38}>
             <div style={{ textAlign:"center", marginTop:52 }}>
               <Link href="/experts" className="bg">Voir tous nos experts <FaArrowRight size={12} /></Link>
@@ -654,9 +709,9 @@ export default function Home() {
         <div style={{ maxWidth:1200, margin:"0 auto", padding:"0 28px", marginBottom:48 }}>
           <Reveal>
             <div style={{ textAlign:"center" }}>
-           <h2 className="text-center font-bold text-5xl leading-tight mb-6 text-[#0A2540]">
-  Nos <span className="text-[#F7B500]">Partenaires</span>
-</h2>
+              <h2 className="text-center font-bold text-5xl leading-tight mb-6 text-[#0A2540]">
+                Nos <span className="text-[#F7B500]">Partenaires</span>
+              </h2>
             </div>
           </Reveal>
         </div>
@@ -700,9 +755,9 @@ export default function Home() {
           <Reveal>
             <div style={{ textAlign:"center", marginBottom:60 }}>
               <span className="ey" style={{ justifyContent:"center", marginBottom:16 }}>Témoignages</span>
-           <h2 className="text-center font-bold text-5xl leading-tight mb-6 text-[#0A2540]">
-  Ce que disent nos <span className="text-[#F7B500]">clients</span>
-</h2>
+              <h2 className="text-center font-bold text-5xl leading-tight mb-6 text-[#0A2540]">
+                Ce que disent nos <span className="text-[#F7B500]">clients</span>
+              </h2>
             </div>
           </Reveal>
 

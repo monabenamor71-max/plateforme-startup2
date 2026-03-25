@@ -1,9 +1,15 @@
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, OneToMany } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 
 @Entity('services')
 export class Service {
   @PrimaryGeneratedColumn()
   id: number;
+
+  @Column({
+    type: 'enum',
+    enum: ['consulting', 'audit', 'accompagnement', 'formation', 'podcast'],
+  })
+  type: string;
 
   @Column({ length: 100 })
   nom: string;
@@ -23,11 +29,17 @@ export class Service {
   @Column({ nullable: true })
   image: string;
 
+  @Column({ length: 50, nullable: true })
+  duree: string;
+
+  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
+  prix: number;
+
+  @Column({ type: 'json', nullable: true })
+  details: any;
+
   @Column({ default: true })
   actif: boolean;
-
-  @Column({ default: 0 })
-  ordre: number;
 
   @CreateDateColumn()
   created_at: Date;

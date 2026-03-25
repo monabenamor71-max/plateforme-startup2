@@ -81,7 +81,6 @@ export default function ExpertsPage() {
     setLoading(true);
     setError("");
     try {
-      // ✅ Route correcte — retourne les experts avec valide: true
       const res = await fetch("http://localhost:3001/experts");
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
@@ -105,7 +104,6 @@ export default function ExpertsPage() {
 
       setExperts(transformed);
 
-      // Charger les disponibilités
       const map: Record<number, any[]> = {};
       await Promise.allSettled(
         transformed.map(async (ex) => {
@@ -166,6 +164,7 @@ export default function ExpertsPage() {
         @keyframes ping2 { 0%{transform:scale(1);opacity:.7;} 100%{transform:scale(1.9);opacity:0;} }
         .ping-dot { position:relative; }
         .ping-dot::after { content:''; position:absolute; inset:-3px; border-radius:50%; border:2px solid #22C55E; animation:ping2 1.8s ease-out infinite; }
+        @keyframes spin { to { transform:rotate(360deg); } }
       `}</style>
 
       {/* ── MODAL ── */}
@@ -316,14 +315,12 @@ export default function ExpertsPage() {
                 <div className="expert-card" style={{ height: "100%" }}>
                   <div style={{ padding: 22, flex: 1, display: "flex", flexDirection: "column" }}>
 
-                    {/* Badge dispo */}
                     <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>
                       <span style={{ fontSize: 11.5, fontWeight: 700, padding: "4px 10px", borderRadius: 99, background: ex.disponible ? "#ECFDF5" : "#F9FAFB", color: ex.disponible ? "#059669" : "#9CA3AF" }}>
                         {ex.disponible ? "● Disponible" : "● Occupé"}
                       </span>
                     </div>
 
-                    {/* Avatar + nom */}
                     <div style={{ display: "flex", alignItems: "flex-start", gap: 14, marginBottom: 14 }}>
                       <div style={{ width: 64, height: 64, borderRadius: "50%", overflow: "hidden", flexShrink: 0, background: "#0A2540", display: "flex", alignItems: "center", justifyContent: "center", color: "#F7B500", fontWeight: 800, fontSize: 20, border: "2px solid #F7B500" }}>
                         {ex.photo ? <img src={`http://localhost:3001/uploads/photos/${ex.photo}`} alt={ex.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : ex.initials}
@@ -334,17 +331,14 @@ export default function ExpertsPage() {
                       </div>
                     </div>
 
-                    {/* Infos */}
                     <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
                       {ex.experience && <span style={{ fontSize: 12, color: "#6B7280", background: "#F7F9FC", border: "1px solid #E8EEF6", borderRadius: 6, padding: "3px 8px" }}>💼 {ex.experience}</span>}
                       {ex.localisation && <span style={{ fontSize: 12, color: "#6B7280", background: "#F7F9FC", border: "1px solid #E8EEF6", borderRadius: 6, padding: "3px 8px" }}>📍 {ex.localisation}</span>}
                       {ex.tarif && <span style={{ fontSize: 12, color: "#D97706", background: "#FFFBEB", border: "1px solid #FDE68A", borderRadius: 6, padding: "3px 8px" }}>💰 {ex.tarif}</span>}
                     </div>
 
-                    {/* Bio */}
                     {ex.bio && <p style={{ fontSize: 13, color: "#6B7280", lineHeight: 1.7, marginBottom: 14, display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden", flex: 1 }}>{ex.bio}</p>}
 
-                    {/* Créneaux */}
                     {dispos[ex.id] && dispos[ex.id].length > 0 && (
                       <div style={{ marginBottom: 14 }}>
                         <p style={{ fontSize: 11, fontWeight: 700, color: "#8A9AB5", textTransform: "uppercase", letterSpacing: 1, marginBottom: 6 }}>Prochains créneaux</p>
@@ -357,7 +351,6 @@ export default function ExpertsPage() {
                       </div>
                     )}
 
-                    {/* Actions */}
                     <div style={{ display: "flex", gap: 8, marginTop: "auto" }}>
                       <button onClick={() => { setSelectedExpert(ex); setShowModal(true); }} style={{ flex: 1, background: "#0A2540", color: "white", border: "none", borderRadius: 10, padding: "11px", fontFamily: "inherit", fontWeight: 700, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, transition: "all .2s" }}
                         onMouseEnter={e => { (e.currentTarget as any).style.background = "#F7B500"; (e.currentTarget as any).style.color = "#0A2540"; }}
@@ -378,22 +371,24 @@ export default function ExpertsPage() {
         )}
       </section>
 
-      {/* ── CTA ── */}
+      {/* ── CTA CENTRÉ ── */}
       <section style={{ background: "#0A2540", padding: "80px 24px", position: "relative", overflow: "hidden" }}>
         <div style={{ position: "absolute", inset: 0, backgroundImage: "radial-gradient(rgba(255,255,255,.022) 1px,transparent 1px)", backgroundSize: "40px 40px", pointerEvents: "none" }} />
-        <FadeUp style={{ maxWidth: 600, margin: "0 auto", textAlign: "center", position: "relative", zIndex: 10 }}>
-          <h2 style={{ fontWeight: 900, color: "white", margin: "0 0 14px", lineHeight: 1.15, fontSize: "clamp(26px,4vw,44px)" }}>
-            Vous êtes expert ?<br /><span style={{ color: "#F7B500" }}>Rejoignez notre réseau</span>
-          </h2>
-          <p style={{ color: "rgba(255,255,255,.45)", fontSize: 15, lineHeight: 1.75, marginBottom: 32 }}>
-            Intégrez la plateforme BEH et connectez-vous avec des startups qui ont besoin de vos compétences.
-          </p>
-          <Link href="/inscription">
-            <button style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "#F7B500", color: "#0A2540", border: "none", borderRadius: 12, padding: "16px 32px", fontWeight: 900, fontSize: 15, cursor: "pointer", fontFamily: "inherit", boxShadow: "0 8px 28px rgba(247,181,0,.35)" }}>
-              Candidater comme expert <FaArrowRight size={14} />
-            </button>
-          </Link>
-        </FadeUp>
+        <div style={{ maxWidth: 600, margin: "0 auto", textAlign: "center", position: "relative", zIndex: 10 }}>
+          <FadeUp>
+            <h2 style={{ fontWeight: 900, color: "white", margin: "0 0 14px", lineHeight: 1.15, fontSize: "clamp(26px,4vw,44px)" }}>
+              Vous êtes expert ?<br /><span style={{ color: "#F7B500" }}>Rejoignez notre réseau</span>
+            </h2>
+            <p style={{ color: "rgba(255,255,255,.45)", fontSize: 15, lineHeight: 1.75, marginBottom: 32 }}>
+              Intégrez la plateforme BEH et connectez-vous avec des startups qui ont besoin de vos compétences.
+            </p>
+            <Link href="/inscription">
+              <button style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "#F7B500", color: "#0A2540", border: "none", borderRadius: 12, padding: "16px 32px", fontWeight: 900, fontSize: 15, cursor: "pointer", fontFamily: "inherit", boxShadow: "0 8px 28px rgba(247,181,0,.35)" }}>
+                Candidater comme expert <FaArrowRight size={14} />
+              </button>
+            </Link>
+          </FadeUp>
+        </div>
       </section>
 
       {/* ── FOOTER ── */}

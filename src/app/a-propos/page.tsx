@@ -676,55 +676,7 @@ export default function APropos() {
 
       
 
-      {/* ════ CTA FINAL ════ */}
-      <section className="py-24 px-6 bg-white">
-        <FadeUp>
-          <div className="max-w-[800px] mx-auto rounded-[28px] overflow-hidden relative"
-            style={{ background:"linear-gradient(135deg,#0A2540,#1a4080)",
-              boxShadow:"0 24px 64px rgba(10,37,64,0.22)", padding:"72px 64px" }}>
-            <div className="absolute top-0 right-0 w-[350px] h-[350px] rounded-full pointer-events-none"
-              style={{ background:"radial-gradient(circle,rgba(247,181,0,0.1) 0%,transparent 65%)" }}/>
-            <div className="absolute inset-0 pointer-events-none"
-              style={{ backgroundImage:"radial-gradient(rgba(255,255,255,0.02) 1px,transparent 1px)", backgroundSize:"32px 32px" }}/>
-            <div className="text-center relative z-10">
-              <div className="w-[70px] h-[70px] rounded-[20px] flex items-center justify-center
-                mx-auto mb-7 text-[#0A2540] text-[28px]"
-                style={{ background:"linear-gradient(135deg,#F7B500,#e6a800)", boxShadow:"0 10px 28px rgba(247,181,0,0.38)" }}>
-                <FaHandsHelping/>
-              </div>
-              <h2 className="font-black text-white m-0 mb-4 leading-[1.12]"
-                style={{ fontSize:"clamp(28px,4vw,48px)" }}>
-                Prêt à rejoindre{" "}
-                <span className="text-[#F7B500]">l&apos;aventure</span>&nbsp;?
-              </h2>
-              <p className="text-white/60 text-[16px] leading-[1.8] mb-10 max-w-[520px] mx-auto">
-                Que vous soyez une startup en quête d&apos;expertise ou un expert souhaitant rejoindre notre réseau,
-                nous serions ravis de vous accueillir et de construire ensemble le succès de demain.
-              </p>
-              <div className="flex flex-wrap gap-4 justify-center">
-                <Link href="/inscription" className="btn-gold">
-                  {"S'inscrire gratuitement"} <FaArrowRight size={12}/>
-                </Link>
-                <Link href="/contact" className="btn-outline">
-                  Nous contacter <FaArrowRight size={12}/>
-                </Link>
-              </div>
-              <div className="flex items-center justify-center gap-8 mt-10 flex-wrap">
-                {[
-                  { icon:"✅", label:"Inscription gratuite" },
-                  { icon:"⚡", label:"Matching en 48h"      },
-                  { icon:"🔒", label:"Données sécurisées"   },
-                ].map((item,i) => (
-                  <div key={i} className="flex items-center gap-2 text-white/40 text-[13px]">
-                    <span>{item.icon}</span>
-                    <span className="font-semibold">{item.label}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </FadeUp>
-      </section>
+      
 
       {/* ════ FOOTER ════ */}
       <footer className="bg-[#081B33] text-white pt-16 pb-8 px-6">
