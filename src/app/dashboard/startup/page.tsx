@@ -126,19 +126,28 @@ export default function DashboardStartup() {
     } catch(e) { notify("Erreur", false); }
   }
 
-  async function envoyerMessage() {
-    if (!msgText.trim() || !msgExpert) return;
-    try {
-      const expertUser = msgExpert.user_id || msgExpert.id;
-      const r = await fetch(`${BASE}/messages`, {
-        method: "POST", headers: hdrJ(),
-        body: JSON.stringify({ receiver_id: expertUser, contenu: msgText }),
-      });
-      if (r.ok) { notify("Message envoyé ✅"); setMsgModal(false); setMsgText(""); loadMessages(); }
-      else notify("Erreur envoi", false);
-    } catch(e) { notify("Erreur", false); }
-  }
-
+async function envoyerMessage() {
+  if (!msgText.trim() || !msgExpert) return;
+  try {
+    // Envoyer vers user_id de l'expert (pas expert.id)
+    const receiverId = msgExpert.user_id;
+    if (!receiverId) {
+      notify("Erreur: impossible de trouver l'expert", false);
+      return;
+    }
+    const r = await fetch(`${BASE}/messages`, {
+      method: "POST",
+      headers: hdrJ(),
+      body: JSON.stringify({ receiver_id: receiverId, contenu: msgText }),
+    });
+    if (r.ok) {
+      notify("Message envoyé ✅");
+      setMsgModal(false);
+      setMsgText("");
+      loadMessages();
+    } else notify("Erreur envoi", false);
+  } catch(e) { notify("Erreur", false); }
+}
   async function envoyerReponse() {
     if (!replyText.trim() || !selectedConv) return;
     try {
