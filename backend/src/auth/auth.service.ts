@@ -1,87 +1,98 @@
-import {
-  Injectable,
-  BadRequestException,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
-import { UsersService } from '../users/users.service';
-import { UserRole } from '../users/user.entity';
-import { ExpertsService } from '../experts/experts.service';
-import { StartupsService } from '../startups/startups.service';
+import { User } from '../user/user.entity';
+import { Expert } from '../user/expert.entity';
+import { Startup } from '../user/startup.entity';
+import { MailService } from '../mail/mail.service';
 
 @Injectable()
 export class AuthService {
   constructor(
-    private usersService: UsersService,
+    @InjectRepository(User) private userRepo: Repository<User>,
+    @InjectRepository(Expert) private expertRepo: Repository<Expert>,
+    @InjectRepository(Startup) private startupRepo: Repository<Startup>,
+    private mailService: MailService,
     private jwtService: JwtService,
-    private expertsService: ExpertsService,
-    private startupsService: StartupsService,
   ) {}
 
-  async validateUser(email: string, password: string): Promise<any> {
-    const user = await this.usersService.findByEmail(email);
-    if (user && (await bcrypt.compare(password, user.password))) {
-      const { password: _pw, ...result } = user;
-      return result;
-    }
-    return null;
-  }
+  async registerExpert(body: any, file?: any) {
+  const existe = await this.userRepo.findOne({ where: { email: body.email } });
+  if (existe) throw new BadRequestException('Email deja utilise');
+  const hash = await bcrypt.hash(body.password, 10);
+  const user = this.userRepo.create({
+    nom: body.nom,
+    prenom: body.prenom,
+    telephone: body.telephone,
+    email: body.email,
+    mot_de_passe: hash,
+    role: 'expert',
+    statut: 'en_attente',
+  });
+  const savedUser = await this.userRepo.save(user);
+  const expert = this.expertRepo.create({
+    user_id: savedUser.id,
+    domaine: body.domaine,
+    description: body.description,
+    experience: body.experience,
+    localisation: body.localisation,
+    cv: file ? file.originalname : null,
+    statut: 'en_attente',
+  });
+  await this.expertRepo.save(expert);
+  try {
+  await this.mailService.sendAdminNotification(
+    body.prenom + ' ' + body.nom, 'Expert', body.email
+  );
+} catch (e) {
+  console.log('Email non envoyé:', e.message);
+}
+return { message: 'Inscription reussie ! En attente de validation.' };}
 
-  async login(email: string, password: string) {
-    const user = await this.validateUser(email, password);
-    if (!user) throw new UnauthorizedException('Identifiants invalides');
-    const payload = { sub: user.id, email: user.email, role: user.role };
-    return { access_token: this.jwtService.sign(payload), user };
-  }
-
-  async register(userData: any, role: UserRole, profileData?: any) {
-    console.log('=== AuthService.register appelé ===');
-    console.log('email:', userData.email, '| role:', role);
-    console.log('profileData:', profileData);
-
-    // 1. Vérifier email unique
-    const existing = await this.usersService.findByEmail(userData.email);
-    if (existing) throw new BadRequestException('Email déjà utilisé');
-
-    // 2. Hasher le mot de passe
-    const hashedPassword = await bcrypt.hash(userData.password, 10);
-
-    // 3. Créer l'utilisateur
-    const user = await this.usersService.create({
-      ...userData,
-      password: hashedPassword,
-      role,
+  async registerStartup(body: any) {
+    const existe = await this.userRepo.findOne({ where: { email: body.email } });
+    if (existe) throw new BadRequestException('Email deja utilise');
+    const hash = await bcrypt.hash(body.password, 10);
+    const user = this.userRepo.create({
+      nom: body.nom,
+      prenom: body.prenom,
+      telephone: body.telephone,
+      email: body.email,
+      mot_de_passe: hash,
+      role: 'startup',
+      statut: 'en_attente',
     });
-
-    console.log('✅ Utilisateur créé — id:', user.id, '| role:', user.role);
-
-    // 4. Créer le profil selon le rôle
-    if (role === UserRole.EXPERT) {
-      console.log('→ Création profil EXPERT pour user id:', user.id);
-      try {
-        await this.expertsService.create(user.id, profileData || {});
-        console.log('✅ Profil expert créé');
-      } catch (err) {
-        console.error('❌ Erreur création expert:', err.message);
-        throw err;
-      }
-    } else if (role === UserRole.STARTUP) {
-      console.log('→ Création profil STARTUP pour user id:', user.id);
-      try {
-        await this.startupsService.create(user.id, profileData || {});
-        console.log('✅ Profil startup créé');
-      } catch (err) {
-        console.error('❌ Erreur création startup:', err.message);
-        throw err;
-      }
-    }
-
-    // 5. Générer token JWT
-    const payload = { sub: user.id, email: user.email, role: user.role };
+    const savedUser = await this.userRepo.save(user);
+    const startup = this.startupRepo.create({
+      user_id: savedUser.id,
+      nom_startup: body.nom_startup,
+      secteur: body.secteur,
+      taille: body.taille,
+      fonction: body.fonction,
+      statut: 'en_attente',
+    });
+    await this.startupRepo.save(startup);
+   try {
+  await this.mailService.sendAdminNotification(
+    body.prenom + ' ' + body.nom, 'Startup', body.email
+  );
+} catch (e) {
+  console.log('Email non envoyé:', e.message);
+}
+return { message: 'Inscription reussie ! En attente de validation.' };}
+  async login(email: string, password: string) {
+    const user = await this.userRepo.findOne({ where: { email } });
+    if (!user) throw new BadRequestException('Email ou mot de passe incorrect');
+    const valid = await bcrypt.compare(password, user.mot_de_passe);
+    if (!valid) throw new BadRequestException('Email ou mot de passe incorrect');
+    if (user.statut === 'en_attente') throw new BadRequestException('Compte en attente de validation');
+    if (user.statut === 'inactif') throw new BadRequestException('Compte desactive');
+    const token = this.jwtService.sign({ id: user.id, email: user.email, role: user.role });
     return {
-      access_token: this.jwtService.sign(payload),
-      user,
+      access_token: token,
+      user: { id: user.id, nom: user.nom, prenom: user.prenom, email: user.email, role: user.role },
     };
   }
 }

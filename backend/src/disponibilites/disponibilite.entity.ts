@@ -1,5 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
-import { Expert } from '../experts/expert.entity';
+import { Expert } from '../user/expert.entity';
 
 @Entity('disponibilites')
 export class Disponibilite {
@@ -9,16 +9,16 @@ export class Disponibilite {
   @Column()
   expert_id: number;
 
-  @ManyToOne(() => Expert, { onDelete: 'CASCADE' })
+  @ManyToOne(() => Expert)
   @JoinColumn({ name: 'expert_id' })
   expert: Expert;
 
   @Column()
   date: string;
 
-  @Column({ nullable: true })
-  heure: string;
+  @Column()
+  heureDebut: string;
 
-  @Column({ default: true })
-  disponible: boolean;
+  @Column()
+  heureFin: string;
 }

@@ -1,42 +1,43 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { ConfigModule } from '@nestjs/config';
-import { UsersModule } from './users/users.module';
+import { UserModule } from './user/user.module';
+import { AuthModule } from './auth/auth.module';
+import { MailModule } from './mail/mail.module';
+import { AdminModule } from './admin/admin.module';
 import { ExpertsModule } from './experts/experts.module';
 import { StartupsModule } from './startups/startups.module';
-import { AuthModule } from './auth/auth.module';
-import { AdminModule } from './admin/admin.module';
+import { RendezVousModule } from './rendez-vous/rendez-vous.module';
 import { DisponibilitesModule } from './disponibilites/disponibilites.module';
-import { TemoignagesModule } from './temoignages/temoignages.module';
 import { MessagesModule } from './messages/messages.module';
-import { RendezvousModule } from './rendezvous/rendezvous.module';
-import { ContactModule } from './contact/contact.module';
+import { User } from './user/user.entity';
+import { Expert } from './user/expert.entity';
+import { Startup } from './user/startup.entity';
+import { Rendezvous } from './rendez-vous/rendezvous.entity';
+import { Disponibilite } from './disponibilites/disponibilite.entity';
+import { Message } from './messages/message.entity';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
     TypeOrmModule.forRoot({
-     
-  type: 'mysql',
-  host: 'localhost',
-  port: 3306,
-  username: 'root',
-  password: '',
-  database: 'consulting_platform',  // ← ICI, mets consulting_platform
-  entities: [__dirname + '/**/*.entity{.ts,.js}'],
-  synchronize: true,
-  logging: true,
-}),
-    UsersModule,
+      type: 'mysql',
+      host: 'localhost',
+      port: 3306,
+      username: 'root',
+      password: '',
+      database: 'consulting_platform',
+      entities: [User, Expert, Startup, Rendezvous, Disponibilite, Message],
+      synchronize: true,
+      logging: false,
+    }),
+    UserModule,
+    AuthModule,
+    MailModule,
+    AdminModule,
     ExpertsModule,
     StartupsModule,
-    AuthModule,
-    AdminModule,
+    RendezVousModule,
     DisponibilitesModule,
-    TemoignagesModule,
     MessagesModule,
-    RendezvousModule,
-    ContactModule,
   ],
 })
 export class AppModule {}

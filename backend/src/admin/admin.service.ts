@@ -1,82 +1,81 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { User } from '../users/user.entity';
-import { Expert } from '../experts/expert.entity';
-import { Startup } from '../startups/startup.entity';
-import { Temoignage } from '../temoignages/temoignage.entity';
+import { User } from '../user/user.entity';
+import { Expert } from '../user/expert.entity';
+import { Startup } from '../user/startup.entity';
+import { MailService } from '../mail/mail.service';
 
 @Injectable()
 export class AdminService {
   constructor(
-    @InjectRepository(User)       private userRepo: Repository<User>,
-    @InjectRepository(Expert)     private expertRepo: Repository<Expert>,
-    @InjectRepository(Startup)    private startupRepo: Repository<Startup>,
-    @InjectRepository(Temoignage) private temoignageRepo: Repository<Temoignage>,
+    @InjectRepository(User) private userRepo: Repository<User>,
+    @InjectRepository(Expert) private expertRepo: Repository<Expert>,
+    @InjectRepository(Startup) private startupRepo: Repository<Startup>,
+    private mailService: MailService,
   ) {}
 
-  async getStats() {
-    const totalUsers         = await this.userRepo.count();
-    const totalExperts       = await this.expertRepo.count();
-    const totalStartups      = await this.startupRepo.count();
-    const expertsValides     = await this.expertRepo.count({ where: { valide: true } });
-    const expertsEnAttente   = await this.expertRepo.count({ where: { valide: false } });
-    const temoignagesAttente = await this.temoignageRepo.count({ where: { statut: 'en_attente' } });
-    return { totalUsers, totalExperts, totalStartups, expertsValides, expertsEnAttente, temoignagesAttente };
-  }
-
-  async getUsers() {
-    return this.userRepo.find();
-  }
-
-  async getExperts() {
-    return this.expertRepo.find({ relations: ['user'] });
-  }
-
-  async validerExpert(id: number) {
-    await this.expertRepo.update(id, { valide: true });
-    return this.expertRepo.findOne({ where: { id }, relations: ['user'] });
-  }
-
-  async refuserExpert(id: number) {
-    await this.expertRepo.update(id, { valide: false });
-    return this.expertRepo.findOne({ where: { id }, relations: ['user'] });
-  }
-
-  async toggleUser(id: number, action: 'activer' | 'desactiver') {
-    const isActive = action === 'activer' ? 1 : 0;
-    await this.userRepo.update(id, { isActive } as any);
-    return this.userRepo.findOne({ where: { id } });
-  }
+  getAllUsers() { return this.userRepo.find(); }
 
   async deleteUser(id: number) {
     await this.userRepo.delete(id);
-    return { message: 'Utilisateur supprimé' };
+    return { message: 'Supprime' };
   }
 
-  async getStartups() {
+  async toggleUserStatut(id: number, statut: string) {
+    await this.userRepo.update(id, { statut });
+    return { message: 'Statut mis a jour' };
+  }
+
+  getAllExperts() {
+    return this.expertRepo.find({ relations: ['user'] });
+  }
+
+  getExpertEnAttente() {
+    return this.expertRepo.find({ where: { statut: 'en_attente' }, relations: ['user'] });
+  }
+
+  async validerExpert(id: number) {
+    const expert = await this.expertRepo.findOne({ where: { id }, relations: ['user'] });
+    if (!expert) throw new NotFoundException('Expert non trouve');
+    await this.expertRepo.update(id, { statut: 'valide' });
+    await this.userRepo.update(expert.user_id, { statut: 'actif' });
+    try { await this.mailService.sendValidationEmail(expert.user.nom, expert.user.email); } catch(e) { console.log(e); }
+    return { message: 'Expert valide' };
+  }
+
+  async refuserExpert(id: number) {
+    const expert = await this.expertRepo.findOne({ where: { id }, relations: ['user'] });
+    if (!expert) throw new NotFoundException('Expert non trouve');
+    await this.expertRepo.update(id, { statut: 'refuse' });
+    await this.userRepo.update(expert.user_id, { statut: 'inactif' });
+    try { await this.mailService.sendRefusEmail(expert.user.nom, expert.user.email); } catch(e) { console.log(e); }
+    return { message: 'Expert refuse' };
+  }
+
+  getAllStartups() {
     return this.startupRepo.find({ relations: ['user'] });
   }
 
+  getStartupEnAttente() {
+    return this.startupRepo.find({ where: { statut: 'en_attente' }, relations: ['user'] });
+  }
+
   async validerStartup(id: number) {
-    await this.startupRepo.update(id, { valid: true });
-    return this.startupRepo.findOne({ where: { id }, relations: ['user'] });
+    const startup = await this.startupRepo.findOne({ where: { id }, relations: ['user'] });
+    if (!startup) throw new NotFoundException('Startup non trouvee');
+    await this.startupRepo.update(id, { statut: 'valide' });
+    await this.userRepo.update(startup.user_id, { statut: 'actif' });
+    try { await this.mailService.sendValidationEmail(startup.user.nom, startup.user.email); } catch(e) { console.log(e); }
+    return { message: 'Startup validee' };
   }
 
-  async getTemoignages() {
-    return this.temoignageRepo.find({
-      relations: ['user'],
-      order: { createdAt: 'DESC' },
-    });
-  }
-
-  async validerTemoignage(id: number) {
-    await this.temoignageRepo.update(id, { statut: 'valide' });
-    return this.temoignageRepo.findOne({ where: { id }, relations: ['user'] });
-  }
-
-  async deleteTemoignage(id: number) {
-    await this.temoignageRepo.delete(id);
-    return { message: 'Témoignage supprimé' };
+  async refuserStartup(id: number) {
+    const startup = await this.startupRepo.findOne({ where: { id }, relations: ['user'] });
+    if (!startup) throw new NotFoundException('Startup non trouvee');
+    await this.startupRepo.update(id, { statut: 'refuse' });
+    await this.userRepo.update(startup.user_id, { statut: 'inactif' });
+    try { await this.mailService.sendRefusEmail(startup.user.nom, startup.user.email); } catch(e) { console.log(e); }
+    return { message: 'Startup refusee' };
   }
 }

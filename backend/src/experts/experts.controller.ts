@@ -1,61 +1,58 @@
-import {
-  Controller, Get, Post, Put,
-  Param, Body, UseGuards, Req,
-  UploadedFile, UseInterceptors,
-} from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
-import { extname } from 'path';
+import { Controller, Get, Put, Patch, Post, Body, Param, Request, UseGuards, UseInterceptors, UploadedFile } from '@nestjs/common';
 import { ExpertsService } from './experts.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import * as path from 'path';
 
 @Controller('experts')
 export class ExpertsController {
-  constructor(private readonly expertsService: ExpertsService) {}
+  constructor(private expertsService: ExpertsService) {}
 
-  // ── Public : liste experts validés ──
   @Get()
-  findAll() {
-    return this.expertsService.findAll();
+  getAll() {
+    return this.expertsService.getListe();
   }
-
-  // ── Routes statiques AVANT :id ──
 
   @Get('moi')
   @UseGuards(JwtAuthGuard)
-  getMoi(@Req() req) {
+  getMoi(@Request() req: any) {
     return this.expertsService.getMoi(req.user.id);
+  }
+
+  @Get('liste')
+  getListe() {
+    return this.expertsService.getListe();
   }
 
   @Put('profil')
   @UseGuards(JwtAuthGuard)
-  updateProfil(@Req() req, @Body() body: any) {
+  updateProfil(@Request() req: any, @Body() body: any) {
     return this.expertsService.updateProfil(req.user.id, body);
-  }
-
-  @Post('temoignage')
-  @UseGuards(JwtAuthGuard)
-  envoyerTemoignage(@Req() req, @Body() body: { texte: string }) {
-    return this.expertsService.envoyerTemoignage(req.user.id, body.texte);
   }
 
   @Post('photo')
   @UseGuards(JwtAuthGuard)
   @UseInterceptors(FileInterceptor('photo', {
     storage: diskStorage({
-      destination: './uploads/photos',
-      filename: (req, file, cb) =>
-        cb(null, `${Date.now()}${extname(file.originalname)}`),
+      destination: path.join(process.cwd(), 'uploads', 'photos'),
+      filename: (req, file, cb) => {
+        cb(null, Date.now() + '-' + file.originalname);
+      },
     }),
   }))
-  uploadPhoto(@Req() req, @UploadedFile() file: Express.Multer.File) {
-    if (!file) return { error: 'Aucun fichier recu' };
-    return this.expertsService.updateProfil(req.user.id, { photo: file.filename });
+  uploadPhoto(@Request() req: any, @UploadedFile() file: any) {
+    if (!file) return { message: 'Aucun fichier recu' };
+    return this.expertsService.updatePhoto(req.user.id, file.filename);
   }
 
-  // ── Profil public — TOUJOURS EN DERNIER ──
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.expertsService.findOne(+id);
+  @Patch(':id/valider-modification')
+  validerModification(@Param('id') id: number) {
+    return this.expertsService.validerModification(id);
+  }
+
+  @Patch(':id/refuser-modification')
+  refuserModification(@Param('id') id: number) {
+    return this.expertsService.refuserModification(id);
   }
 }

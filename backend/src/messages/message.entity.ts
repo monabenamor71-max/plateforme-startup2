@@ -1,5 +1,5 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
-import { User } from '../users/user.entity';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, CreateDateColumn } from 'typeorm';
+import { User } from '../user/user.entity';
 
 @Entity('messages')
 export class Message {
@@ -12,7 +12,15 @@ export class Message {
   @Column()
   receiver_id: number;
 
-  @Column('text')
+  @ManyToOne(() => User)
+  @JoinColumn({ name: 'sender_id' })
+  sender: User;
+
+  @ManyToOne(() => User)
+  @JoinColumn({ name: 'receiver_id' })
+  receiver: User;
+
+  @Column({ type: 'text' })
   contenu: string;
 
   @Column({ default: false })
@@ -20,12 +28,4 @@ export class Message {
 
   @CreateDateColumn()
   createdAt: Date;
-
-  @ManyToOne(() => User, { eager: true, onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'sender_id' })
-  sender: User;
-
-  @ManyToOne(() => User, { eager: true, onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'receiver_id' })
-  receiver: User;
 }

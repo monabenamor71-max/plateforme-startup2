@@ -74,17 +74,19 @@ export default function Inscription() {
       if (!res.ok) throw new Error(data.message || "Erreur lors de l'inscription");
 
       if (data.access_token && data.user) {
-        localStorage.setItem("token", data.access_token);
-        localStorage.setItem("user", JSON.stringify(data.user));
-        const routes: Record<string, string> = {
-          startup: "/dashboard/startup",
-          expert:  "/dashboard/expert",
-          admin:   "/dashboard/admin",
-        };
-        router.push(routes[data.user.role] || "/");
-      } else {
-        router.push("/connexion?registered=true");
-      }
+  localStorage.setItem("token", data.access_token);
+  localStorage.setItem("user", JSON.stringify(data.user));
+  const routes: Record<string, string> = {
+    startup: "/dashboard/startup",
+    expert:  "/dashboard/expert",
+    admin:   "/dashboard/admin",
+  };
+  router.push(routes[data.user.role] || "/");
+} else {
+  // Sauvegarder email pour affichage sur page attente
+  localStorage.setItem("pending_email", formData.email);
+  router.push("/attente-validation");
+}
     } catch (err: any) {
       setError(err.message);
     } finally {

@@ -20,11 +20,11 @@ function FadeUp({ children, delay = 0 }: { children: React.ReactNode; delay?: nu
 
 const COLOR = "#F7B500";
 const STEPS = [
-  { num:1, icon:"🤝", title:"Onboarding & cadrage",       desc:"Découverte de votre projet, définition des objectifs et des KPI de succès. Affectation de votre expert dédié sous 48h." },
-  { num:2, icon:"📋", title:"Plan d'action personnalisé", desc:"Élaboration d'une feuille de route sur mesure avec jalons, priorités et ressources mobilisées." },
-  { num:3, icon:"🎯", title:"Coaching hebdomadaire",       desc:"Sessions de travail régulières avec votre expert : suivi des actions, déblocage d'obstacles, adaptation du plan." },
-  { num:4, icon:"📊", title:"Reporting & ajustements",     desc:"Revues mensuelles structurées : KPI, retours d'expérience, pivots stratégiques si nécessaire." },
-  { num:5, icon:"🏆", title:"Bilan & capitalisation",      desc:"Clôture de l'accompagnement avec bilan complet, recommandations pour la suite et transfert de compétences." },
+  { num:1, icon:"", title:"Onboarding & cadrage",       desc:"Découverte de votre projet, définition des objectifs et des KPI de succès. Affectation de votre expert dédié sous 48h." },
+  { num:2, icon:"", title:"Plan d'action personnalisé", desc:"Élaboration d'une feuille de route sur mesure avec jalons, priorités et ressources mobilisées." },
+  { num:3, icon:"", title:"Coaching hebdomadaire",       desc:"Sessions de travail régulières avec votre expert : suivi des actions, déblocage d'obstacles, adaptation du plan." },
+  { num:4, icon:"", title:"Reporting & ajustements",     desc:"Revues mensuelles structurées : KPI, retours d'expérience, pivots stratégiques si nécessaire." },
+  { num:5, icon:"", title:"Bilan & capitalisation",      desc:"Clôture de l'accompagnement avec bilan complet, recommandations pour la suite et transfert de compétences." },
 ];
 const INCLUS = ["Expert dédié tout au long du parcours","Sessions hebdomadaires (1h/semaine)","Accès à la plateforme BEH","Reporting mensuel structuré","Réseau partenaires & investisseurs","Support illimité par messagerie","Révisions du plan d'action incluses","Accès aux ressources premium"];
 const FORMULES = [
@@ -134,17 +134,6 @@ export default function AccompagnementPage() {
       </section>
 
       <div className="max-w-[1200px] mx-auto px-6">
-        <FadeUp><section className="py-16 border-b border-gray-100">
-          <div className="flex items-center gap-3 mb-8"><div className="bar h-8"/><h2 className="font-black text-[#0A2540] m-0 text-[26px]">Ce qui est inclus</h2></div>
-          <div className="grid grid-cols-2 gap-3">
-            {INCLUS.map((item,i)=>(
-              <div key={i} className="incl">
-                <div className="w-8 h-8 rounded-[9px] flex items-center justify-center flex-shrink-0" style={{background:"rgba(247,181,0,0.12)",border:"1px solid rgba(247,181,0,0.25)"}}><FaCheckCircle style={{color:"#b88900",fontSize:13}}/></div>
-                <span className="font-semibold text-[14px] text-gray-700">{item}</span>
-              </div>
-            ))}
-          </div>
-        </section></FadeUp>
 
         <section className="py-16 border-b border-gray-100">
           <FadeUp>

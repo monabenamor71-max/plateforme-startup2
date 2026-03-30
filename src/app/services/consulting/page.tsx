@@ -20,11 +20,11 @@ function FadeUp({ children, delay = 0 }: { children: React.ReactNode; delay?: nu
 
 const COLOR = "#3B82F6";
 const STEPS = [
-  { num:1, icon:"🔍", title:"Diagnostic & objectifs",              desc:"Entretiens, revue documentaire, données clés, définition des résultats attendus." },
-  { num:2, icon:"🗺️", title:"Feuille de route & priorisation",    desc:"Quick wins vs chantiers structurants, planning, ressources et budget." },
-  { num:3, icon:"⚙️", title:"Conception & outillage",              desc:"Processus cibles, procédures, formulaires, tableaux de bord et indicateurs." },
-  { num:4, icon:"🚀", title:"Déploiement & conduite du changement",desc:"Workshops, communication, coaching managers, formation des équipes." },
-  { num:5, icon:"📈", title:"Suivi de la performance",             desc:"KPI, revues de performance, audits internes, boucle d'amélioration continue." },
+  { num:1, icon:"", title:"Diagnostic & objectifs",              desc:"Entretiens, revue documentaire, données clés, définition des résultats attendus." },
+  { num:2, icon:"", title:"Feuille de route & priorisation",    desc:"Quick wins vs chantiers structurants, planning, ressources et budget." },
+  { num:3, icon:"", title:"Conception & outillage",              desc:"Processus cibles, procédures, formulaires, tableaux de bord et indicateurs." },
+  { num:4, icon:"", title:"Déploiement & conduite du changement",desc:"Workshops, communication, coaching managers, formation des équipes." },
+  { num:5, icon:"", title:"Suivi de la performance",             desc:"KPI, revues de performance, audits internes, boucle d'amélioration continue." },
 ];
 const EXPERTISES = ["Stratégie & Business Model","Organisation & Processus","Finance & Contrôle de gestion","Marketing & Développement commercial","RH & Management","OKR / KPI / Tableaux de bord","Lean • Kaizen • AMDEC","Cartographie des processus"];
 const LIVRABLES = ["Rapport de diagnostic complet","Feuille de route priorisée","Cartographie des processus","Plan de transformation","Tableaux de bord personnalisés","Support de formation équipes"];
@@ -170,21 +170,7 @@ export default function ConsultingPage() {
           </div>
         </section>
 
-        {/* LIVRABLES */}
-        <FadeUp><section className="py-16 border-b border-gray-100">
-          <div className="flex items-center gap-3 mb-8"><div className="bar h-8"/><h2 className="font-black text-[#0A2540] m-0 text-[26px]">Livrables types</h2></div>
-          <div className="grid grid-cols-2 gap-3">
-            {LIVRABLES.map((l,i)=>(
-              <div key={i} className="liv">
-                <div className="w-8 h-8 rounded-[9px] flex items-center justify-center flex-shrink-0" style={{background:`${COLOR}15`,border:`1px solid ${COLOR}28`}}>
-                  <FaCheckCircle style={{color:COLOR,fontSize:13}}/>
-                </div>
-                <span className="font-semibold text-[14px] text-gray-700">{l}</span>
-              </div>
-            ))}
-          </div>
-        </section></FadeUp>
-
+      
         {/* CTA */}
         <FadeUp><section className="py-16 border-b border-gray-100">
           <div className="rounded-[26px] overflow-hidden relative" style={{background:"linear-gradient(135deg,#0A2540,#1a3a6e)",padding:"52px 56px"}}>

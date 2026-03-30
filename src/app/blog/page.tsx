@@ -107,7 +107,7 @@ export default function BlogPage() {
             </svg>
             <div>
               <div className="font-black text-[17px] text-[#0A2540] leading-none">Business <span className="text-[#F7B500]">Expert</span> Hub</div>
-              <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-[0.8px] mt-[3px]">Plateforme Experts &amp; Startups</div>
+              
             </div>
           </Link>
           <nav className="flex gap-6 items-center">

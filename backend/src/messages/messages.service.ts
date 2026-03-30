@@ -10,51 +10,45 @@ export class MessagesService {
     private messageRepo: Repository<Message>,
   ) {}
 
-  async envoyer(senderId: number, receiverId: number, contenu: string) {
-    const msg = this.messageRepo.create({
-      sender_id: senderId,
-      receiver_id: receiverId,
-      contenu,
-      lu: false,
-    } as any);
-    return this.messageRepo.save(msg as any);
+  async send(sender_id: number, receiver_id: number, contenu: string) {
+    const msg = this.messageRepo.create({ sender_id, receiver_id, contenu });
+    return this.messageRepo.save(msg);
   }
 
-  async getMesMessages(userId: number) {
+  async getConversation(user1_id: number, user2_id: number) {
     return this.messageRepo.find({
       where: [
-        { sender_id: userId } as any,
-        { receiver_id: userId } as any,
+        { sender_id: user1_id, receiver_id: user2_id },
+        { sender_id: user2_id, receiver_id: user1_id },
       ],
-      order: { createdAt: 'ASC' },
       relations: ['sender', 'receiver'],
+      order: { createdAt: 'ASC' },
     });
   }
 
-  async getConversation(userId1: number, userId2: number) {
-    const msgs = await this.messageRepo.find({
+  async getMyMessages(userId: number) {
+    return this.messageRepo.find({
+      where: [
+        { sender_id: userId },
+        { receiver_id: userId },
+      ],
       relations: ['sender', 'receiver'],
-      order: { createdAt: 'ASC' },
+      order: { createdAt: 'DESC' },
     });
-    return msgs.filter(m =>
-      (m.sender_id === userId1 && m.receiver_id === userId2) ||
-      (m.sender_id === userId2 && m.receiver_id === userId1)
+  }
+
+  async markAsRead(userId: number, senderId: number) {
+    await this.messageRepo.update(
+      { receiver_id: userId, sender_id: senderId },
+      { lu: true },
     );
+    return { message: 'Lu' };
   }
 
-  async marquerLu(messageId: number) {
-    await this.messageRepo.update(messageId, { lu: true });
-    return { success: true };
-  }
-
-  async getMessagesExpert(expertUserId: number) {
-    return this.messageRepo.find({
-      where: [
-        { sender_id: expertUserId } as any,
-        { receiver_id: expertUserId } as any,
-      ],
-      order: { createdAt: 'ASC' },
-      relations: ['sender', 'receiver'],
+  async getUnread(userId: number) {
+    const msgs = await this.messageRepo.find({
+      where: { receiver_id: userId, lu: false },
     });
+    return { count: msgs.length };
   }
 }

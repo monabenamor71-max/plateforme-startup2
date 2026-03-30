@@ -1,14 +1,12 @@
-import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { DisponibilitesService } from './disponibilites.service';
-import { DisponibilitesController } from './disponibilites.controller';
-import { Disponibilite } from './disponibilite.entity';
-import { ExpertsModule } from '../experts/experts.module';
+import { Module } from "@nestjs/common";
+import { TypeOrmModule } from "@nestjs/typeorm";
+import { DisponibilitesService } from "./disponibilites.service";
+import { DisponibilitesController } from "./disponibilites.controller";
+import { Disponibilite } from "./disponibilite.entity";
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Disponibilite]), ExpertsModule],
-  providers: [DisponibilitesService],
+  imports: [TypeOrmModule.forFeature([Disponibilite])],
   controllers: [DisponibilitesController],
-  exports: [DisponibilitesService],
+  providers: [DisponibilitesService],
 })
 export class DisponibilitesModule {}

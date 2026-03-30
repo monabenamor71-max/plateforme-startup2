@@ -20,11 +20,11 @@ function FadeUp({ children, delay = 0 }: { children: React.ReactNode; delay?: nu
 
 const COLOR = "#8B5CF6";
 const STEPS = [
-  { num:1, icon:"📋", title:"Brief & cadrage",          desc:"Objectifs, périmètre, contraintes et délais. Collecte des documents existants." },
-  { num:2, icon:"🔍", title:"Visite & audit terrain",   desc:"Relevés, interviews, photos techniques, vérifications ciblées." },
-  { num:3, icon:"📐", title:"Études & dimensionnement", desc:"Calculs, simulations, choix techniques, plans & schémas." },
-  { num:4, icon:"📊", title:"Rapport & plan d'actions", desc:"Écarts, niveaux de criticité, priorisation et budgétisation." },
-  { num:5, icon:"✅", title:"Mise en conformité",       desc:"Accompagnement, tests, réception et DOE." },
+  { num:1, icon:"", title:"Brief & cadrage",          desc:"Objectifs, périmètre, contraintes et délais. Collecte des documents existants." },
+  { num:2, icon:"", title:"Visite & audit terrain",   desc:"Relevés, interviews, photos techniques, vérifications ciblées." },
+  { num:3, icon:"", title:"Études & dimensionnement", desc:"Calculs, simulations, choix techniques, plans & schémas." },
+  { num:4, icon:"", title:"Rapport & plan d'actions", desc:"Écarts, niveaux de criticité, priorisation et budgétisation." },
+  { num:5, icon:"", title:"Mise en conformité",       desc:"Accompagnement, tests, réception et DOE." },
 ];
 const EXPERTISES = ["Sécurité incendie (SSI / sprinklers)","Électricité : schémas & sélectivité","ATEX / Machines","Conformité réglementaire","Analyse des risques industriels","Audit énergétique","Plans & schémas techniques","Mise aux normes industrielles"];
 const PLATES = [
@@ -173,39 +173,6 @@ export default function AuditPage() {
             </div>
           </div>
         </section>
-
-        {/* PLATES DE COURS */}
-        <FadeUp><section className="py-16 border-b border-gray-100">
-          <div className="flex items-center gap-3 mb-2"><div className="bar h-8"/><h2 className="font-black text-[#0A2540] m-0 text-[26px]">Plates de cours (formation professionnelle)</h2></div>
-          <p className="text-gray-500 text-[15px] mb-8 pl-4">Formations complémentaires à l&apos;audit terrain</p>
-          <div className="grid grid-cols-2 gap-4">
-            {PLATES.map((p,i)=>(
-              <div key={i} className="pc">
-                <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 rounded-[12px] flex items-center justify-center flex-shrink-0" style={{background:`${COLOR}12`,border:`1px solid ${COLOR}22`}}>
-                    <FaGraduationCap style={{color:COLOR,fontSize:16}}/>
-                  </div>
-                  <div>
-                    <div className="font-black text-[#0A2540] text-[15px] mb-1.5">{p.title}</div>
-                    <div className="text-gray-500 text-[13px] leading-[1.6]">{p.desc}</div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section></FadeUp>
-
-        <FadeUp><section className="py-16 border-b border-gray-100">
-          <div className="flex items-center gap-3 mb-8"><div className="bar h-8"/><h2 className="font-black text-[#0A2540] m-0 text-[26px]">Livrables types</h2></div>
-          <div className="grid grid-cols-2 gap-3">
-            {LIVRABLES.map((l,i)=>(
-              <div key={i} className="liv">
-                <div className="w-8 h-8 rounded-[9px] flex items-center justify-center flex-shrink-0" style={{background:`${COLOR}15`,border:`1px solid ${COLOR}28`}}><FaCheckCircle style={{color:COLOR,fontSize:13}}/></div>
-                <span className="font-semibold text-[14px] text-gray-700">{l}</span>
-              </div>
-            ))}
-          </div>
-        </section></FadeUp>
 
         <FadeUp><section className="py-16 border-b border-gray-100">
           <div className="rounded-[26px] overflow-hidden relative" style={{background:"linear-gradient(135deg,#2d1b5e,#0A2540)",padding:"52px 56px"}}>

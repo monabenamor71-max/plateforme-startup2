@@ -1,19 +1,18 @@
-import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { AdminService } from './admin.service';
-import { AdminController } from './admin.controller';
-import { User } from '../users/user.entity';
-import { Expert } from '../experts/expert.entity';
-import { Startup } from '../startups/startup.entity';
-import { Temoignage } from '../temoignages/temoignage.entity'; // ← import
-import { AuthModule } from '../auth/auth.module';
+import { Module } from "@nestjs/common";
+import { TypeOrmModule } from "@nestjs/typeorm";
+import { AdminService } from "./admin.service";
+import { AdminController } from "./admin.controller";
+import { User } from "../user/user.entity";
+import { Expert } from "../user/expert.entity";
+import { Startup } from "../user/startup.entity";
+import { MailModule } from "../mail/mail.module";
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User, Expert, Startup, Temoignage]), // ← ajout
-    AuthModule,
+    TypeOrmModule.forFeature([User, Expert, Startup]),
+    MailModule,
   ],
-  providers: [AdminService],
   controllers: [AdminController],
+  providers: [AdminService],
 })
 export class AdminModule {}

@@ -453,9 +453,7 @@ export default function APropos() {
                 </div>
               ))}
             </div>
-            <Link href="/contact" className="btn-gold">
-              Nous rejoindre <FaArrowRight size={12}/>
-            </Link>
+          
           </FadeUp>
 
           <FadeUp delay={0.22}>

@@ -448,17 +448,22 @@ export default function Home() {
       <header style={{ background:"#fff", position:"sticky", top:0, zIndex:100, boxShadow:"0 1px 0 #EEF2F7,0 4px 18px rgba(10,37,64,.05)" }}>
         <div style={{ maxWidth:1280, margin:"0 auto", padding:"0 28px", height:76, display:"flex", alignItems:"center", justifyContent:"space-between", gap:20 }}>
 
-          {/* Logo */}
-          <Link href="/" style={{ display:"flex", alignItems:"center", gap:11, textDecoration:"none", flexShrink:0 }}>
-            <svg width="40" height="40" viewBox="0 0 46 46" fill="none">
-              <rect width="46" height="46" rx="11" fill="#0A2540" />
-              <text x="50%" y="55%" dominantBaseline="middle" textAnchor="middle" fill="#F7B500" fontSize="14" fontWeight="900" fontFamily="Arial">BEH</text>
-            </svg>
-            <span style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:19, color:"#0A2540" }}>
-              Business <em style={{ color:"#F7B500" }}>Expert</em> Hub
-            </span>
-          </Link>
-
+       {/* Logo */}
+<Link href="/" style={{ display: "flex", alignItems: "center", gap: 11, textDecoration: "none", flexShrink: 0 }}>
+  <svg width="40" height="40" viewBox="0 0 46 46" fill="none">
+    <rect width="46" height="46" rx="11" fill="#0A2540" />
+    <text x="50%" y="55%" dominantBaseline="middle" textAnchor="middle" fill="#F7B500" fontSize="14" fontWeight="900" fontFamily="Arial">BEH</text>
+  </svg>
+  <span style={{ 
+    fontFamily: "'Inter', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif", 
+    fontWeight: 700, 
+    fontSize: 18, 
+    color: "#0A2540",
+    letterSpacing: "-0.3px"
+  }}>
+    Business <span style={{ color: "#F7B500" }}>Expert</span> Hub
+  </span>
+</Link>
           {/* Navigation */}
           <nav style={{ display:"flex", gap:20, alignItems:"center", flex:1, justifyContent:"center" }}>
             <Link href="/" className="nl" style={{ color:"#F7B500", fontWeight:700 }}>Accueil</Link>
@@ -558,152 +563,145 @@ export default function Home() {
           </Reveal>
         </div>
       </section>
+{/* ════════════════ EXPERTS ════════════════ */}
+<section style={{ padding:"100px 28px", position:"relative", overflow:"hidden", background:"#FFFFFF" }}>
+  <div style={{ position:"absolute", inset:0, backgroundImage:"radial-gradient(rgba(0,0,0,.02) 1px,transparent 1px)", backgroundSize:"44px 44px", pointerEvents:"none" }} />
+  <div style={{ maxWidth:1240, margin:"0 auto", position:"relative", zIndex:10 }}>
+    <Reveal>
+      <div style={{ textAlign:"center", marginBottom:68 }}>
+        <span className="ey" style={{ justifyContent:"center", marginBottom:16 }}>Notre équipe</span>
+        <h2 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:"clamp(34px,4vw,52px)", fontWeight:700, color:"#0A2540", marginBottom:16 }}>
+          Nos <span style={{ color:"#F7B500" }}>Experts</span> certifiés
+        </h2>
+        <p style={{ fontSize:15, color:"#64748B", maxWidth:500, margin:"0 auto", lineHeight:1.8 }}>
+          Des experts validés et certifiés prêts à accompagner votre startup
+        </p>
+      </div>
+    </Reveal>
 
-      {/* ════════════════ EXPERTS ════════════════ */}
-      <section style={{ padding:"100px 28px", position:"relative", overflow:"hidden", background:"#FFFFFF" }}>
-        <div style={{ position:"absolute", inset:0, backgroundImage:"radial-gradient(rgba(0,0,0,.02) 1px,transparent 1px)", backgroundSize:"44px 44px", pointerEvents:"none" }} />
-        <div style={{ maxWidth:1240, margin:"0 auto", position:"relative", zIndex:10 }}>
-          <Reveal>
-            <div style={{ textAlign:"center", marginBottom:68 }}>
-              <span className="ey" style={{ justifyContent:"center", marginBottom:16 }}>Notre équipe</span>
-              <h2 className="text-center font-bold text-5xl leading-tight mb-6 text-[#0A2540]">
-                Nos <span className="text-[#F7B500]">Experts</span> certifiés
-              </h2>
-            </div>
-          </Reveal>
+    {loading ? (
+      <div style={{ textAlign:"center", padding:"72px 0" }}>
+        <div style={{ width:42, height:42, border:"3px solid #F7B500", borderTopColor:"transparent", borderRadius:"50%", animation:"spin .8s linear infinite", margin:"0 auto" }} />
+      </div>
+    ) : experts.length === 0 ? (
+      <div style={{ textAlign:"center", padding:"72px 0" }}>
+        <div style={{ fontSize:48, marginBottom:16 }}>🎯</div>
+        <div style={{ color:"#94A3B8", fontSize:15 }}>Aucun expert disponible pour le moment.</div>
+      </div>
+    ) : (
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(290px,1fr))", gap:24 }}>
+        {experts.map((ex, i) => {
+          const name = getName(ex);
+          const ini  = getIni(ex);
+          const dsp  = dispos[ex.id] || [];
+          return (
+            <Reveal key={ex.id} delay={i * .09}>
+              <div className="ec" style={{ height:"100%", borderRadius:20, overflow:"hidden", display:"flex", flexDirection:"column" }}>
 
-          {loading ? (
-            <div style={{ textAlign:"center", padding:"72px 0" }}>
-              <div style={{ width:42, height:42, border:"3px solid #F7B500", borderTopColor:"transparent", borderRadius:"50%", animation:"spin .8s linear infinite", margin:"0 auto" }} />
-            </div>
-          ) : experts.length === 0 ? (
-            <div style={{ textAlign:"center", padding:"72px 0", color:"#94A3B8", fontSize:15 }}>Aucun expert disponible pour le moment.</div>
-          ) : (
-            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(278px,1fr))", gap:20 }}>
-              {experts.map((ex, i) => {
-                const name = getName(ex); const ini = getIni(ex); const dsp = dispos[ex.id] || [];
-                return (
-                  <Reveal key={ex.id} delay={i * .09}>
-                    <div className="ec" style={{ height:"100%", borderRadius:16, overflow:"hidden", display:"flex", flexDirection:"column" }}>
+                {/* Bande colorée */}
+                <div style={{ height:4, background: ex.disponible ? "linear-gradient(90deg,#0A2540,#F7B500)" : "#E2E8F0", flexShrink:0 }} />
 
-                      {/* Bande colorée supérieure — verte si dispo, grise sinon */}
-                      <div style={{ height:3, background: ex.disponible ? "linear-gradient(90deg,#0A2540,#F7B500)" : "#E2E8F0", flexShrink:0 }} />
+                {/* Photo de profil */}
+                <div style={{ position:"relative", height:180, background:"linear-gradient(135deg,#0A2540,#1a3f6f)", display:"flex", alignItems:"center", justifyContent:"center", overflow:"hidden" }}>
+                  {ex.photo ? (
+                    <img
+                      src={`http://localhost:3001/uploads/photos/${ex.photo}`}
+                      alt={name}
+                      style={{ width:"100%", height:"100%", objectFit:"cover" }}
+                      onError={(e) => {
+                        (e.currentTarget as HTMLImageElement).style.display = "none";
+                      }}
+                    />
+                  ) : (
+                    <div style={{ width:80, height:80, borderRadius:"50%", background:"rgba(247,181,0,.2)", border:"3px solid #F7B500", display:"flex", alignItems:"center", justifyContent:"center", color:"#F7B500", fontWeight:800, fontSize:28 }}>
+                      {ini}
+                    </div>
+                  )}
+                  {/* Badge disponibilité */}
+                  <div style={{ position:"absolute", top:12, right:12, fontSize:11, fontWeight:700, padding:"4px 10px", borderRadius:99, background: ex.disponible ? "#10B981" : "#94A3B8", color:"#fff" }}>
+                    {ex.disponible ? "✓ Disponible" : "Occupé"}
+                  </div>
+                </div>
 
-                      <div style={{ padding:"24px 24px 0", flex:1, display:"flex", flexDirection:"column" }}>
+                <div style={{ padding:"20px 22px 0", flex:1, display:"flex", flexDirection:"column" }}>
+                  {/* Nom + domaine */}
+                  <div style={{ marginBottom:14 }}>
+                    <h3 style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, color:"#0A2540", fontSize:20, marginBottom:6 }}>{name}</h3>
+                    <span style={{ fontSize:12, fontWeight:700, color:"#92400E", background:"#FEF3C7", borderRadius:6, padding:"3px 10px" }}>
+                      {ex.domaine || "Expert"}
+                    </span>
+                  </div>
 
-                        {/* En-tête : avatar + nom + badge dispo */}
-                        <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", marginBottom:18 }}>
+                  {/* Description */}
+                  {ex.description && (
+                    <p style={{ fontSize:13, color:"#64748B", lineHeight:1.75, marginBottom:14, display:"-webkit-box", WebkitLineClamp:3, WebkitBoxOrient:"vertical" as any, overflow:"hidden" }}>
+                      {ex.description}
+                    </p>
+                  )}
 
-                          <div style={{ display:"flex", alignItems:"center", gap:13 }}>
-                            {/* Avatar carré, initiales ou photo */}
-                            <div style={{ width:48, height:48, borderRadius:10, overflow:"hidden", flexShrink:0, background:"#0A2540", display:"flex", alignItems:"center", justifyContent:"center", color:"#F7B500", fontWeight:700, fontSize:15, letterSpacing:.5 }}>
-                              {ex.photo
-                                ? <img src={`http://localhost:3001/uploads/photos/${ex.photo}`} alt={name} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
-                                : ini}
-                            </div>
-                            <div>
-                              <h3 style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, color:"#0A2540", fontSize:18, margin:"0 0 4px", lineHeight:1.2 }}>{name}</h3>
-                              <span style={{ fontSize:11, fontWeight:600, color:"#92400E", background:"#FEF3C7", borderRadius:5, padding:"2px 8px", letterSpacing:.2 }}>
-                                {ex.domaine || "Expert"}
-                              </span>
-                            </div>
-                          </div>
-
-                          {/* Badge disponibilité — texte seul, sobre */}
-                          <span style={{
-                            fontSize:10.5, fontWeight:600, padding:"3px 9px", borderRadius:5, flexShrink:0, marginTop:2,
-                            background: ex.disponible ? "#F0FDF4" : "#F8FAFC",
-                            color:      ex.disponible ? "#15803D"  : "#94A3B8",
-                            border:    `1px solid ${ex.disponible ? "#BBF7D0" : "#E2E8F0"}`
-                          }}>
-                            {ex.disponible ? "Disponible" : "Occupé"}
-                          </span>
-                        </div>
-
-                        {/* Séparateur fin */}
-                        <div style={{ height:"0.5px", background:"#F1F5F9", marginBottom:16 }} />
-
-                        {/* Description courte */}
-                        {ex.description && (
-                          <p style={{ fontSize:13, color:"#64748B", lineHeight:1.75, marginBottom:16, display:"-webkit-box", WebkitLineClamp:2, WebkitBoxOrient:"vertical", overflow:"hidden" }}>
-                            {ex.description}
-                          </p>
-                        )}
-
-                        {/* Méta données : tableau clé / valeur, propre et lisible */}
-                        {(ex.experience || ex.localisation || ex.tarif) && (
-                          <div style={{ display:"flex", flexDirection:"column", gap:8, marginBottom:16 }}>
-                            {ex.experience && (
-                              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-                                <span style={{ fontSize:11.5, color:"#94A3B8", fontWeight:500 }}>Expérience</span>
-                                <span style={{ fontSize:12, color:"#334155", fontWeight:600 }}>{ex.experience}</span>
-                              </div>
-                            )}
-                            {ex.localisation && (
-                              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-                                <span style={{ fontSize:11.5, color:"#94A3B8", fontWeight:500 }}>Localisation</span>
-                                <span style={{ fontSize:12, color:"#334155", fontWeight:600 }}>{ex.localisation}</span>
-                              </div>
-                            )}
-                            {ex.tarif && (
-                              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-                                <span style={{ fontSize:11.5, color:"#94A3B8", fontWeight:500 }}>Tarif</span>
-                                <span style={{ fontSize:12, color:"#0A2540", fontWeight:700 }}>{ex.tarif}</span>
-                              </div>
-                            )}
-                          </div>
-                        )}
-
-                        {/* Créneaux disponibles */}
-                        {dsp.length > 0 && (
-                          <div style={{ marginBottom:16 }}>
-                            <p style={{ fontSize:10, fontWeight:700, color:"#CBD5E1", textTransform:"uppercase", letterSpacing:"1.5px", marginBottom:7 }}>Prochains créneaux</p>
-                            <div style={{ display:"flex", flexWrap:"wrap", gap:5 }}>
-                              {dsp.slice(0, 3).map((d, idx) => (
-                                <span key={idx} style={{ fontSize:11, background:"#F8FAFC", color:"#475569", padding:"4px 9px", borderRadius:5, fontWeight:500, border:"1px solid #E2E8F0" }}>
-                                  {new Date(d.date).toLocaleDateString("fr-FR", { day:"numeric", month:"short" })} · {(d.heure || "").slice(0, 5)}
-                                </span>
-                              ))}
-                              {dsp.length > 3 && (
-                                <span style={{ fontSize:11, color:"#94A3B8", alignSelf:"center" }}>+{dsp.length - 3}</span>
-                              )}
-                            </div>
-                          </div>
-                        )}
+                  {/* Infos */}
+                  <div style={{ display:"flex", flexDirection:"column", gap:6, marginBottom:14 }}>
+                    {ex.experience && (
+                      <div style={{ display:"flex", justifyContent:"space-between" }}>
+                        <span style={{ fontSize:12, color:"#94A3B8" }}>Expérience</span>
+                        <span style={{ fontSize:12, color:"#334155", fontWeight:600 }}>{ex.experience}</span>
                       </div>
+                    )}
+                    {ex.localisation && (
+                      <div style={{ display:"flex", justifyContent:"space-between" }}>
+                        <span style={{ fontSize:12, color:"#94A3B8" }}>Localisation</span>
+                        <span style={{ fontSize:12, color:"#334155", fontWeight:600 }}>{ex.localisation}</span>
+                      </div>
+                    )}
+                  </div>
 
-                      {/* Footer de la carte : deux boutons textuels */}
-                      <div style={{ padding:"14px 24px 22px", display:"flex", gap:8, marginTop:"auto" }}>
-                        <button
-                          onClick={() => setModal(true)}
-                          style={{ flex:1, fontFamily:"inherit", fontSize:13, fontWeight:700, background:"#0A2540", color:"#fff", border:"none", borderRadius:9, padding:"11px 16px", cursor:"pointer", letterSpacing:.2, transition:"background .22s, color .22s" }}
-                          onMouseEnter={e => { e.currentTarget.style.background="#F7B500"; e.currentTarget.style.color="#0A2540"; }}
-                          onMouseLeave={e => { e.currentTarget.style.background="#0A2540"; e.currentTarget.style.color="#fff"; }}>
-                          Voir le profil
-                        </button>
-                        <button
-                          onClick={() => setModal(true)}
-                          style={{ padding:"11px 18px", background:"transparent", border:"1.5px solid #E2E8F0", borderRadius:9, fontFamily:"inherit", fontSize:13, fontWeight:600, color:"#334155", cursor:"pointer", whiteSpace:"nowrap", transition:"border-color .22s, color .22s" }}
-                          onMouseEnter={e => { e.currentTarget.style.borderColor="#0A2540"; e.currentTarget.style.color="#0A2540"; }}
-                          onMouseLeave={e => { e.currentTarget.style.borderColor="#E2E8F0"; e.currentTarget.style.color="#334155"; }}>
-                          Réserver
-                        </button>
+                  {/* Créneaux */}
+                  {dsp.length > 0 && (
+                    <div style={{ marginBottom:14 }}>
+                      <p style={{ fontSize:10, fontWeight:700, color:"#CBD5E1", textTransform:"uppercase" as const, letterSpacing:"1.5px", marginBottom:7 }}>Prochains créneaux</p>
+                      <div style={{ display:"flex", flexWrap:"wrap" as const, gap:5 }}>
+                        {dsp.slice(0,3).map((d, idx) => (
+                          <span key={idx} style={{ fontSize:11, background:"#F8FAFC", color:"#475569", padding:"4px 9px", borderRadius:6, fontWeight:500, border:"1px solid #E2E8F0" }}>
+                            📅 {new Date(d.date).toLocaleDateString("fr-FR", { day:"numeric", month:"short" })}
+                          </span>
+                        ))}
+                        {dsp.length > 3 && <span style={{ fontSize:11, color:"#94A3B8", alignSelf:"center" }}>+{dsp.length-3}</span>}
                       </div>
                     </div>
-                  </Reveal>
-                );
-              })}
-            </div>
-          )}
+                  )}
+                </div>
 
-          <Reveal delay={.38}>
-            <div style={{ textAlign:"center", marginTop:52 }}>
-              <Link href="/experts" className="bg">Voir tous nos experts <FaArrowRight size={12} /></Link>
-            </div>
-          </Reveal>
-        </div>
-      </section>
+                {/* Boutons */}
+                <div style={{ padding:"14px 22px 22px", display:"flex", gap:8, marginTop:"auto" }}>
+                  <button
+                    onClick={() => setModal(true)}
+                    style={{ flex:1, fontFamily:"inherit", fontSize:13, fontWeight:700, background:"#0A2540", color:"#fff", border:"none", borderRadius:10, padding:"11px 14px", cursor:"pointer", transition:"all .22s", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}
+                    onMouseEnter={e => { e.currentTarget.style.background="#F7B500"; e.currentTarget.style.color="#0A2540"; }}
+                    onMouseLeave={e => { e.currentTarget.style.background="#0A2540"; e.currentTarget.style.color="#fff"; }}>
+                    💬 Message
+                  </button>
+                  <button
+                    onClick={() => setModal(true)}
+                    style={{ flex:1, fontFamily:"inherit", fontSize:13, fontWeight:700, background:"#F7B500", color:"#0A2540", border:"none", borderRadius:10, padding:"11px 14px", cursor:"pointer", transition:"all .22s", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}
+                    onMouseEnter={e => { e.currentTarget.style.background="#e6a800"; }}
+                    onMouseLeave={e => { e.currentTarget.style.background="#F7B500"; }}>
+                    📅 Réserver
+                  </button>
+                </div>
+              </div>
+            </Reveal>
+          );
+        })}
+      </div>
+    )}
 
+    <Reveal delay={.38}>
+      <div style={{ textAlign:"center", marginTop:52 }}>
+        <Link href="/experts" className="bg">Voir tous nos experts <FaArrowRight size={12} /></Link>
+      </div>
+    </Reveal>
+  </div>
+</section>
       {/* ════════════════ PARTENAIRES ════════════════ */}
       <section style={{ padding:"72px 0", background:"#FFFFFF", overflow:"hidden" }}>
         <div style={{ maxWidth:1200, margin:"0 auto", padding:"0 28px", marginBottom:48 }}>
@@ -878,7 +876,7 @@ export default function Home() {
                   <text x="50%" y="55%" dominantBaseline="middle" textAnchor="middle" fill="#F7B500" fontSize="14" fontWeight="900" fontFamily="Arial">BEH</text>
                 </svg>
                 <span style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:16, color:"#fff" }}>
-                  Business <em style={{ color:"#F7B500" }}>Expert</em> Hub
+                   Business <span style={{ color: "#F7B500" }}>Expert</span> Hub
                 </span>
               </Link>
               <p style={{ color:"rgba(255,255,255,.28)", fontSize:13.5, lineHeight:1.9, marginBottom:28, maxWidth:280 }}>

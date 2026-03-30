@@ -1,84 +1,53 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { Expert } from './expert.entity';
-import { Temoignage } from '../temoignages/temoignage.entity';
+import { Injectable } from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
+import { Expert } from "../user/expert.entity";
+import { User } from "../user/user.entity";
+import { MailService } from "../mail/mail.service";
 
 @Injectable()
 export class ExpertsService {
   constructor(
-    @InjectRepository(Expert)
-    private expertRepo: Repository<Expert>,
-    @InjectRepository(Temoignage)
-    private temoignageRepo: Repository<Temoignage>,
+    @InjectRepository(Expert) private expertRepo: Repository<Expert>,
+    @InjectRepository(User) private userRepo: Repository<User>,
+    private mailService: MailService,
   ) {}
 
-  async findAll(): Promise<Expert[]> {
-    return this.expertRepo.find({
-      where: { valide: true },
-      relations: ['user'],
-    });
-  }
-
-  async findOne(id: number): Promise<Expert> {
-    const expert = await this.expertRepo.findOne({
-      where: { id },
-      relations: ['user'],
-    });
-    if (!expert) throw new NotFoundException('Expert non trouve');
-    return expert;
-  }
-
-  async findByUser(userId: number): Promise<Expert | null> {
-    return this.expertRepo.findOne({
-      where: { user_id: userId } as any,
-      relations: ['user'],
-    });
-  }
-
-  async create(userId: number, data: any): Promise<Expert> {
-    const existing = await this.findByUser(userId);
-    if (existing) return existing;
-    const raw = this.expertRepo.create({ user_id: userId, valide: false, ...data } as any);
-    const saved = await this.expertRepo.save(raw as any);
-    return saved as any;
-  }
-
   async getMoi(userId: number) {
-    const expert = await this.findByUser(userId);
-    if (!expert) throw new NotFoundException('Profil expert non trouve');
-    const temoignages = await this.temoignageRepo.find({
-      where: { user_id: userId } as any,
-      order: { createdAt: 'DESC' },
-    });
-    return { ...expert, temoignages };
+    const expert = await this.expertRepo.findOne({ where: { user_id: userId }, relations: ["user"] });
+    if (!expert) return null;
+    return { ...expert, nom: expert.user.nom, prenom: expert.user.prenom, email: expert.user.email, telephone: expert.user.telephone, valide: expert.statut === "valide" };
   }
 
-  async updateProfil(userId: number, data: any): Promise<Expert> {
-    const existing = await this.findByUser(userId);
-    if (!existing) {
-      return this.create(userId, data);
-    }
-    await this.expertRepo.update(existing.id, data);
-    const updated = await this.expertRepo.findOne({ where: { id: existing.id }, relations: ['user'] });
-    return updated as Expert;
+  async getListe() {
+    return this.expertRepo.find({ where: { statut: "valide" }, relations: ["user"] });
   }
 
-  async envoyerTemoignage(userId: number, texte: string) {
-    const temo = this.temoignageRepo.create({
-      user_id: userId,
-      texte,
-      statut: 'en_attente',
-    } as any);
-    return this.temoignageRepo.save(temo);
+  async updateProfil(userId: number, body: any) {
+    const expert = await this.expertRepo.findOne({ where: { user_id: userId }, relations: ["user"] });
+    if (!expert) return { message: "Expert non trouve" };
+    const modifications = JSON.stringify({ domaine: body.domaine, description: body.description, localisation: body.localisation, experience: body.experience, disponibilite: body.disponible ? "disponible" : "non disponible", telephone: body.telephone });
+    await this.expertRepo.update({ user_id: userId }, { modifications_en_attente: modifications, modification_demandee: true });
+    try { await this.mailService.sendAdminNotification(expert.user.nom, "Modification profil expert", expert.user.email); } catch(e) { console.log(e.message); }
+    return { message: "Modification envoyee a admin" };
   }
 
-  async update(id: number, data: any) {
-    await this.expertRepo.update(id, data);
-    return this.expertRepo.findOne({ where: { id }, relations: ['user'] });
+  async validerModification(expertId: number) {
+    const expert = await this.expertRepo.findOne({ where: { id: expertId } });
+    if (!expert || !expert.modifications_en_attente) return { message: "Aucune modification" };
+    const mods = JSON.parse(expert.modifications_en_attente);
+    await this.expertRepo.update(expertId, { domaine: mods.domaine, description: mods.description, localisation: mods.localisation, experience: mods.experience, disponibilite: mods.disponibilite, modifications_en_attente: "", modification_demandee: false });
+    if (mods.telephone) await this.userRepo.update(expert.user_id, { telephone: mods.telephone });
+    return { message: "Modification validee" };
   }
 
-  async remove(id: number): Promise<void> {
-    await this.expertRepo.delete(id);
+  async refuserModification(expertId: number) {
+    await this.expertRepo.update(expertId, { modifications_en_attente: "", modification_demandee: false });
+    return { message: "Modification refusee" };
+  }
+
+  async updatePhoto(userId: number, filename: string) {
+    await this.expertRepo.update({ user_id: userId }, { photo: filename });
+    return { message: "Photo mise a jour" };
   }
 }
