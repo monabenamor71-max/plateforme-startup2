@@ -9,12 +9,14 @@ import { StartupsModule } from './startups/startups.module';
 import { RendezVousModule } from './rendez-vous/rendez-vous.module';
 import { DisponibilitesModule } from './disponibilites/disponibilites.module';
 import { MessagesModule } from './messages/messages.module';
+import { TemoignagesModule } from './temoignages/temoignages.module';
 import { User } from './user/user.entity';
 import { Expert } from './user/expert.entity';
 import { Startup } from './user/startup.entity';
 import { Rendezvous } from './rendez-vous/rendezvous.entity';
 import { Disponibilite } from './disponibilites/disponibilite.entity';
 import { Message } from './messages/message.entity';
+import { Temoignage } from './temoignages/temoignage.entity';
 
 @Module({
   imports: [
@@ -25,7 +27,7 @@ import { Message } from './messages/message.entity';
       username: 'root',
       password: '',
       database: 'consulting_platform',
-      entities: [User, Expert, Startup, Rendezvous, Disponibilite, Message],
+      entities: [User, Expert, Startup, Rendezvous, Disponibilite, Message, Temoignage],
       synchronize: true,
       logging: false,
     }),
@@ -38,6 +40,7 @@ import { Message } from './messages/message.entity';
     RendezVousModule,
     DisponibilitesModule,
     MessagesModule,
+    TemoignagesModule,
   ],
 })
 export class AppModule {}

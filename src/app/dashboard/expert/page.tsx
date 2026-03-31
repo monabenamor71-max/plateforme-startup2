@@ -2,33 +2,33 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
-type Tab = "dashboard" | "profil" | "rendezvous" | "disponibilites" | "messages";
+type Tab = "dashboard" | "profil" | "messages" | "rendezvous" | "disponibilites";
 
 export default function DashboardExpert() {
   const router = useRouter();
-  const [user,          setUser]          = useState<any>(null);
-  const [expert,        setExpert]        = useState<any>(null);
-  const [tab,           setTab]           = useState<Tab>("dashboard");
-  const [rdvs,          setRdvs]          = useState<any[]>([]);
-  const [dispos,        setDispos]        = useState<any[]>([]);
-  const [messages,      setMessages]      = useState<any[]>([]);
-  const [selectedConv,  setSelectedConv]  = useState<any>(null);
-  const [convMessages,  setConvMessages]  = useState<any[]>([]);
-  const [replyText,     setReplyText]     = useState("");
-  const [toast,         setToast]         = useState({ text: "", ok: true });
+  const [user, setUser] = useState<any>(null);
+  const [expert, setExpert] = useState<any>(null);
+  const [tab, setTab] = useState<Tab>("dashboard");
+  const [messages, setMessages] = useState<any[]>([]);
+  const [rdvs, setRdvs] = useState<any[]>([]);
+  const [dispos, setDispos] = useState<any[]>([]);
+  const [toast, setToast] = useState({ text: "", ok: true });
   const [editingProfil, setEditingProfil] = useState(false);
-  const [savingProfil,  setSavingProfil]  = useState(false);
-  const [uploading,     setUploading]     = useState(false);
-  const [photoUrl,      setPhotoUrl]      = useState<string>("");
-  const [dispoModal,    setDispoModal]    = useState(false);
+  const [savingProfil, setSavingProfil] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [photoUrl, setPhotoUrl] = useState<string>("");
+  const [selectedConv, setSelectedConv] = useState<any>(null);
+  const [convMessages, setConvMessages] = useState<any[]>([]);
+  const [replyText, setReplyText] = useState("");
+  const [dispoModal, setDispoModal] = useState(false);
   const [newDispo, setNewDispo] = useState({ date: "", heureDebut: "", heureFin: "" });
   const [form, setForm] = useState({
     domaine: "", description: "", localisation: "",
     telephone: "", experience: "", disponible: true,
   });
 
-  const tk   = () => localStorage.getItem("token") || "";
-  const hdr  = () => ({ Authorization: `Bearer ${tk()}` });
+  const tk = () => localStorage.getItem("token") || "";
+  const hdr = () => ({ Authorization: `Bearer ${tk()}` });
   const hdrJ = () => ({ Authorization: `Bearer ${tk()}`, "Content-Type": "application/json" });
   const BASE = "http://localhost:3001";
 
@@ -39,8 +39,8 @@ export default function DashboardExpert() {
     if (p.role !== "expert") { router.push("/"); return; }
     setUser(p);
     loadProfile();
-    loadRdvs();
     loadMessages();
+    loadRdvs();
   }, []);
 
   function notify(text: string, ok = true) {
@@ -54,41 +54,77 @@ export default function DashboardExpert() {
       if (r.ok) {
         const d = await r.json();
         setExpert(d);
-        setPhotoUrl(d.photo ? `${BASE}/uploads/photos/${d.photo}?t=${Date.now()}` : "");
+        if (d.photo) setPhotoUrl(`${BASE}/uploads/photos/${d.photo}?t=${Date.now()}`);
+        else setPhotoUrl("");
         setForm({
-          domaine:      d.domaine      || "",
-          description:  d.description  || "",
+          domaine: d.domaine || "",
+          description: d.description || "",
           localisation: d.localisation || "",
-          telephone:    d.telephone    || "",
-          experience:   d.experience   || "",
-          disponible:   d.disponibilite !== "non disponible",
+          telephone: d.telephone || "",
+          experience: d.experience || "",
+          disponible: d.disponibilite !== "non disponible",
         });
         if (d.id) loadDispos(d.id);
       }
     } catch(e) { console.log(e); }
   }
 
-  async function loadRdvs() {
-    try {
-      const r = await fetch(`${BASE}/rendez-vous/expert`, { headers: hdr() });
-      if (r.ok) setRdvs(await r.json()); else setRdvs([]);
-    } catch(e) { setRdvs([]); }
-  }
-
-  // ── Route correcte : GET /messages/expert ──
   async function loadMessages() {
     try {
       const r = await fetch(`${BASE}/messages/expert`, { headers: hdr() });
-      if (r.ok) setMessages(await r.json()); else setMessages([]);
+      if (r.ok) setMessages(await r.json());
+      else setMessages([]);
     } catch(e) { setMessages([]); }
   }
 
-  // ── Route correcte : GET /messages/conversation/:userId ──
   async function loadConversation(userId: number) {
     try {
       const r = await fetch(`${BASE}/messages/conversation/${userId}`, { headers: hdr() });
       if (r.ok) setConvMessages(await r.json());
     } catch(e) { console.log(e); }
+  }
+
+  async function loadRdvs() {
+    try {
+      const r = await fetch(`${BASE}/rendez-vous/expert`, { headers: hdr() });
+      if (r.ok) setRdvs(await r.json());
+      else setRdvs([]);
+    } catch(e) { setRdvs([]); }
+  }
+
+  async function loadDispos(id: number) {
+    try {
+      const r = await fetch(`${BASE}/disponibilites/expert/${id}`, { headers: hdr() });
+      if (r.ok) setDispos(await r.json());
+      else setDispos([]);
+    } catch(e) { setDispos([]); }
+  }
+
+  async function saveProfil(e: React.FormEvent) {
+    e.preventDefault();
+    setSavingProfil(true);
+    try {
+      const r = await fetch(`${BASE}/experts/profil`, {
+        method: "PUT", headers: hdrJ(), body: JSON.stringify(form),
+      });
+      if (r.ok) { notify("✅ Modification envoyée à l'admin !"); setEditingProfil(false); loadProfile(); }
+      else notify("Erreur sauvegarde", false);
+    } catch(e) { notify("Erreur", false); }
+    setSavingProfil(false);
+  }
+
+  async function uploadPhoto(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    const fd = new FormData();
+    fd.append("photo", file);
+    try {
+      const r = await fetch(`${BASE}/experts/photo`, { method: "POST", headers: hdr(), body: fd });
+      if (r.ok) { notify("Photo mise à jour ✅"); await loadProfile(); }
+      else notify("Erreur upload", false);
+    } catch(e) { notify("Erreur", false); }
+    setUploading(false);
   }
 
   async function envoyerReponse() {
@@ -102,40 +138,8 @@ export default function DashboardExpert() {
         setReplyText("");
         loadConversation(selectedConv.otherId);
         loadMessages();
-      }
+      } else notify("Erreur envoi", false);
     } catch(e) { notify("Erreur", false); }
-  }
-
-  async function loadDispos(id: number) {
-    try {
-      const r = await fetch(`${BASE}/disponibilites/expert/${id}`, { headers: hdr() });
-      if (r.ok) setDispos(await r.json()); else setDispos([]);
-    } catch(e) { setDispos([]); }
-  }
-
-  async function saveProfil(e: React.FormEvent) {
-    e.preventDefault(); setSavingProfil(true);
-    try {
-      const r = await fetch(`${BASE}/experts/profil`, {
-        method: "PUT", headers: hdrJ(), body: JSON.stringify(form),
-      });
-      if (r.ok) { notify("✅ Modification envoyée à l'admin pour validation !"); setEditingProfil(false); loadProfile(); }
-      else notify("Erreur sauvegarde", false);
-    } catch(e) { notify("Erreur", false); }
-    setSavingProfil(false);
-  }
-
-  async function uploadPhoto(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]; if (!file) return;
-    setUploading(true);
-    const fd = new FormData(); fd.append("photo", file);
-    try {
-      const r = await fetch(`${BASE}/experts/photo`, { method: "POST", headers: hdr(), body: fd });
-      const data = await r.json();
-      if (r.ok) { notify("Photo mise à jour ✅"); await loadProfile(); }
-      else notify("Erreur upload: " + (data.message || ""), false);
-    } catch(e) { notify("Erreur connexion", false); }
-    setUploading(false);
   }
 
   async function saveDispo(e: React.FormEvent) {
@@ -145,7 +149,8 @@ export default function DashboardExpert() {
         method: "POST", headers: hdrJ(), body: JSON.stringify(newDispo),
       });
       if (r.ok) {
-        notify("Créneau ajouté ✅"); setDispoModal(false);
+        notify("Créneau ajouté ✅");
+        setDispoModal(false);
         setNewDispo({ date: "", heureDebut: "", heureFin: "" });
         if (expert?.id) loadDispos(expert.id);
       } else notify("Erreur", false);
@@ -163,589 +168,365 @@ export default function DashboardExpert() {
   async function confirmerRdv(id: number) {
     try {
       const r = await fetch(`${BASE}/rendez-vous/${id}/confirmer`, { method: "PUT", headers: hdr() });
-      if (r.ok) { notify("Confirmé ✅"); loadRdvs(); }
+      if (r.ok) { notify("✅ Rendez-vous confirmé !"); loadRdvs(); }
     } catch(e) { notify("Erreur", false); }
   }
 
   async function annulerRdv(id: number) {
     try {
       const r = await fetch(`${BASE}/rendez-vous/${id}/annuler`, { method: "PUT", headers: hdr() });
-      if (r.ok) { notify("Annulé"); loadRdvs(); }
+      if (r.ok) { notify("Rendez-vous annulé"); loadRdvs(); }
     } catch(e) { notify("Erreur", false); }
   }
 
-  const rdvFuturs    = rdvs.filter(r => r.statut !== "annule");
-  const rdvEnAttente = rdvFuturs.filter(r => r.statut === "en_attente").length;
-
-  // ── Grouper les messages en conversations ──
-  const convsMap: Record<number, any> = {};
-  messages.forEach((m: any) => {
-    const otherId   = m.sender_id === user?.id ? m.receiver_id : m.sender_id;
+  // Grouper messages par conversation
+  const conversations = messages.reduce((acc: any, m: any) => {
+    const otherId = m.sender_id === user?.id ? m.receiver_id : m.sender_id;
     const otherName = m.sender_id === user?.id
-      ? `${m.receiver?.prenom || ""} ${m.receiver?.nom || ""}`.trim()
-      : `${m.sender?.prenom   || ""} ${m.sender?.nom   || ""}`.trim();
-    if (!convsMap[otherId]) convsMap[otherId] = { otherId, otherName, messages: [], unread: 0 };
-    convsMap[otherId].messages.push(m);
-    if (!m.lu && m.receiver_id === user?.id) convsMap[otherId].unread++;
-  });
-  const convList   = Object.values(convsMap) as any[];
-  const unreadMessages = messages.filter((m: any) => !m.lu && m.receiver_id === user?.id).length;
-
-  function AvatarImg({ name, size = 44 }: { name: string; size?: number }) {
-    const ini = (name || "?").split(" ").filter(Boolean).map((w: string) => w[0]).join("").toUpperCase().slice(0, 2) || "??";
-    return (
-      <div style={{ width:size, height:size, borderRadius:"50%", background:"#0A2540", color:"#F7B500", display:"flex", alignItems:"center", justifyContent:"center", fontWeight:800, fontSize:size*0.34, flexShrink:0 }}>
-        {ini}
-      </div>
-    );
-  }
-
-  function Avatar({ size = 64 }: { size?: number }) {
-    return (
-      <div style={{ position:"relative", flexShrink:0 }}>
-        <div style={{ width:size, height:size, borderRadius:"50%", border:"3px solid #F7B500", overflow:"hidden", background:"#0A2540", display:"flex", alignItems:"center", justifyContent:"center" }}>
-          {photoUrl ? (
-            <img src={photoUrl} alt="photo" style={{ width:"100%", height:"100%", objectFit:"cover" }} onError={() => setPhotoUrl("")} />
-          ) : (
-            <span style={{ color:"#F7B500", fontWeight:800, fontSize:size*0.35 }}>{user?.prenom?.[0]}{user?.nom?.[0]}</span>
-          )}
-        </div>
-        <label style={{ position:"absolute", bottom:0, right:0, width:size*0.35, height:size*0.35, background:"#F7B500", borderRadius:"50%", border:"2px solid #fff", display:"flex", alignItems:"center", justifyContent:"center", cursor:uploading?"wait":"pointer", fontSize:size*0.18 }}>
-          {uploading ? "⏳" : "📷"}
-          <input type="file" accept="image/*" onChange={uploadPhoto} style={{ display:"none" }} disabled={uploading} />
-        </label>
-      </div>
-    );
-  }
+      ? `${m.receiver?.prenom||""} ${m.receiver?.nom||""}`.trim()
+      : `${m.sender?.prenom||""} ${m.sender?.nom||""}`.trim();
+    if (!acc[otherId]) acc[otherId] = { otherId, otherName, messages: [], unread: 0 };
+    acc[otherId].messages.push(m);
+    if (!m.lu && m.receiver_id === user?.id) acc[otherId].unread++;
+    return acc;
+  }, {});
+  const convList = Object.values(conversations);
+  const unreadTotal = messages.filter((m: any) => !m.lu && m.receiver_id === user?.id).length;
+  const rdvEnAttente = rdvs.filter(r => r.statut === "en_attente");
+  const rdvFuturs = rdvs.filter(r => new Date(r.date_rdv) > new Date() && r.statut !== "annule");
 
   if (!user) return null;
 
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Cormorant+Garamond:wght@600;700&display=swap');
-        *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-        body{font-family:'Outfit',sans-serif;background:#EEF2F7;color:#1E293B;}
-        @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
-        @keyframes spin{to{transform:rotate(360deg)}}
-        .fade{animation:fadeUp .35s cubic-bezier(.22,1,.36,1);}
-        .card{background:#fff;border:1px solid #DDE5F0;border-radius:16px;box-shadow:0 2px 8px rgba(10,37,64,.04);}
-        .btn{font-family:'Outfit',sans-serif;font-weight:700;border:none;border-radius:10px;cursor:pointer;padding:10px 20px;font-size:13px;transition:all .2s;display:inline-flex;align-items:center;gap:7px;white-space:nowrap;}
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap');
+        *{box-sizing:border-box;margin:0;padding:0;}
+        body{font-family:'Outfit',sans-serif;background:#F2F5F9;}
+        .card{background:#fff;border:1px solid #E8EEF6;border-radius:16px;}
+        .btn{font-family:'Outfit',sans-serif;font-weight:600;border:none;border-radius:8px;cursor:pointer;padding:9px 18px;font-size:13px;transition:all .18s;display:inline-flex;align-items:center;gap:6px;}
         .btn-p{background:#0A2540;color:#fff;}.btn-p:hover{background:#F7B500;color:#0A2540;}
-        .btn-g{background:#F7B500;color:#0A2540;box-shadow:0 4px 12px rgba(247,181,0,.25);}.btn-g:hover{background:#e6a800;}
-        .btn-s{background:#F1F5FB;color:#475569;border:1px solid #DDE5F0;}.btn-s:hover{background:#E2EAF4;}
+        .btn-g{background:#F7B500;color:#0A2540;}.btn-g:hover{background:#e6a800;}
+        .btn-s{background:#F1F5F9;color:#475569;}.btn-s:hover{background:#E2E8F0;}
         .btn-gr{background:#ECFDF5;color:#059669;}.btn-gr:hover{background:#059669;color:#fff;}
         .btn-r{background:#FEF2F2;color:#DC2626;}.btn-r:hover{background:#DC2626;color:#fff;}
-        .btn-sm{padding:7px 14px!important;font-size:12px!important;}
-        .btn:disabled{opacity:.45;cursor:not-allowed;}
-        .tab{background:none;border:none;cursor:pointer;padding:16px 4px;font-size:13.5px;font-weight:500;color:#94A3B8;border-bottom:2.5px solid transparent;font-family:'Outfit',sans-serif;transition:all .2s;white-space:nowrap;}
+        .btn:disabled{opacity:.55;cursor:not-allowed;}
+        .tab{background:none;border:none;cursor:pointer;padding:14px 4px;font-size:13px;font-weight:500;color:#7D8FAA;border-bottom:2px solid transparent;font-family:'Outfit',sans-serif;transition:all .2s;}
         .tab.active{color:#0A2540;border-bottom-color:#F7B500;font-weight:700;}
-        .tab:hover:not(.active){color:#334155;}
-        .inp{width:100%;background:#F8FAFC;border:1.5px solid #DDE5F0;border-radius:10px;padding:11px 16px;font-family:'Outfit',sans-serif;font-size:13.5px;color:#0A2540;outline:none;transition:border-color .18s,box-shadow .18s;}
-        .inp:focus{border-color:#F7B500;box-shadow:0 0 0 3px rgba(247,181,0,.11);}
-        .inp::placeholder{color:#B8C8DC;}
-        textarea.inp{resize:vertical;min-height:80px;line-height:1.6;}
-        select.inp{appearance:none;cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23A8B8CC' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;}
-        .lbl{font-size:11px;font-weight:700;color:#64748B;text-transform:uppercase;letter-spacing:1.2px;display:block;margin-bottom:6px;}
-        .modal-bg{position:fixed;inset:0;background:rgba(6,14,26,.6);backdrop-filter:blur(8px);z-index:300;display:flex;align-items:center;justify-content:center;padding:24px;}
-        .modal{background:#fff;border-radius:22px;width:100%;max-width:500px;overflow:hidden;box-shadow:0 32px 80px rgba(10,37,64,.25);}
-        .badge-ok{background:#ECFDF5;color:#059669;border:1px solid #A7F3D0;border-radius:99px;padding:3px 12px;font-size:11px;font-weight:700;}
-        .badge-wait{background:#FFF8E1;color:#B45309;border:1px solid #F7B500;border-radius:99px;padding:3px 12px;font-size:11px;font-weight:700;}
-        .badge-modif{background:#FFF8E1;color:#B45309;border:1px solid #F7B500;border-radius:99px;padding:3px 12px;font-size:11px;font-weight:700;}
-        .conv-row{padding:12px 14px;cursor:pointer;border-bottom:1px solid #F1F5F9;transition:background .15s;}
-        .conv-row:hover{background:#F8FAFC;}
-        .conv-row.active{background:#FFFBEB;border-left:3px solid #F7B500;}
+        .inp{width:100%;background:#F7F9FC;border:1.5px solid #DDE4EF;border-radius:10px;padding:11px 14px;font-family:'Outfit',sans-serif;font-size:13.5px;color:#0A2540;outline:none;transition:border-color .18s;}
+        .inp:focus{border-color:#F7B500;box-shadow:0 0 0 3px rgba(247,181,0,.1);}
+        textarea.inp{resize:vertical;min-height:90px;}
+        select.inp{appearance:none;cursor:pointer;}
+        .lbl{font-size:11px;font-weight:700;color:#7D8FAA;text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:6px;}
+        .modal-bg{position:fixed;inset:0;background:rgba(10,37,64,.5);z-index:200;display:flex;align-items:center;justify-content:center;padding:24px;backdrop-filter:blur(4px);}
+        .modal{background:#fff;border-radius:20px;width:100%;max-width:480px;box-shadow:0 24px 80px rgba(10,37,64,.2);overflow:hidden;}
+        .badge-ok{background:#ECFDF5;color:#059669;border:1px solid #A7F3D0;border-radius:99px;padding:3px 10px;font-size:11px;font-weight:700;}
+        .badge-wait{background:#FFF8E1;color:#B45309;border:1px solid #F7B500;border-radius:99px;padding:3px 10px;font-size:11px;font-weight:700;}
+        .badge-modif{background:#FFF8E1;color:#B45309;border:1px solid #F7B500;border-radius:99px;padding:3px 10px;font-size:11px;font-weight:700;}
       `}</style>
 
-      {/* ── TOAST ── */}
+      {/* Toast */}
       {toast.text && (
-        <div className="fade" style={{ position:"fixed", top:22, right:22, zIndex:999, background:toast.ok?"#F0FDF4":"#FFF1F2", border:`1px solid ${toast.ok?"#BBF7D0":"#FECDD3"}`, borderLeft:`4px solid ${toast.ok?"#22C55E":"#F43F5E"}`, color:toast.ok?"#166534":"#9F1239", borderRadius:12, padding:"13px 20px", fontWeight:600, fontSize:13.5, boxShadow:"0 12px 36px rgba(0,0,0,.1)", minWidth:260 }}>
+        <div style={{position:"fixed",top:20,right:20,zIndex:999,background:toast.ok?"#ECFDF5":"#FEF2F2",border:`1px solid ${toast.ok?"#A7F3D0":"#FECACA"}`,borderLeft:`3px solid ${toast.ok?"#059669":"#DC2626"}`,color:toast.ok?"#059669":"#DC2626",borderRadius:10,padding:"12px 18px",fontWeight:600,fontSize:13,boxShadow:"0 8px 24px rgba(0,0,0,.1)"}}>
           {toast.text}
         </div>
       )}
 
-      {/* ── MODAL DISPO ── */}
+      {/* Modal Disponibilité */}
       {dispoModal && (
         <div className="modal-bg" onClick={() => setDispoModal(false)}>
           <div className="modal" onClick={e => e.stopPropagation()}>
-            <div style={{ padding:"20px 28px", borderBottom:"1px solid #F1F5FB", display:"flex", alignItems:"center", justifyContent:"space-between", background:"#FAFBFE" }}>
-              <span style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:20, color:"#0A2540" }}>Ajouter un créneau</span>
-              <button className="btn btn-s btn-sm" onClick={() => setDispoModal(false)}>Fermer</button>
+            <div style={{padding:"18px 24px",borderBottom:"1px solid #F1F5F9",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+              <span style={{fontWeight:700,fontSize:16,color:"#0A2540"}}>Ajouter un créneau</span>
+              <button className="btn btn-s" style={{padding:"6px 10px"}} onClick={() => setDispoModal(false)}>✕</button>
             </div>
             <form onSubmit={saveDispo}>
-              <div style={{ padding:"24px 28px", display:"flex", flexDirection:"column", gap:18 }}>
-                <div>
-                  <label className="lbl">Date *</label>
-                  <input type="date" className="inp" value={newDispo.date}
-                    min={new Date().toISOString().split("T")[0]}
-                    onChange={e => setNewDispo({ ...newDispo, date: e.target.value })} required />
-                </div>
-                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14 }}>
-                  <div>
-                    <label className="lbl">Heure début *</label>
-                    <input type="time" className="inp" value={newDispo.heureDebut}
-                      onChange={e => setNewDispo({ ...newDispo, heureDebut: e.target.value })} required />
-                  </div>
-                  <div>
-                    <label className="lbl">Heure fin *</label>
-                    <input type="time" className="inp" value={newDispo.heureFin}
-                      onChange={e => setNewDispo({ ...newDispo, heureFin: e.target.value })} required />
-                  </div>
+              <div style={{padding:24,display:"flex",flexDirection:"column",gap:16}}>
+                <div><label className="lbl">Date</label><input type="date" className="inp" value={newDispo.date} onChange={e => setNewDispo({...newDispo,date:e.target.value})} required /></div>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+                  <div><label className="lbl">Heure début</label><input type="time" className="inp" value={newDispo.heureDebut} onChange={e => setNewDispo({...newDispo,heureDebut:e.target.value})} required /></div>
+                  <div><label className="lbl">Heure fin</label><input type="time" className="inp" value={newDispo.heureFin} onChange={e => setNewDispo({...newDispo,heureFin:e.target.value})} required /></div>
                 </div>
               </div>
-              <div style={{ padding:"16px 28px", borderTop:"1px solid #F1F5FB", display:"flex", justifyContent:"flex-end", gap:10, background:"#FAFBFE" }}>
+              <div style={{padding:"14px 24px",borderTop:"1px solid #F1F5F9",display:"flex",justifyContent:"flex-end",gap:10}}>
                 <button type="button" className="btn btn-s" onClick={() => setDispoModal(false)}>Annuler</button>
-                <button type="submit" className="btn btn-g">Ajouter le créneau</button>
+                <button type="submit" className="btn btn-g">Ajouter</button>
               </div>
             </form>
           </div>
         </div>
       )}
 
-      {/* ════════ HEADER ════════ */}
-      <header style={{ background:"#0A2540", height:64, padding:"0 32px", display:"flex", alignItems:"center", justifyContent:"space-between", position:"sticky", top:0, zIndex:100, boxShadow:"0 2px 20px rgba(10,37,64,.4)" }}>
-        <div style={{ display:"flex", alignItems:"center", gap:14 }}>
-          <div style={{ background:"#F7B500", borderRadius:9, width:36, height:36, display:"flex", alignItems:"center", justifyContent:"center", fontWeight:900, fontSize:12, color:"#0A2540" }}>BEH</div>
+      {/* Header */}
+      <header style={{background:"#0A2540",height:62,padding:"0 28px",display:"flex",alignItems:"center",justifyContent:"space-between",position:"sticky",top:0,zIndex:100,boxShadow:"0 2px 20px rgba(10,37,64,.3)"}}>
+        <div style={{display:"flex",alignItems:"center",gap:12}}>
+          <div style={{width:34,height:34,background:"#F7B500",borderRadius:8,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:11,color:"#0A2540"}}>BEH</div>
           <div>
-            <div style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:600, fontSize:17, color:"#fff" }}>Business Expert Hub</div>
-            <div style={{ fontSize:11, color:"rgba(255,255,255,.4)" }}>Espace Expert — {user?.prenom} {user?.nom}</div>
+            <div style={{color:"#fff",fontWeight:700,fontSize:14}}>Espace Expert</div>
+            <div style={{color:"rgba(255,255,255,.4)",fontSize:11}}>{user?.prenom} {user?.nom}</div>
           </div>
         </div>
-        <div style={{ display:"flex", alignItems:"center", gap:12 }}>
-          {expert?.statut === "valide" && !expert?.modification_demandee && (
-            <span style={{ background:"rgba(16,185,129,.15)", border:"1px solid rgba(16,185,129,.3)", borderRadius:99, padding:"4px 14px", fontSize:11, fontWeight:700, color:"#34D399" }}>✓ Compte validé</span>
+        <div style={{display:"flex",alignItems:"center",gap:10}}>
+          {(unreadTotal > 0 || rdvEnAttente.length > 0) && (
+            <div style={{background:"#F7B500",color:"#0A2540",borderRadius:99,padding:"4px 12px",fontSize:12,fontWeight:800}}>
+              🔔 {unreadTotal + rdvEnAttente.length} notifications
+            </div>
           )}
-          {expert?.statut === "en_attente" && (
-            <span style={{ background:"rgba(247,181,0,.15)", border:"1px solid rgba(247,181,0,.3)", borderRadius:99, padding:"4px 14px", fontSize:11, fontWeight:700, color:"#F7B500" }}>⏳ En attente de validation</span>
-          )}
-          {expert?.modification_demandee && (
-            <span style={{ background:"rgba(247,181,0,.15)", border:"1px solid rgba(247,181,0,.3)", borderRadius:99, padding:"4px 14px", fontSize:11, fontWeight:700, color:"#F7B500" }}>⚠️ Modif en attente</span>
-          )}
-          <button className="btn btn-s btn-sm"
-            style={{ color:"rgba(255,255,255,.7)", background:"rgba(255,255,255,.08)", border:"1px solid rgba(255,255,255,.15)" }}
+          <button className="btn btn-s" style={{color:"rgba(255,255,255,.7)",background:"rgba(255,255,255,.08)",border:"1px solid rgba(255,255,255,.12)"}}
             onClick={() => { localStorage.clear(); router.push("/"); }}>
             Déconnexion
           </button>
         </div>
       </header>
 
-      {/* ════════ TABS ════════ */}
-      <div style={{ background:"#fff", borderBottom:"1px solid #DDE5F0" }}>
-        <div style={{ maxWidth:1200, margin:"0 auto", padding:"0 32px", display:"flex", gap:28 }}>
-          {([
-            { id:"dashboard",      label:"Tableau de bord" },
-            { id:"profil",         label:"Mon profil" },
-            { id:"rendezvous",     label:"Rendez-vous",    badge: rdvEnAttente > 0 ? rdvEnAttente : null },
-            { id:"disponibilites", label:"Disponibilités", badge: dispos.length > 0 ? dispos.length : null },
-            { id:"messages",       label:"Messages",       badge: unreadMessages > 0 ? unreadMessages : null },
-          ] as any[]).map(t => (
-            <button key={t.id} className={`tab${tab === t.id ? " active" : ""}`} onClick={() => setTab(t.id)}>
+      {/* Tabs */}
+      <div style={{background:"#fff",borderBottom:"1px solid #E8EEF6"}}>
+        <div style={{maxWidth:1100,margin:"0 auto",padding:"0 24px",display:"flex",gap:20}}>
+          {[
+            { id:"dashboard",      label:"🏠 Accueil" },
+            { id:"profil",         label:"👤 Profil" },
+            { id:"messages",       label:`💬 Messages${unreadTotal > 0 ? ` (${unreadTotal})` : ""}` },
+            { id:"rendezvous",     label:`📅 RDV${rdvEnAttente.length > 0 ? ` (${rdvEnAttente.length})` : ""}` },
+            { id:"disponibilites", label:`🕐 Disponibilités` },
+          ].map(t => (
+            <button key={t.id} className={`tab${tab===t.id?" active":""}`} onClick={() => { setTab(t.id as Tab); setSelectedConv(null); }}>
               {t.label}
-              {t.badge && (
-                <span style={{ background:tab===t.id?"#F7B500":"#EEF2F7", color:tab===t.id?"#0A2540":"#64748B", borderRadius:99, padding:"1px 8px", fontSize:11, fontWeight:800, marginLeft:4 }}>
-                  {t.badge}
-                </span>
-              )}
             </button>
           ))}
         </div>
       </div>
 
-      {/* ════════ MAIN ════════ */}
-      <main style={{ maxWidth:1200, margin:"0 auto", padding:"32px" }}>
+      <main style={{maxWidth:1100,margin:"0 auto",padding:"28px 24px"}}>
 
         {/* ══ DASHBOARD ══ */}
         {tab === "dashboard" && (
-          <div className="fade">
-            {expert?.modification_demandee && (
-              <div style={{ background:"linear-gradient(135deg,#FFF8E1,#FEF3C7)", border:"1px solid rgba(247,181,0,.4)", borderRadius:16, padding:"20px 26px", marginBottom:20, display:"flex", alignItems:"center", gap:16 }}>
-                <div style={{ fontSize:32 }}>⚠️</div>
+          <div>
+            {/* Alertes */}
+            {rdvEnAttente.length > 0 && (
+              <div style={{background:"linear-gradient(135deg,#EFF6FF,#DBEAFE)",border:"1px solid #93C5FD",borderRadius:16,padding:"16px 24px",marginBottom:16,display:"flex",alignItems:"center",gap:16}}>
+                <div style={{fontSize:28}}>📅</div>
                 <div>
-                  <div style={{ fontWeight:700, color:"#B45309", fontSize:15 }}>Modification en attente de validation</div>
-                  <div style={{ color:"#92400E", fontSize:13, marginTop:4 }}>Vos modifications sont en cours d'examen par l'administrateur.</div>
+                  <div style={{fontWeight:700,color:"#1D4ED8",fontSize:14}}>{rdvEnAttente.length} rendez-vous en attente de réponse</div>
+                  <button className="btn btn-s" style={{marginTop:6,fontSize:12}} onClick={() => setTab("rendezvous")}>Voir les rendez-vous →</button>
                 </div>
               </div>
             )}
-            {expert?.statut === "en_attente" && !expert?.modification_demandee && (
-              <div style={{ background:"linear-gradient(135deg,#FFF8E1,#FEF3C7)", border:"1px solid rgba(247,181,0,.4)", borderRadius:16, padding:"20px 26px", marginBottom:20, display:"flex", alignItems:"center", gap:16 }}>
-                <div style={{ fontSize:32 }}>⏳</div>
+            {unreadTotal > 0 && (
+              <div style={{background:"linear-gradient(135deg,#ECFDF5,#D1FAE5)",border:"1px solid #A7F3D0",borderRadius:16,padding:"16px 24px",marginBottom:16,display:"flex",alignItems:"center",gap:16}}>
+                <div style={{fontSize:28}}>💬</div>
                 <div>
-                  <div style={{ fontWeight:700, color:"#B45309", fontSize:15 }}>Profil en attente de validation</div>
-                  <div style={{ color:"#92400E", fontSize:13, marginTop:4 }}>L'administrateur va examiner votre profil. Vous recevrez un email dès la validation.</div>
+                  <div style={{fontWeight:700,color:"#059669",fontSize:14}}>{unreadTotal} message{unreadTotal > 1 ? "s" : ""} non lu{unreadTotal > 1 ? "s" : ""}</div>
+                  <button className="btn btn-s" style={{marginTop:6,fontSize:12}} onClick={() => setTab("messages")}>Voir les messages →</button>
+                </div>
+              </div>
+            )}
+            {expert?.modification_demandee && (
+              <div style={{background:"linear-gradient(135deg,#FFF8E1,#FFF3CD)",border:"1px solid #F7B500",borderRadius:16,padding:"16px 24px",marginBottom:16,display:"flex",alignItems:"center",gap:16}}>
+                <div style={{fontSize:28}}>⏳</div>
+                <div>
+                  <div style={{fontWeight:700,color:"#B45309",fontSize:14}}>Modification de profil en attente de validation</div>
+                  <div style={{color:"#92400E",fontSize:12,marginTop:2}}>L'admin va examiner vos modifications.</div>
                 </div>
               </div>
             )}
             {expert?.statut === "valide" && !expert?.modification_demandee && (
-              <div style={{ background:"linear-gradient(135deg,#ECFDF5,#D1FAE5)", border:"1px solid rgba(16,185,129,.3)", borderRadius:16, padding:"20px 26px", marginBottom:20, display:"flex", alignItems:"center", gap:16 }}>
-                <div style={{ fontSize:32 }}>✅</div>
+              <div style={{background:"linear-gradient(135deg,#ECFDF5,#D1FAE5)",border:"1px solid #A7F3D0",borderRadius:16,padding:"16px 24px",marginBottom:16,display:"flex",alignItems:"center",gap:16}}>
+                <div style={{fontSize:28}}>✅</div>
                 <div>
-                  <div style={{ fontWeight:700, color:"#065F46", fontSize:15 }}>Votre profil est validé !</div>
-                  <div style={{ color:"#047857", fontSize:13, marginTop:4 }}>Vous êtes visible sur la plateforme. Les startups peuvent vous contacter.</div>
+                  <div style={{fontWeight:700,color:"#059669",fontSize:14}}>Profil validé — Vous êtes visible sur la plateforme</div>
                 </div>
               </div>
             )}
 
-            {/* Hero profil */}
-            <div className="card" style={{ padding:"26px 30px", marginBottom:20, background:"linear-gradient(135deg,#0A2540 0%,#0f3464 100%)", border:"none", position:"relative", overflow:"hidden" }}>
-              <div style={{ position:"absolute", top:-50, right:-50, width:200, height:200, borderRadius:"50%", background:"rgba(247,181,0,.06)", pointerEvents:"none" }} />
-              <div style={{ display:"flex", alignItems:"center", gap:20, position:"relative", zIndex:2 }}>
-                <Avatar size={72} />
-                <div style={{ flex:1 }}>
-                  <div style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:24, color:"#fff", lineHeight:1.2 }}>{user?.prenom} {user?.nom}</div>
-                  <div style={{ fontSize:14, color:"rgba(255,255,255,.55)", marginTop:4 }}>{expert?.domaine || "Domaine non renseigné"}</div>
-                  <div style={{ display:"flex", flexWrap:"wrap", gap:8, marginTop:10 }}>
-                    {expert?.experience   && <span style={{ background:"rgba(255,255,255,.1)", color:"rgba(255,255,255,.8)", borderRadius:8, padding:"3px 10px", fontSize:12 }}>💼 {expert.experience}</span>}
-                    {expert?.localisation && <span style={{ background:"rgba(255,255,255,.1)", color:"rgba(255,255,255,.8)", borderRadius:8, padding:"3px 10px", fontSize:12 }}>📍 {expert.localisation}</span>}
-                  </div>
-                </div>
-                <button className="btn btn-g" onClick={() => setTab("profil")}>✏️ Modifier le profil</button>
-              </div>
-            </div>
-
             {/* Stats */}
-            <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:16, marginBottom:20 }}>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:16,marginBottom:20}}>
               {[
-                { label:"RDV à venir",    val:rdvFuturs.length,  color:"#3B82F6", icon:"📅" },
-                { label:"En attente",     val:rdvEnAttente,      color:"#F59E0B", icon:"⏳" },
-                { label:"Disponibilités", val:dispos.length,     color:"#10B981", icon:"🕐" },
-                { label:"Messages",       val:unreadMessages,    color:"#8B5CF6", icon:"💬" },
-              ].map((s, i) => (
-                <div key={i} className="card" style={{ padding:"18px 22px" }}>
-                  <div style={{ fontSize:30, marginBottom:10 }}>{s.icon}</div>
-                  <div style={{ fontSize:30, fontWeight:800, color:s.color, lineHeight:1 }}>{s.val}</div>
-                  <div style={{ fontSize:12.5, color:"#64748B", marginTop:6 }}>{s.label}</div>
-                  <div style={{ height:3, borderRadius:99, background:"#EEF2F7", marginTop:10, overflow:"hidden" }}>
-                    <div style={{ height:"100%", background:s.color, width:`${Math.min((Number(s.val)/10)*100,100)}%`, borderRadius:99 }} />
+                { label:"Messages",      val:messages.length,  color:"#10B981", icon:"💬" },
+                { label:"Non lus",       val:unreadTotal,      color:"#EF4444", icon:"🔔" },
+                { label:"RDV en attente",val:rdvEnAttente.length, color:"#3B82F6", icon:"📅" },
+                { label:"Disponibilités",val:dispos.length,    color:"#F7B500", icon:"🕐" },
+              ].map((s,i) => (
+                <div key={i} className="card" style={{padding:"18px 20px",display:"flex",alignItems:"center",gap:14}}>
+                  <div style={{fontSize:28}}>{s.icon}</div>
+                  <div>
+                    <div style={{fontSize:22,fontWeight:800,color:s.color}}>{s.val}</div>
+                    <div style={{fontSize:11,color:"#8A9AB5",marginTop:2}}>{s.label}</div>
                   </div>
                 </div>
               ))}
             </div>
 
-            {/* RDV récents */}
-            {rdvFuturs.length > 0 && (
-              <div className="card" style={{ padding:"22px 28px", marginBottom:20 }}>
-                <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:16 }}>
-                  <div style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:20, color:"#0A2540" }}>Prochains rendez-vous</div>
-                  <button className="btn btn-s btn-sm" onClick={() => setTab("rendezvous")}>Voir tous</button>
+            {/* Aperçu profil */}
+            <div className="card" style={{padding:"20px 24px"}}>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
+                <span style={{fontWeight:700,fontSize:15,color:"#0A2540"}}>Mon profil</span>
+                <button className="btn btn-s" onClick={() => setTab("profil")}>✏️ Modifier</button>
+              </div>
+              <div style={{display:"flex",alignItems:"center",gap:16}}>
+                <div style={{position:"relative",flexShrink:0}}>
+                  <div style={{width:56,height:56,borderRadius:"50%",border:"3px solid #F7B500",overflow:"hidden",background:"#0A2540",display:"flex",alignItems:"center",justifyContent:"center"}}>
+                    {photoUrl ? (
+                      <img src={photoUrl} alt="photo" style={{width:"100%",height:"100%",objectFit:"cover"}} onError={() => setPhotoUrl("")} />
+                    ) : (
+                      <span style={{color:"#F7B500",fontWeight:800,fontSize:18}}>{user?.prenom?.[0]}{user?.nom?.[0]}</span>
+                    )}
+                  </div>
+                  <label style={{position:"absolute",bottom:0,right:0,width:20,height:20,background:"#F7B500",borderRadius:"50%",border:"2px solid #fff",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",fontSize:10}}>
+                    📷<input type="file" accept="image/*" onChange={uploadPhoto} style={{display:"none"}} />
+                  </label>
                 </div>
-                <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
-                  {rdvFuturs.slice(0, 3).map(r => {
-                    const nomS = `${r.startup?.user?.prenom || ""} ${r.startup?.user?.nom || ""}`.trim() || "Startup";
-                    return (
-                      <div key={r.id} style={{ display:"flex", alignItems:"center", gap:14, padding:"12px 16px", background:"#F8FAFC", borderRadius:12, border:"1px solid #E8EEF8" }}>
-                        <AvatarImg name={nomS} size={42} />
-                        <div style={{ flex:1 }}>
-                          <div style={{ fontWeight:600, fontSize:14, color:"#0A2540" }}>{nomS}</div>
-                          <div style={{ fontSize:12, color:"#64748B", marginTop:2 }}>
-                            {new Date(r.date_rdv).toLocaleDateString("fr-FR", { weekday:"short", day:"numeric", month:"short" })}{r.heure ? ` à ${r.heure}` : ""}
-                          </div>
-                        </div>
-                        <span className={r.statut === "confirme" ? "badge-ok" : "badge-wait"}>
-                          {r.statut === "confirme" ? "✅ Confirmé" : "⏳ En attente"}
-                        </span>
-                        {r.statut === "en_attente" && (
-                          <div style={{ display:"flex", gap:6 }}>
-                            <button className="btn btn-gr btn-sm" onClick={() => confirmerRdv(r.id)}>Confirmer</button>
-                            <button className="btn btn-r btn-sm" onClick={() => annulerRdv(r.id)}>Refuser</button>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
+                <div>
+                  <div style={{fontWeight:700,fontSize:16,color:"#0A2540"}}>{user?.prenom} {user?.nom}</div>
+                  <div style={{fontSize:13,color:"#8A9AB5"}}>{expert?.domaine || "Domaine non renseigné"}</div>
+                  <div style={{display:"flex",gap:6,marginTop:6,flexWrap:"wrap"}}>
+                    {expert?.statut==="valide" && !expert?.modification_demandee && <span className="badge-ok">✅ Validé</span>}
+                    {expert?.statut==="en_attente" && <span className="badge-wait">⏳ En attente</span>}
+                    {expert?.modification_demandee && <span className="badge-modif">⚠️ Modif en attente</span>}
+                    {expert?.localisation && <span style={{fontSize:11,color:"#6B7280"}}>📍 {expert.localisation}</span>}
+                  </div>
                 </div>
               </div>
-            )}
-
-            {/* Aperçu messages récents */}
-            {convList.length > 0 && (
-              <div className="card" style={{ padding:"22px 28px" }}>
-                <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:16 }}>
-                  <div style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:20, color:"#0A2540" }}>Messages récents</div>
-                  <button className="btn btn-s btn-sm" onClick={() => setTab("messages")}>Voir tous</button>
-                </div>
-                <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
-                  {convList.slice(0, 4).map((c: any) => {
-                    const last = c.messages[c.messages.length - 1];
-                    return (
-                      <div key={c.otherId}
-                        onClick={() => { setSelectedConv(c); loadConversation(c.otherId); setTab("messages"); }}
-                        style={{ display:"flex", alignItems:"center", gap:14, padding:"12px 16px", background:"#F8FAFC", borderRadius:12, border:"1px solid #E8EEF8", cursor:"pointer", transition:"background .15s" }}
-                        onMouseEnter={e => (e.currentTarget as HTMLElement).style.background="#FFFBEB"}
-                        onMouseLeave={e => (e.currentTarget as HTMLElement).style.background="#F8FAFC"}>
-                        <AvatarImg name={c.otherName} size={42} />
-                        <div style={{ flex:1, minWidth:0 }}>
-                          <div style={{ fontWeight:600, fontSize:14, color:"#0A2540" }}>{c.otherName}</div>
-                          <div style={{ fontSize:12, color:"#64748B", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", marginTop:2 }}>{last?.contenu}</div>
-                        </div>
-                        {c.unread > 0 && (
-                          <span style={{ background:"#F7B500", color:"#0A2540", borderRadius:99, padding:"2px 8px", fontSize:11, fontWeight:800 }}>{c.unread}</span>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
+            </div>
           </div>
         )}
 
         {/* ══ PROFIL ══ */}
         {tab === "profil" && (
-          <div className="fade" style={{ maxWidth:740, margin:"0 auto" }}>
-            <div className="card" style={{ padding:"24px", marginBottom:16 }}>
-              <div style={{ display:"flex", alignItems:"center", gap:20 }}>
-                <Avatar size={88} />
-                <div style={{ flex:1 }}>
-                  <div style={{ fontWeight:800, fontSize:19, color:"#0A2540" }}>{user?.prenom} {user?.nom}</div>
-                  <div style={{ fontSize:13, color:"#8A9AB5", marginTop:2 }}>{user?.email}</div>
-                  <div style={{ marginTop:10, display:"flex", gap:8, flexWrap:"wrap" }}>
-                    {expert?.statut === "valide" && !expert?.modification_demandee && <span className="badge-ok">✅ Validé</span>}
-                    {expert?.statut === "en_attente" && <span className="badge-wait">⏳ En attente</span>}
+          <div style={{maxWidth:700,margin:"0 auto"}}>
+            {/* Photo */}
+            <div className="card" style={{padding:"24px",marginBottom:16}}>
+              <div style={{display:"flex",alignItems:"center",gap:20}}>
+                <div style={{position:"relative",flexShrink:0}}>
+                  <div style={{width:88,height:88,borderRadius:"50%",overflow:"hidden",border:"3px solid #F7B500",background:"#0A2540",display:"flex",alignItems:"center",justifyContent:"center"}}>
+                    {photoUrl ? (
+                      <img src={photoUrl} alt="photo" style={{width:"100%",height:"100%",objectFit:"cover"}} onError={() => setPhotoUrl("")} />
+                    ) : (
+                      <span style={{color:"#F7B500",fontWeight:800,fontSize:28}}>{user?.prenom?.[0]}{user?.nom?.[0]}</span>
+                    )}
+                  </div>
+                  <label style={{position:"absolute",bottom:0,right:0,width:28,height:28,background:"#F7B500",borderRadius:"50%",border:"2px solid #fff",display:"flex",alignItems:"center",justifyContent:"center",cursor:uploading?"wait":"pointer",fontSize:13}}>
+                    {uploading?"⏳":"📷"}<input type="file" accept="image/*" onChange={uploadPhoto} style={{display:"none"}} disabled={uploading} />
+                  </label>
+                </div>
+                <div>
+                  <div style={{fontWeight:800,fontSize:18,color:"#0A2540"}}>{user?.prenom} {user?.nom}</div>
+                  <div style={{fontSize:13,color:"#8A9AB5",marginTop:2}}>{user?.email}</div>
+                  <div style={{marginTop:8,display:"flex",gap:6,flexWrap:"wrap"}}>
+                    {expert?.statut==="valide" && !expert?.modification_demandee && <span className="badge-ok">✅ Validé</span>}
+                    {expert?.statut==="en_attente" && <span className="badge-wait">⏳ En attente</span>}
                     {expert?.modification_demandee && <span className="badge-modif">⚠️ Modification en attente</span>}
                   </div>
-                  {uploading && <div style={{ marginTop:8, fontSize:12, color:"#8A9AB5" }}>⏳ Upload en cours...</div>}
-                  <div style={{ marginTop:6, fontSize:12, color:"#94A3B8" }}>Cliquez sur 📷 pour changer la photo de profil</div>
+                  <div style={{fontSize:11,color:"#8A9AB5",marginTop:6}}>Cliquez 📷 pour changer la photo</div>
                 </div>
               </div>
             </div>
 
             {expert?.modification_demandee && (
-              <div style={{ background:"#FFF8E1", border:"1px solid #F7B500", borderRadius:12, padding:"14px 18px", marginBottom:16, display:"flex", alignItems:"center", gap:12 }}>
-                <div style={{ fontSize:20 }}>⚠️</div>
-                <div>
-                  <div style={{ fontWeight:700, color:"#B45309", fontSize:13 }}>Modifications en attente de validation</div>
-                  <div style={{ fontSize:12, color:"#92400E", marginTop:2 }}>Vos modifications seront appliquées après validation par l'admin.</div>
-                </div>
+              <div style={{background:"#FFF8E1",border:"1px solid #F7B500",borderRadius:12,padding:"14px 18px",marginBottom:16}}>
+                <div style={{fontWeight:700,color:"#B45309",fontSize:13}}>⚠️ Modifications en attente de validation admin</div>
               </div>
             )}
 
-            <div className="card" style={{ overflow:"hidden" }}>
-              <div style={{ padding:"18px 28px", borderBottom:"1px solid #F1F5FB", display:"flex", alignItems:"center", justifyContent:"space-between", background:"#FAFBFE" }}>
-                <span style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:20, color:"#0A2540" }}>Informations professionnelles</span>
+            <div className="card" style={{overflow:"hidden"}}>
+              <div style={{padding:"16px 24px",borderBottom:"1px solid #F1F5F9",display:"flex",alignItems:"center",justifyContent:"space-between",background:"#FAFBFE"}}>
+                <span style={{fontWeight:700,fontSize:15,color:"#0A2540"}}>Informations professionnelles</span>
                 {!editingProfil && (
                   <button className="btn btn-g" onClick={() => setEditingProfil(true)} disabled={!!expert?.modification_demandee}>
                     {expert?.modification_demandee ? "⏳ En attente..." : "✏️ Modifier"}
                   </button>
                 )}
               </div>
-
               {editingProfil ? (
                 <form onSubmit={saveProfil}>
-                  <div style={{ padding:"24px 28px", display:"flex", flexDirection:"column", gap:18 }}>
-                    <div style={{ background:"#EFF6FF", border:"1px solid #BFDBFE", borderRadius:10, padding:"12px 16px", fontSize:13, color:"#1D4ED8" }}>
-                      ℹ️ Vos modifications seront soumises à l'administrateur pour validation avant publication.
+                  <div style={{padding:24,display:"flex",flexDirection:"column",gap:16}}>
+                    <div style={{background:"#EFF6FF",border:"1px solid #BFDBFE",borderRadius:10,padding:"12px 16px",fontSize:13,color:"#1D4ED8"}}>
+                      ℹ️ Modifications envoyées à l'admin pour validation.
                     </div>
-                    <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16 }}>
-                      <div>
-                        <label className="lbl">Domaine *</label>
-                        <input className="inp" type="text" placeholder="Ex: Marketing Digital" value={form.domaine} onChange={e => setForm({ ...form, domaine: e.target.value })} required />
-                      </div>
-                      <div>
-                        <label className="lbl">Expérience</label>
-                        <select className="inp" value={form.experience} onChange={e => setForm({ ...form, experience: e.target.value })}>
+                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}>
+                      <div><label className="lbl">Domaine *</label><input className="inp" type="text" value={form.domaine} onChange={e => setForm({...form,domaine:e.target.value})} required /></div>
+                      <div><label className="lbl">Expérience</label>
+                        <select className="inp" value={form.experience} onChange={e => setForm({...form,experience:e.target.value})}>
                           <option value="">Sélectionner...</option>
                           {["1-2 ans","3-5 ans","5-8 ans","8-12 ans","12+ ans"].map(v => <option key={v} value={v}>{v}</option>)}
                         </select>
                       </div>
                     </div>
-                    <div>
-                      <label className="lbl">Description</label>
-                      <textarea className="inp" placeholder="Présentez votre parcours..." value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} />
-                    </div>
-                    <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16 }}>
-                      <div>
-                        <label className="lbl">Localisation</label>
-                        <input className="inp" type="text" placeholder="Ex: Tunis, Sfax..." value={form.localisation} onChange={e => setForm({ ...form, localisation: e.target.value })} />
-                      </div>
-                      <div>
-                        <label className="lbl">Téléphone</label>
-                        <input className="inp" type="tel" placeholder="+216 00 000 000" value={form.telephone} onChange={e => setForm({ ...form, telephone: e.target.value })} />
-                      </div>
+                    <div><label className="lbl">Description</label><textarea className="inp" value={form.description} onChange={e => setForm({...form,description:e.target.value})} /></div>
+                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}>
+                      <div><label className="lbl">Localisation</label><input className="inp" type="text" value={form.localisation} onChange={e => setForm({...form,localisation:e.target.value})} /></div>
+                      <div><label className="lbl">Téléphone</label><input className="inp" type="tel" value={form.telephone} onChange={e => setForm({...form,telephone:e.target.value})} /></div>
                     </div>
                     <div>
-                      <label className="lbl" style={{ marginBottom:10 }}>Disponibilité</label>
-                      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
-                        {[
-                          { val:true,  label:"✅ Disponible",     sub:"Visible sur la plateforme" },
-                          { val:false, label:"❌ Non disponible", sub:"Masqué temporairement" },
-                        ].map(opt => (
-                          <div key={String(opt.val)} onClick={() => setForm({ ...form, disponible: opt.val })}
-                            style={{ border:`1.5px solid ${form.disponible===opt.val?"#F7B500":"#DDE5F0"}`, borderRadius:12, padding:"13px 16px", cursor:"pointer", background:form.disponible===opt.val?"rgba(247,181,0,.05)":"#F8FAFC", transition:"all .18s" }}>
-                            <div style={{ fontWeight:700, fontSize:13, color:"#0A2540" }}>{opt.label}</div>
-                            <div style={{ fontSize:11.5, color:"#94A3B8", marginTop:3 }}>{opt.sub}</div>
+                      <label className="lbl" style={{marginBottom:10}}>Disponibilité</label>
+                      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+                        {[{val:true,label:"✅ Disponible"},{val:false,label:"❌ Non disponible"}].map(opt => (
+                          <div key={String(opt.val)} onClick={() => setForm({...form,disponible:opt.val})}
+                            style={{border:`1.5px solid ${form.disponible===opt.val?"#F7B500":"#DDE4EF"}`,borderRadius:10,padding:"12px",cursor:"pointer",background:form.disponible===opt.val?"rgba(247,181,0,.06)":"#F7F9FC"}}>
+                            <div style={{fontWeight:700,fontSize:13,color:"#0A2540"}}>{opt.label}</div>
                           </div>
                         ))}
                       </div>
                     </div>
                   </div>
-                  <div style={{ padding:"16px 28px", borderTop:"1px solid #F1F5FB", display:"flex", justifyContent:"flex-end", gap:10, background:"#FAFBFE" }}>
+                  <div style={{padding:"14px 24px",borderTop:"1px solid #F1F5F9",display:"flex",justifyContent:"flex-end",gap:10}}>
                     <button type="button" className="btn btn-s" onClick={() => setEditingProfil(false)}>Annuler</button>
-                    <button type="submit" className="btn btn-p" disabled={savingProfil}>
-                      {savingProfil ? "Envoi en cours..." : "📤 Envoyer pour validation"}
-                    </button>
+                    <button type="submit" className="btn btn-g" disabled={savingProfil}>{savingProfil?"Envoi...":"📤 Envoyer pour validation"}</button>
                   </div>
                 </form>
               ) : (
-                <div style={{ padding:"20px 28px" }}>
-                  <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14 }}>
-                    {[
-                      { lbl:"Nom complet",   val:`${user?.prenom} ${user?.nom}` },
-                      { lbl:"Email",         val:user?.email },
-                      { lbl:"Téléphone",     val:expert?.telephone    || "—" },
-                      { lbl:"Domaine",       val:expert?.domaine      || "—" },
-                      { lbl:"Expérience",    val:expert?.experience   || "—" },
-                      { lbl:"Localisation",  val:expert?.localisation || "—" },
-                      { lbl:"Disponibilité", val:expert?.disponibilite || "—" },
-                      { lbl:"Statut",        val:expert?.statut       || "—" },
-                    ].map((row, i) => (
-                      <div key={i} style={{ background:"#F8FAFC", border:"1px solid #EEF2F9", borderRadius:10, padding:"12px 16px" }}>
-                        <div style={{ fontSize:11, fontWeight:700, color:"#94A3B8", textTransform:"uppercase" as const, letterSpacing:1, marginBottom:4 }}>{row.lbl}</div>
-                        <div style={{ fontSize:13.5, color:"#0A2540", fontWeight:500 }}>{row.val}</div>
-                      </div>
-                    ))}
-                  </div>
-                  {expert?.description && (
-                    <div style={{ marginTop:14, background:"#F8FAFC", border:"1px solid #EEF2F9", borderRadius:10, padding:"14px 16px" }}>
-                      <div style={{ fontSize:11, fontWeight:700, color:"#94A3B8", textTransform:"uppercase" as const, letterSpacing:1, marginBottom:6 }}>Description</div>
-                      <div style={{ fontSize:13.5, color:"#334155", lineHeight:1.7 }}>{expert.description}</div>
+                <div style={{padding:24}}>
+                  {[
+                    { lbl:"Nom complet",   val:`${user?.prenom} ${user?.nom}` },
+                    { lbl:"Email",         val:user?.email },
+                    { lbl:"Téléphone",     val:expert?.telephone||"-" },
+                    { lbl:"Domaine",       val:expert?.domaine||"-" },
+                    { lbl:"Expérience",    val:expert?.experience||"-" },
+                    { lbl:"Localisation",  val:expert?.localisation||"-" },
+                    { lbl:"Disponibilité", val:expert?.disponibilite||"-" },
+                    { lbl:"Description",   val:expert?.description||"-" },
+                  ].map((row,i) => (
+                    <div key={i} style={{display:"flex",gap:12,padding:"10px 0",borderBottom:"1px solid #F1F5F9"}}>
+                      <div style={{fontSize:11,color:"#8A9AB5",fontWeight:700,textTransform:"uppercase" as const,width:120,flexShrink:0,paddingTop:2}}>{row.lbl}</div>
+                      <div style={{fontSize:14,color:"#0A2540"}}>{row.val}</div>
                     </div>
-                  )}
+                  ))}
                 </div>
               )}
             </div>
           </div>
         )}
 
-        {/* ══ RENDEZ-VOUS ══ */}
-        {tab === "rendezvous" && (
-          <div className="fade">
-            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:22 }}>
-              <div>
-                <div style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:26, color:"#0A2540" }}>Mes rendez-vous</div>
-                <div style={{ fontSize:13, color:"#94A3B8", marginTop:4 }}>{rdvFuturs.length} rendez-vous actif{rdvFuturs.length > 1 ? "s" : ""}</div>
-              </div>
-            </div>
-            {rdvFuturs.length === 0 ? (
-              <div className="card" style={{ padding:"64px 40px", textAlign:"center" }}>
-                <div style={{ fontSize:48, marginBottom:16 }}>📅</div>
-                <div style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:22, color:"#0A2540", marginBottom:8 }}>Aucun rendez-vous</div>
-                <div style={{ fontSize:14, color:"#94A3B8" }}>Les demandes des startups apparaîtront ici.</div>
-              </div>
-            ) : (
-              <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
-                {rdvFuturs.map(r => {
-                  const nomS = `${r.startup?.user?.prenom || ""} ${r.startup?.user?.nom || ""}`.trim() || "Startup";
-                  return (
-                    <div key={r.id} className="card" style={{ padding:"20px 26px" }}>
-                      <div style={{ display:"flex", alignItems:"flex-start", gap:16, flexWrap:"wrap" }}>
-                        <AvatarImg name={nomS} size={52} />
-                        <div style={{ flex:1, minWidth:200 }}>
-                          <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:6, flexWrap:"wrap" }}>
-                            <span style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:20, color:"#0A2540" }}>{nomS}</span>
-                            <span className={r.statut === "confirme" ? "badge-ok" : "badge-wait"}>
-                              {r.statut === "confirme" ? "✅ Confirmé" : "⏳ En attente"}
-                            </span>
-                          </div>
-                          <div style={{ fontSize:13, color:"#64748B", display:"flex", gap:18, flexWrap:"wrap" }}>
-                            <span>📅 {new Date(r.date_rdv).toLocaleDateString("fr-FR", { weekday:"long", day:"numeric", month:"long", year:"numeric" })}</span>
-                            {r.heure && <span>🕐 {r.heure}</span>}
-                          </div>
-                          {r.motif && (
-                            <div style={{ marginTop:10, background:"#F8FAFC", border:"1px solid #EEF2F9", borderRadius:8, padding:"10px 14px", fontSize:13, color:"#475569" }}>
-                              <span style={{ fontWeight:600, color:"#334155" }}>Objet : </span>{r.motif}
-                            </div>
-                          )}
-                        </div>
-                        {r.statut === "en_attente" && (
-                          <div style={{ display:"flex", gap:8 }}>
-                            <button className="btn btn-gr" onClick={() => confirmerRdv(r.id)}>✅ Confirmer</button>
-                            <button className="btn btn-r"  onClick={() => annulerRdv(r.id)}>✕ Refuser</button>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* ══ DISPONIBILITÉS ══ */}
-        {tab === "disponibilites" && (
-          <div className="fade">
-            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:22 }}>
-              <div>
-                <div style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:26, color:"#0A2540" }}>Mes disponibilités</div>
-                <div style={{ fontSize:13, color:"#94A3B8", marginTop:4 }}>{dispos.length} créneau{dispos.length > 1 ? "x" : ""} défini{dispos.length > 1 ? "s" : ""}</div>
-              </div>
-              <button className="btn btn-g" onClick={() => setDispoModal(true)}>+ Ajouter un créneau</button>
-            </div>
-            {dispos.length === 0 ? (
-              <div className="card" style={{ padding:"64px 40px", textAlign:"center" }}>
-                <div style={{ fontSize:48, marginBottom:16 }}>🕐</div>
-                <div style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:22, color:"#0A2540", marginBottom:8 }}>Aucun créneau défini</div>
-                <div style={{ fontSize:14, color:"#94A3B8", marginBottom:20 }}>Ajoutez vos disponibilités pour que les startups puissent réserver.</div>
-                <button className="btn btn-g" onClick={() => setDispoModal(true)}>Ajouter maintenant</button>
-              </div>
-            ) : (
-              <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(300px,1fr))", gap:14 }}>
-                {dispos.map(d => (
-                  <div key={d.id} className="card" style={{ padding:"16px 20px", display:"flex", alignItems:"center", gap:14 }}>
-                    <div style={{ width:46, height:46, background:"rgba(247,181,0,.12)", borderRadius:12, display:"flex", alignItems:"center", justifyContent:"center", fontSize:22, flexShrink:0 }}>🕐</div>
-                    <div style={{ flex:1 }}>
-                      <div style={{ fontWeight:600, fontSize:14, color:"#0A2540" }}>
-                        {new Date(d.date).toLocaleDateString("fr-FR", { weekday:"short", day:"numeric", month:"long" })}
-                      </div>
-                      <div style={{ fontSize:12.5, color:"#64748B", marginTop:3 }}>
-                        {(d.heureDebut || "").slice(0,5)} → {(d.heureFin || "").slice(0,5)}
-                      </div>
-                    </div>
-                    <button className="btn btn-r btn-sm" onClick={() => deleteDispo(d.id)} style={{ padding:"6px 10px" }}>🗑</button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
         {/* ══ MESSAGES ══ */}
         {tab === "messages" && (
-          <div className="fade card" style={{ overflow:"hidden", display:"grid", gridTemplateColumns:"280px 1fr", height:560 }}>
-
+          <div className="card" style={{overflow:"hidden",display:"grid",gridTemplateColumns:"280px 1fr",height:580}}>
             {/* Liste conversations */}
-            <div style={{ borderRight:"1px solid #E8EEF6", overflowY:"auto" }}>
-              <div style={{ padding:"13px 16px", borderBottom:"1px solid #F1F5F9", fontWeight:700, fontSize:13, color:"#0A2540", background:"#FAFBFE", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-                <span>Conversations</span>
-                {unreadMessages > 0 && (
-                  <span style={{ background:"#F7B500", color:"#0A2540", borderRadius:99, padding:"2px 8px", fontSize:11, fontWeight:800 }}>{unreadMessages} non lus</span>
-                )}
+            <div style={{borderRight:"1px solid #E8EEF6",overflowY:"auto",display:"flex",flexDirection:"column"}}>
+              <div style={{padding:"13px 16px",borderBottom:"1px solid #F1F5F9",fontWeight:700,fontSize:13,color:"#0A2540",background:"#FAFBFE",flexShrink:0}}>
+                💬 Conversations ({convList.length})
               </div>
-
               {convList.length === 0 ? (
-                <div style={{ padding:"48px 20px", textAlign:"center" }}>
-                  <div style={{ fontSize:36, marginBottom:12 }}>💬</div>
-                  <div style={{ fontWeight:600, color:"#0A2540", fontSize:13, marginBottom:6 }}>Aucune conversation</div>
-                  <div style={{ fontSize:12, color:"#94A3B8", lineHeight:1.6 }}>Les startups peuvent vous contacter depuis la plateforme.</div>
+                <div style={{padding:40,textAlign:"center",color:"#8A9AB5",fontSize:13}}>
+                  <div style={{fontSize:32,marginBottom:8}}>💬</div>
+                  Aucune conversation
                 </div>
               ) : convList.map((c: any) => {
                 const last = c.messages[c.messages.length - 1];
-                const isActive = selectedConv?.otherId === c.otherId;
                 return (
                   <div key={c.otherId}
-                    className={`conv-row${isActive ? " active" : ""}`}
-                    onClick={() => { setSelectedConv(c); loadConversation(c.otherId); }}>
-                    <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-                      <AvatarImg name={c.otherName} size={36} />
-                      <div style={{ flex:1, minWidth:0 }}>
-                        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-                          <span style={{ fontWeight:600, fontSize:13, color:"#0A2540" }}>{c.otherName}</span>
-                          {c.unread > 0 && (
-                            <span style={{ background:"#F7B500", color:"#0A2540", borderRadius:99, padding:"1px 7px", fontSize:11, fontWeight:800 }}>{c.unread}</span>
-                          )}
+                    onClick={() => { setSelectedConv(c); loadConversation(c.otherId); }}
+                    style={{padding:"12px 14px",cursor:"pointer",borderBottom:"1px solid #F1F5F9",background:selectedConv?.otherId===c.otherId?"#FFFBEB":"transparent",transition:"background .15s"}}>
+                    <div style={{display:"flex",alignItems:"center",gap:10}}>
+                      <div style={{width:38,height:38,borderRadius:"50%",background:"#0A2540",color:"#F7B500",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:13,flexShrink:0}}>
+                        {c.otherName.split(" ").map((w: string) => w[0]||"").join("").slice(0,2).toUpperCase()||"?"}
+                      </div>
+                      <div style={{flex:1,minWidth:0}}>
+                        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                          <span style={{fontWeight:600,fontSize:13,color:"#0A2540"}}>{c.otherName||"Inconnu"}</span>
+                          {c.unread > 0 && <span style={{background:"#F7B500",color:"#0A2540",borderRadius:99,padding:"1px 7px",fontSize:11,fontWeight:800}}>{c.unread}</span>}
                         </div>
-                        <div style={{ fontSize:12, color:"#8A9AB5", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", marginTop:2 }}>
-                          {last?.contenu}
+                        <div style={{fontSize:12,color:"#8A9AB5",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{last?.contenu||""}</div>
+                        <div style={{fontSize:10,color:"#B8C4D6",marginTop:2}}>
+                          {last?.createdAt ? new Date(last.createdAt).toLocaleDateString("fr-FR") : ""}
                         </div>
                       </div>
                     </div>
@@ -756,59 +537,138 @@ export default function DashboardExpert() {
 
             {/* Zone conversation */}
             {selectedConv ? (
-              <div style={{ display:"flex", flexDirection:"column" }}>
-                {/* En-tête */}
-                <div style={{ padding:"12px 18px", borderBottom:"1px solid #F1F5F9", display:"flex", alignItems:"center", gap:12, background:"#FAFBFE" }}>
-                  <AvatarImg name={selectedConv.otherName} size={38} />
-                  <div style={{ flex:1 }}>
-                    <div style={{ fontWeight:700, fontSize:14, color:"#0A2540" }}>{selectedConv.otherName}</div>
-                    <div style={{ fontSize:12, color:"#94A3B8" }}>Startup BEH</div>
+              <div style={{display:"flex",flexDirection:"column",height:"100%"}}>
+                <div style={{padding:"12px 18px",borderBottom:"1px solid #F1F5F9",display:"flex",alignItems:"center",gap:12,background:"#FAFBFE",flexShrink:0}}>
+                  <div style={{width:36,height:36,borderRadius:"50%",background:"#0A2540",color:"#F7B500",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:13}}>
+                    {selectedConv.otherName.split(" ").map((w: string) => w[0]||"").join("").slice(0,2).toUpperCase()}
                   </div>
-                  <button className="btn btn-s btn-sm" style={{ padding:"5px 10px" }} onClick={() => setSelectedConv(null)}>✕</button>
+                  <div>
+                    <div style={{fontWeight:700,fontSize:14,color:"#0A2540"}}>{selectedConv.otherName}</div>
+                    <div style={{fontSize:11,color:"#8A9AB5"}}>Startup</div>
+                  </div>
                 </div>
-
-                {/* Messages */}
-                <div style={{ flex:1, overflowY:"auto", padding:"16px 18px", display:"flex", flexDirection:"column", gap:10 }}>
+                <div style={{flex:1,overflowY:"auto",padding:"16px 18px",display:"flex",flexDirection:"column",gap:10}}>
                   {convMessages.length === 0 ? (
-                    <div style={{ textAlign:"center", color:"#B8C8DC", fontSize:13, padding:"40px 0" }}>Aucun message dans cette conversation.</div>
+                    <div style={{textAlign:"center",color:"#B8C4D6",padding:20}}>Aucun message dans cette conversation</div>
                   ) : convMessages.map((m: any) => {
                     const isMe = m.sender_id === user?.id;
                     return (
-                      <div key={m.id} style={{ display:"flex", justifyContent:isMe?"flex-end":"flex-start" }}>
-                        <div style={{
-                          background:isMe?"#0A2540":"#F1F5F9",
-                          color:isMe?"#fff":"#0A2540",
-                          borderRadius:isMe?"14px 14px 2px 14px":"14px 14px 14px 2px",
-                          padding:"10px 14px", fontSize:13.5, maxWidth:"75%",
-                          lineHeight:1.55, wordBreak:"break-word"
-                        }}>
+                      <div key={m.id} style={{display:"flex",justifyContent:isMe?"flex-end":"flex-start"}}>
+                        <div style={{background:isMe?"#0A2540":"#F1F5F9",color:isMe?"#fff":"#0A2540",borderRadius:isMe?"14px 14px 2px 14px":"14px 14px 14px 2px",padding:"10px 14px",fontSize:13.5,maxWidth:"75%"}}>
                           <div>{m.contenu}</div>
-                          <div style={{ fontSize:10, opacity:.45, marginTop:4 }}>
-                            {new Date(m.createdAt).toLocaleTimeString("fr-FR", { hour:"2-digit", minute:"2-digit" })}
+                          <div style={{fontSize:10,opacity:.45,marginTop:4}}>
+                            {new Date(m.createdAt).toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"})}
                           </div>
                         </div>
                       </div>
                     );
                   })}
                 </div>
-
-                {/* Champ de réponse */}
-                <div style={{ padding:"12px 16px", borderTop:"1px solid #F1F5F9", display:"flex", gap:10, background:"#FAFBFE" }}>
-                  <input className="inp" style={{ flex:1 }} placeholder="Écrire un message..."
-                    value={replyText} onChange={e => setReplyText(e.target.value)}
-                    onKeyDown={e => e.key === "Enter" && envoyerReponse()} />
-                  <button className="btn btn-g" onClick={envoyerReponse} disabled={!replyText.trim()}>
-                    📤 Envoyer
-                  </button>
+                <div style={{padding:"12px 16px",borderTop:"1px solid #F1F5F9",display:"flex",gap:10,flexShrink:0}}>
+                  <input className="inp" style={{flex:1}} placeholder="Écrire un message..." value={replyText} onChange={e => setReplyText(e.target.value)} onKeyDown={e => e.key==="Enter" && envoyerReponse()} />
+                  <button className="btn btn-g" onClick={envoyerReponse} disabled={!replyText.trim()}>📤 Envoyer</button>
                 </div>
               </div>
             ) : (
-              <div style={{ display:"flex", alignItems:"center", justifyContent:"center", color:"#B8C4D6", fontSize:14, flexDirection:"column", gap:12 }}>
-                <div style={{ fontSize:40 }}>💬</div>
-                <div style={{ fontWeight:500, color:"#94A3B8" }}>Sélectionnez une conversation</div>
-                <div style={{ fontSize:12, color:"#C2CEDC" }}>pour lire et répondre aux messages</div>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"center",color:"#B8C4D6",fontSize:14,flexDirection:"column",gap:12}}>
+                <div style={{fontSize:48}}>💬</div>
+                <div style={{fontWeight:600,color:"#8A9AB5"}}>Sélectionnez une conversation</div>
               </div>
             )}
+          </div>
+        )}
+
+        {/* ══ RENDEZ-VOUS ══ */}
+        {tab === "rendezvous" && (
+          <div>
+            {/* En attente */}
+            {rdvEnAttente.length > 0 && (
+              <div style={{marginBottom:24}}>
+                <div style={{fontWeight:700,fontSize:15,color:"#0A2540",marginBottom:12}}>⏳ En attente de réponse ({rdvEnAttente.length})</div>
+                {rdvEnAttente.map(r => (
+                  <div key={r.id} className="card" style={{padding:"16px 22px",marginBottom:10,display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:12,borderLeft:"4px solid #F7B500"}}>
+                    <div style={{display:"flex",alignItems:"center",gap:14}}>
+                      <div style={{width:44,height:44,borderRadius:"50%",background:"#0A2540",color:"#F7B500",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:16}}>
+                        {r.client?.prenom?.[0]}{r.client?.nom?.[0]}
+                      </div>
+                      <div>
+                        <div style={{fontWeight:700,fontSize:14,color:"#0A2540"}}>{r.client?.prenom} {r.client?.nom}</div>
+                        <div style={{fontSize:13,color:"#6B7280",marginTop:2}}>
+                          📅 {new Date(r.date_rdv).toLocaleDateString("fr-FR",{weekday:"long",year:"numeric",month:"long",day:"numeric"})}
+                        </div>
+                        <div style={{fontSize:12,color:"#8A9AB5"}}>
+                          🕐 {new Date(r.date_rdv).toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"})}
+                        </div>
+                      </div>
+                    </div>
+                    <div style={{display:"flex",gap:8}}>
+                      <button className="btn btn-gr" onClick={() => confirmerRdv(r.id)}>✅ Confirmer</button>
+                      <button className="btn btn-r" onClick={() => annulerRdv(r.id)}>❌ Refuser</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Tous les RDV */}
+            <div style={{fontWeight:700,fontSize:15,color:"#0A2540",marginBottom:12}}>📋 Tous les rendez-vous</div>
+            {rdvs.length === 0 ? (
+              <div className="card" style={{padding:40,textAlign:"center",color:"#8A9AB5"}}>
+                <div style={{fontSize:40,marginBottom:12}}>📅</div>
+                <div style={{fontWeight:700,fontSize:16}}>Aucun rendez-vous</div>
+              </div>
+            ) : rdvs.map(r => (
+              <div key={r.id} className="card" style={{padding:"14px 20px",marginBottom:10,display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:10}}>
+                <div style={{display:"flex",alignItems:"center",gap:12}}>
+                  <div style={{width:40,height:40,borderRadius:"50%",background:"#0A2540",color:"#F7B500",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:14}}>
+                    {r.client?.prenom?.[0]}{r.client?.nom?.[0]}
+                  </div>
+                  <div>
+                    <div style={{fontWeight:600,fontSize:14,color:"#0A2540"}}>{r.client?.prenom} {r.client?.nom}</div>
+                    <div style={{fontSize:12,color:"#8A9AB5"}}>{new Date(r.date_rdv).toLocaleDateString("fr-FR")}</div>
+                  </div>
+                </div>
+                <span style={{
+                  background:r.statut==="confirme"?"#ECFDF5":r.statut==="annule"?"#FEF2F2":"#FFF8E1",
+                  color:r.statut==="confirme"?"#059669":r.statut==="annule"?"#DC2626":"#B45309",
+                  border:`1px solid ${r.statut==="confirme"?"#A7F3D0":r.statut==="annule"?"#FECACA":"#F7B500"}`,
+                  borderRadius:99,padding:"3px 10px",fontSize:11,fontWeight:700
+                }}>
+                  {r.statut==="confirme"?"✅ Confirmé":r.statut==="annule"?"❌ Annulé":"⏳ En attente"}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* ══ DISPONIBILITÉS ══ */}
+        {tab === "disponibilites" && (
+          <div>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16}}>
+              <div style={{fontWeight:700,fontSize:16,color:"#0A2540"}}>🕐 Mes créneaux disponibles</div>
+              <button className="btn btn-g" onClick={() => setDispoModal(true)}>+ Ajouter un créneau</button>
+            </div>
+            {dispos.length === 0 ? (
+              <div className="card" style={{padding:52,textAlign:"center"}}>
+                <div style={{fontSize:40,marginBottom:12}}>📅</div>
+                <div style={{fontWeight:700,color:"#0A2540",fontSize:16,marginBottom:6}}>Aucun créneau défini</div>
+                <div style={{fontSize:13,color:"#8A9AB5",marginBottom:20}}>Ajoutez vos disponibilités pour que les startups puissent prendre rendez-vous.</div>
+                <button className="btn btn-g" onClick={() => setDispoModal(true)}>+ Ajouter maintenant</button>
+              </div>
+            ) : dispos.map(d => (
+              <div key={d.id} className="card" style={{padding:"14px 20px",marginBottom:10,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                <div style={{display:"flex",alignItems:"center",gap:14}}>
+                  <div style={{width:40,height:40,background:"rgba(247,181,0,.12)",borderRadius:10,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20}}>🕐</div>
+                  <div>
+                    <div style={{fontWeight:600,fontSize:14,color:"#0A2540"}}>
+                      {new Date(d.date).toLocaleDateString("fr-FR",{weekday:"long",year:"numeric",month:"long",day:"numeric"})}
+                    </div>
+                    <div style={{fontSize:13,color:"#6B7280",marginTop:2}}>{d.heureDebut?.slice(0,5)} → {d.heureFin?.slice(0,5)}</div>
+                  </div>
+                </div>
+                <button className="btn btn-r" onClick={() => deleteDispo(d.id)}>🗑</button>
+              </div>
+            ))}
           </div>
         )}
 

@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
-type Tab = "dashboard" | "profil" | "experts" | "rendezvous" | "messages";
+type Tab = "dashboard" | "profil" | "experts" | "rendezvous" | "messages" | "temoignages";
 
 export default function DashboardStartup() {
   const router = useRouter();
@@ -12,6 +12,7 @@ export default function DashboardStartup() {
   const [experts, setExperts] = useState<any[]>([]);
   const [rdvs, setRdvs] = useState<any[]>([]);
   const [messages, setMessages] = useState<any[]>([]);
+  const [temoignages, setTemoignages] = useState<any[]>([]);
   const [toast, setToast] = useState({ text: "", ok: true });
   const [editingProfil, setEditingProfil] = useState(false);
   const [savingProfil, setSavingProfil] = useState(false);
@@ -24,9 +25,11 @@ export default function DashboardStartup() {
   const [selectedConv, setSelectedConv] = useState<any>(null);
   const [convMessages, setConvMessages] = useState<any[]>([]);
   const [replyText, setReplyText] = useState("");
+  const [temoText, setTemoText] = useState("");
+  const [sendingTemo, setSendingTemo] = useState(false);
   const [form, setForm] = useState({
-    nom_startup: "", secteur: "", taille: "", site_web: "",
-    description: "", fonction: "", localisation: "",
+    nom_startup:"", secteur:"", taille:"", site_web:"",
+    description:"", fonction:"", localisation:"",
   });
 
   const tk = () => localStorage.getItem("token") || "";
@@ -44,6 +47,7 @@ export default function DashboardStartup() {
     loadExperts();
     loadRdvs();
     loadMessages();
+    loadTemoignages();
   }, []);
 
   function notify(text: string, ok = true) {
@@ -58,13 +62,10 @@ export default function DashboardStartup() {
         const d = await r.json();
         setStartup(d);
         setForm({
-          nom_startup: d.nom_startup || "",
-          secteur: d.secteur || "",
-          taille: d.taille || "",
-          site_web: d.site_web || "",
-          description: d.description || "",
-          fonction: d.fonction || "",
-          localisation: d.localisation || "",
+          nom_startup: d.nom_startup||"", secteur: d.secteur||"",
+          taille: d.taille||"", site_web: d.site_web||"",
+          description: d.description||"", fonction: d.fonction||"",
+          localisation: d.localisation||"",
         });
       }
     } catch(e) { console.log(e); }
@@ -101,13 +102,18 @@ export default function DashboardStartup() {
     } catch(e) { console.log(e); }
   }
 
-  async function saveProfil(e: React.FormEvent) {
-    e.preventDefault();
-    setSavingProfil(true);
+  async function loadTemoignages() {
     try {
-      const r = await fetch(`${BASE}/startups/profil`, {
-        method: "PUT", headers: hdrJ(), body: JSON.stringify(form),
-      });
+      const r = await fetch(`${BASE}/temoignages/mes-temoignages`, { headers: hdr() });
+      if (r.ok) setTemoignages(await r.json());
+      else setTemoignages([]);
+    } catch(e) { setTemoignages([]); }
+  }
+
+  async function saveProfil(e: React.FormEvent) {
+    e.preventDefault(); setSavingProfil(true);
+    try {
+      const r = await fetch(`${BASE}/startups/profil`, { method:"PUT", headers:hdrJ(), body:JSON.stringify(form) });
       if (r.ok) { notify("Profil mis à jour ✅"); setEditingProfil(false); loadProfile(); }
       else notify("Erreur sauvegarde", false);
     } catch(e) { notify("Erreur", false); }
@@ -118,66 +124,71 @@ export default function DashboardStartup() {
     if (!rdvDate || !selectedExpert) return;
     try {
       const r = await fetch(`${BASE}/rendez-vous`, {
-        method: "POST", headers: hdrJ(),
-        body: JSON.stringify({ expert_id: selectedExpert.id, date_rdv: rdvDate }),
+        method:"POST", headers:hdrJ(),
+        body:JSON.stringify({ expert_id: selectedExpert.id, date_rdv: rdvDate }),
       });
       if (r.ok) { notify("Rendez-vous demandé ✅"); setRdvModal(false); setRdvDate(""); loadRdvs(); }
       else notify("Erreur", false);
     } catch(e) { notify("Erreur", false); }
   }
 
-async function envoyerMessage() {
-  if (!msgText.trim() || !msgExpert) return;
-  try {
-    // Envoyer vers user_id de l'expert (pas expert.id)
-    const receiverId = msgExpert.user_id;
-    if (!receiverId) {
-      notify("Erreur: impossible de trouver l'expert", false);
-      return;
-    }
-    const r = await fetch(`${BASE}/messages`, {
-      method: "POST",
-      headers: hdrJ(),
-      body: JSON.stringify({ receiver_id: receiverId, contenu: msgText }),
-    });
-    if (r.ok) {
-      notify("Message envoyé ✅");
-      setMsgModal(false);
-      setMsgText("");
-      loadMessages();
-    } else notify("Erreur envoi", false);
-  } catch(e) { notify("Erreur", false); }
-}
+  async function envoyerMessage() {
+    if (!msgText.trim() || !msgExpert) return;
+    try {
+      const receiverId = msgExpert.user_id;
+      if (!receiverId) { notify("Erreur expert", false); return; }
+      const r = await fetch(`${BASE}/messages`, {
+        method:"POST", headers:hdrJ(),
+        body:JSON.stringify({ receiver_id: receiverId, contenu: msgText }),
+      });
+      if (r.ok) { notify("Message envoyé ✅"); setMsgModal(false); setMsgText(""); loadMessages(); }
+      else notify("Erreur envoi", false);
+    } catch(e) { notify("Erreur", false); }
+  }
+
   async function envoyerReponse() {
     if (!replyText.trim() || !selectedConv) return;
     try {
       const r = await fetch(`${BASE}/messages`, {
-        method: "POST", headers: hdrJ(),
-        body: JSON.stringify({ receiver_id: selectedConv.otherId, contenu: replyText }),
+        method:"POST", headers:hdrJ(),
+        body:JSON.stringify({ receiver_id: selectedConv.otherId, contenu: replyText }),
       });
-      if (r.ok) {
-        setReplyText("");
-        loadConversation(selectedConv.otherId);
-        loadMessages();
-      } else notify("Erreur envoi", false);
+      if (r.ok) { setReplyText(""); loadConversation(selectedConv.otherId); loadMessages(); }
+      else notify("Erreur envoi", false);
     } catch(e) { notify("Erreur", false); }
   }
 
-  async function annulerRdv(id: number) {
-    if (!confirm("Annuler ce rendez-vous ?")) return;
+  async function envoyerTemoignage(e: React.FormEvent) {
+    e.preventDefault();
+    if (!temoText.trim()) return;
+    setSendingTemo(true);
     try {
-      const r = await fetch(`${BASE}/rendez-vous/${id}/annuler`, { method: "PUT", headers: hdr() });
+      const r = await fetch(`${BASE}/temoignages`, {
+        method:"POST", headers:hdrJ(), body:JSON.stringify({ texte: temoText }),
+      });
+      if (r.ok) {
+        notify("Témoignage envoyé à l'admin ✅");
+        setTemoText("");
+        loadTemoignages();
+      } else notify("Erreur envoi", false);
+    } catch(e) { notify("Erreur", false); }
+    setSendingTemo(false);
+  }
+
+  async function annulerRdv(id: number) {
+    if (!confirm("Annuler ?")) return;
+    try {
+      const r = await fetch(`${BASE}/rendez-vous/${id}/annuler`, { method:"PUT", headers:hdr() });
       if (r.ok) { notify("Annulé"); loadRdvs(); }
     } catch(e) { notify("Erreur", false); }
   }
 
-  // Grouper messages par conversation
   const conversations = messages.reduce((acc: any, m: any) => {
     const otherId = m.sender_id === user?.id ? m.receiver_id : m.sender_id;
     const otherName = m.sender_id === user?.id
-      ? `${m.receiver?.prenom || ""} ${m.receiver?.nom || ""}`.trim()
-      : `${m.sender?.prenom || ""} ${m.sender?.nom || ""}`.trim();
-    if (!acc[otherId]) acc[otherId] = { otherId, otherName, messages: [], unread: 0 };
+      ? `${m.receiver?.prenom||""} ${m.receiver?.nom||""}`.trim()
+      : `${m.sender?.prenom||""} ${m.sender?.nom||""}`.trim();
+    if (!acc[otherId]) acc[otherId] = { otherId, otherName, messages:[], unread:0 };
     acc[otherId].messages.push(m);
     if (!m.lu && m.receiver_id === user?.id) acc[otherId].unread++;
     return acc;
@@ -199,27 +210,23 @@ async function envoyerMessage() {
         .btn-g{background:#F7B500;color:#0A2540;}.btn-g:hover{background:#e6a800;}
         .btn-s{background:#F1F5F9;color:#475569;}.btn-s:hover{background:#E2E8F0;}
         .btn-r{background:#FEF2F2;color:#DC2626;}.btn-r:hover{background:#DC2626;color:#fff;}
-        .btn-b{background:#EFF6FF;color:#1D4ED8;}.btn-b:hover{background:#1D4ED8;color:#fff;}
+        .btn-gr{background:#ECFDF5;color:#059669;}.btn-gr:hover{background:#059669;color:#fff;}
         .btn:disabled{opacity:.55;cursor:not-allowed;}
-        .tab{background:none;border:none;cursor:pointer;padding:14px 4px;font-size:13px;font-weight:500;color:#7D8FAA;border-bottom:2px solid transparent;font-family:'Outfit',sans-serif;transition:all .2s;}
+        .tab{background:none;border:none;cursor:pointer;padding:12px 4px;font-size:12.5px;font-weight:500;color:#7D8FAA;border-bottom:2px solid transparent;font-family:'Outfit',sans-serif;transition:all .2s;}
         .tab.active{color:#0A2540;border-bottom-color:#F7B500;font-weight:700;}
         .inp{width:100%;background:#F7F9FC;border:1.5px solid #DDE4EF;border-radius:10px;padding:11px 14px;font-family:'Outfit',sans-serif;font-size:13.5px;color:#0A2540;outline:none;transition:border-color .18s;}
         .inp:focus{border-color:#F7B500;box-shadow:0 0 0 3px rgba(247,181,0,.1);}
-        textarea.inp{resize:vertical;min-height:90px;}
-        select.inp{appearance:none;cursor:pointer;}
+        textarea.inp{resize:vertical;min-height:100px;}
+        select.inp{appearance:none;}
         .lbl{font-size:11px;font-weight:700;color:#7D8FAA;text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:6px;}
         .modal-bg{position:fixed;inset:0;background:rgba(10,37,64,.5);z-index:200;display:flex;align-items:center;justify-content:center;padding:24px;backdrop-filter:blur(4px);}
         .modal{background:#fff;border-radius:20px;width:100%;max-width:520px;box-shadow:0 24px 80px rgba(10,37,64,.2);overflow:hidden;}
         .badge-ok{background:#ECFDF5;color:#059669;border:1px solid #A7F3D0;border-radius:99px;padding:3px 10px;font-size:11px;font-weight:700;}
         .badge-wait{background:#FFF8E1;color:#B45309;border:1px solid #F7B500;border-radius:99px;padding:3px 10px;font-size:11px;font-weight:700;}
+        .badge-no{background:#FEF2F2;color:#DC2626;border:1px solid #FECACA;border-radius:99px;padding:3px 10px;font-size:11px;font-weight:700;}
         .avatar{width:44px;height:44px;border-radius:50%;background:#0A2540;color:#F7B500;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px;flex-shrink:0;}
-        .expert-card{background:#fff;border:1px solid #E8EEF6;border-radius:16px;padding:20px;transition:all .2s;}
-        .expert-card:hover{box-shadow:0 8px 28px rgba(10,37,64,.1);border-color:rgba(247,181,0,.3);}
-        .msg-me{background:#0A2540;color:#fff;border-radius:14px 14px 2px 14px;padding:10px 14px;font-size:13.5px;max-width:75%;}
-        .msg-other{background:#F1F5F9;color:#0A2540;border-radius:14px 14px 14px 2px;padding:10px 14px;font-size:13.5px;max-width:75%;}
       `}</style>
 
-      {/* Toast */}
       {toast.text && (
         <div style={{position:"fixed",top:20,right:20,zIndex:999,background:toast.ok?"#ECFDF5":"#FEF2F2",border:`1px solid ${toast.ok?"#A7F3D0":"#FECACA"}`,borderLeft:`3px solid ${toast.ok?"#059669":"#DC2626"}`,color:toast.ok?"#059669":"#DC2626",borderRadius:10,padding:"12px 18px",fontWeight:600,fontSize:13,boxShadow:"0 8px 24px rgba(0,0,0,.1)"}}>
           {toast.text}
@@ -236,21 +243,20 @@ async function envoyerMessage() {
             </div>
             <div style={{padding:24}}>
               <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:20,padding:16,background:"#F7F9FC",borderRadius:12}}>
-                <div className="avatar" style={{width:52,height:52,fontSize:18}}>
-                  {selectedExpert.user?.prenom?.[0]}{selectedExpert.user?.nom?.[0]}
+                <div style={{width:52,height:52,borderRadius:"50%",overflow:"hidden",background:"#0A2540",display:"flex",alignItems:"center",justifyContent:"center",border:"2px solid #F7B500",flexShrink:0}}>
+                  {selectedExpert.photo ? <img src={`${BASE}/uploads/photos/${selectedExpert.photo}`} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/> : <span style={{color:"#F7B500",fontWeight:800,fontSize:18}}>{selectedExpert.user?.prenom?.[0]}{selectedExpert.user?.nom?.[0]}</span>}
                 </div>
                 <div>
                   <div style={{fontWeight:700,color:"#0A2540",fontSize:15}}>{selectedExpert.user?.prenom} {selectedExpert.user?.nom}</div>
                   <div style={{fontSize:13,color:"#8A9AB5"}}>{selectedExpert.domaine}</div>
-                  {selectedExpert.localisation && <div style={{fontSize:12,color:"#6B7280"}}>📍 {selectedExpert.localisation}</div>}
                 </div>
               </div>
-              <label className="lbl">Date et heure du rendez-vous</label>
+              <label className="lbl">Date et heure</label>
               <input type="datetime-local" className="inp" value={rdvDate} onChange={e => setRdvDate(e.target.value)} />
             </div>
             <div style={{padding:"14px 24px",borderTop:"1px solid #F1F5F9",display:"flex",justifyContent:"flex-end",gap:10}}>
               <button className="btn btn-s" onClick={() => setRdvModal(false)}>Annuler</button>
-              <button className="btn btn-g" onClick={prendreRdv} disabled={!rdvDate}>📅 Confirmer le RDV</button>
+              <button className="btn btn-g" onClick={prendreRdv} disabled={!rdvDate}>📅 Confirmer</button>
             </div>
           </div>
         </div>
@@ -261,21 +267,21 @@ async function envoyerMessage() {
         <div className="modal-bg" onClick={() => setMsgModal(false)}>
           <div className="modal" onClick={e => e.stopPropagation()}>
             <div style={{padding:"18px 24px",borderBottom:"1px solid #F1F5F9",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-              <span style={{fontWeight:700,fontSize:16,color:"#0A2540"}}>💬 Envoyer un message</span>
+              <span style={{fontWeight:700,fontSize:16,color:"#0A2540"}}>💬 Message à {msgExpert.user?.prenom}</span>
               <button className="btn btn-s" style={{padding:"6px 10px"}} onClick={() => setMsgModal(false)}>✕</button>
             </div>
             <div style={{padding:24}}>
               <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:20,padding:16,background:"#F7F9FC",borderRadius:12}}>
-                <div className="avatar" style={{width:52,height:52,fontSize:18}}>
-                  {msgExpert.user?.prenom?.[0]}{msgExpert.user?.nom?.[0]}
+                <div style={{width:52,height:52,borderRadius:"50%",overflow:"hidden",background:"#0A2540",display:"flex",alignItems:"center",justifyContent:"center",border:"2px solid #F7B500",flexShrink:0}}>
+                  {msgExpert.photo ? <img src={`${BASE}/uploads/photos/${msgExpert.photo}`} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/> : <span style={{color:"#F7B500",fontWeight:800,fontSize:18}}>{msgExpert.user?.prenom?.[0]}{msgExpert.user?.nom?.[0]}</span>}
                 </div>
                 <div>
-                  <div style={{fontWeight:700,color:"#0A2540",fontSize:15}}>{msgExpert.user?.prenom} {msgExpert.user?.nom}</div>
+                  <div style={{fontWeight:700,color:"#0A2540"}}>{msgExpert.user?.prenom} {msgExpert.user?.nom}</div>
                   <div style={{fontSize:13,color:"#8A9AB5"}}>{msgExpert.domaine}</div>
                 </div>
               </div>
-              <label className="lbl">Votre message</label>
-              <textarea className="inp" style={{minHeight:120}} placeholder="Écrivez votre message ici..." value={msgText} onChange={e => setMsgText(e.target.value)} />
+              <label className="lbl">Message</label>
+              <textarea className="inp" placeholder="Écrivez votre message..." value={msgText} onChange={e => setMsgText(e.target.value)} />
             </div>
             <div style={{padding:"14px 24px",borderTop:"1px solid #F1F5F9",display:"flex",justifyContent:"flex-end",gap:10}}>
               <button className="btn btn-s" onClick={() => { setMsgModal(false); setMsgText(""); }}>Annuler</button>
@@ -291,24 +297,26 @@ async function envoyerMessage() {
           <div style={{width:34,height:34,background:"#F7B500",borderRadius:8,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:11,color:"#0A2540"}}>BEH</div>
           <div>
             <div style={{color:"#fff",fontWeight:700,fontSize:14}}>Espace Startup</div>
-            <div style={{color:"rgba(255,255,255,.4)",fontSize:11}}>{startup?.nom_startup || `${user?.prenom} ${user?.nom}`}</div>
+            <div style={{color:"rgba(255,255,255,.4)",fontSize:11}}>{startup?.nom_startup||`${user?.prenom} ${user?.nom}`}</div>
           </div>
         </div>
-        <button className="btn btn-s" style={{color:"rgba(255,255,255,.7)",background:"rgba(255,255,255,.08)",border:"1px solid rgba(255,255,255,.12)"}}
-          onClick={() => { localStorage.clear(); router.push("/"); }}>
-          Déconnexion
-        </button>
+        <div style={{display:"flex",gap:10,alignItems:"center"}}>
+          {unreadTotal > 0 && <div style={{background:"#F7B500",color:"#0A2540",borderRadius:99,padding:"4px 12px",fontSize:12,fontWeight:800}}>🔔 {unreadTotal}</div>}
+          <button className="btn btn-s" style={{color:"rgba(255,255,255,.7)",background:"rgba(255,255,255,.08)",border:"1px solid rgba(255,255,255,.12)"}}
+            onClick={() => { localStorage.clear(); router.push("/"); }}>Déconnexion</button>
+        </div>
       </header>
 
       {/* Tabs */}
       <div style={{background:"#fff",borderBottom:"1px solid #E8EEF6"}}>
-        <div style={{maxWidth:1100,margin:"0 auto",padding:"0 24px",display:"flex",gap:24}}>
+        <div style={{maxWidth:1100,margin:"0 auto",padding:"0 24px",display:"flex",gap:16}}>
           {[
-            { id:"dashboard",  label:"🏠 Accueil" },
-            { id:"profil",     label:"🚀 Mon Profil" },
-            { id:"experts",    label:`🎯 Experts (${experts.length})` },
-            { id:"rendezvous", label:`📅 RDV (${rdvs.length})` },
-            { id:"messages",   label:`💬 Messages${unreadTotal > 0 ? ` (${unreadTotal})` : ""}` },
+            { id:"dashboard",   label:"🏠 Accueil" },
+            { id:"profil",      label:"🚀 Profil" },
+            { id:"experts",     label:`🎯 Experts (${experts.length})` },
+            { id:"rendezvous",  label:`📅 RDV (${rdvs.length})` },
+            { id:"messages",    label:`💬 Messages${unreadTotal>0?` (${unreadTotal})`:""}` },
+            { id:"temoignages", label:"⭐ Témoignages" },
           ].map(t => (
             <button key={t.id} className={`tab${tab===t.id?" active":""}`} onClick={() => { setTab(t.id as Tab); setSelectedConv(null); }}>
               {t.label}
@@ -322,55 +330,47 @@ async function envoyerMessage() {
         {/* ══ DASHBOARD ══ */}
         {tab === "dashboard" && (
           <div>
-            {startup?.statut === "en_attente" && (
-              <div style={{background:"linear-gradient(135deg,#FFF8E1,#FFF3CD)",border:"1px solid #F7B500",borderRadius:16,padding:"20px 24px",marginBottom:20,display:"flex",alignItems:"center",gap:16}}>
+            {startup?.statut==="en_attente" && (
+              <div style={{background:"linear-gradient(135deg,#FFF8E1,#FFF3CD)",border:"1px solid #F7B500",borderRadius:16,padding:"20px 24px",marginBottom:20,display:"flex",gap:16,alignItems:"center"}}>
                 <div style={{fontSize:32}}>⏳</div>
-                <div>
-                  <div style={{fontWeight:700,color:"#B45309",fontSize:15}}>Compte en attente de validation</div>
-                  <div style={{color:"#92400E",fontSize:13,marginTop:4}}>Vous recevrez un email dès la validation.</div>
-                </div>
+                <div><div style={{fontWeight:700,color:"#B45309"}}>Compte en attente de validation</div><div style={{fontSize:13,color:"#92400E",marginTop:4}}>Vous recevrez un email dès la validation.</div></div>
               </div>
             )}
-            {startup?.statut === "valide" && (
-              <div style={{background:"linear-gradient(135deg,#ECFDF5,#D1FAE5)",border:"1px solid #A7F3D0",borderRadius:16,padding:"20px 24px",marginBottom:20,display:"flex",alignItems:"center",gap:16}}>
+            {startup?.statut==="valide" && (
+              <div style={{background:"linear-gradient(135deg,#ECFDF5,#D1FAE5)",border:"1px solid #A7F3D0",borderRadius:16,padding:"20px 24px",marginBottom:20,display:"flex",gap:16,alignItems:"center"}}>
                 <div style={{fontSize:32}}>✅</div>
-                <div>
-                  <div style={{fontWeight:700,color:"#059669",fontSize:15}}>Compte validé !</div>
-                  <div style={{color:"#065F46",fontSize:13,marginTop:4}}>Vous pouvez contacter des experts et prendre des rendez-vous.</div>
-                </div>
+                <div><div style={{fontWeight:700,color:"#059669"}}>Compte validé !</div><div style={{fontSize:13,color:"#065F46",marginTop:4}}>Vous pouvez contacter des experts.</div></div>
               </div>
             )}
-
             <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:16,marginBottom:20}}>
               {[
-                { label:"Experts", val:experts.length, color:"#8B5CF6", icon:"🎯" },
-                { label:"RDV",     val:rdvs.length,    color:"#3B82F6", icon:"📅" },
-                { label:"Messages",val:messages.length,color:"#10B981", icon:"💬" },
-                { label:"Non lus", val:unreadTotal,    color:"#EF4444", icon:"🔔" },
+                { label:"Experts",   val:experts.length,     color:"#8B5CF6", icon:"🎯" },
+                { label:"RDV",       val:rdvs.length,        color:"#3B82F6", icon:"📅" },
+                { label:"Messages",  val:messages.length,    color:"#10B981", icon:"💬" },
+                { label:"Témoignages",val:temoignages.length,color:"#F7B500", icon:"⭐" },
               ].map((s,i) => (
-                <div key={i} className="card" style={{padding:"20px 24px",display:"flex",alignItems:"center",gap:16}}>
+                <div key={i} className="card" style={{padding:"18px 20px",display:"flex",alignItems:"center",gap:14}}>
                   <div style={{fontSize:28}}>{s.icon}</div>
                   <div>
                     <div style={{fontSize:22,fontWeight:800,color:s.color}}>{s.val}</div>
-                    <div style={{fontSize:12,color:"#8A9AB5",marginTop:4}}>{s.label}</div>
+                    <div style={{fontSize:11,color:"#8A9AB5",marginTop:2}}>{s.label}</div>
                   </div>
                 </div>
               ))}
             </div>
 
-            {/* Experts récents */}
             {experts.length > 0 && (
-              <div className="card" style={{padding:"20px 24px",marginBottom:16}}>
-                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16}}>
+              <div className="card" style={{padding:"20px 24px"}}>
+                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
                   <span style={{fontWeight:700,fontSize:15,color:"#0A2540"}}>Experts disponibles</span>
                   <button className="btn btn-s" onClick={() => setTab("experts")}>Voir tous →</button>
                 </div>
-                <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(220px,1fr))",gap:12}}>
-                  {experts.slice(0,3).map(e => (
+                <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))",gap:12}}>
+                  {experts.slice(0,4).map(e => (
                     <div key={e.id} style={{background:"#F7F9FC",borderRadius:12,padding:"14px",border:"1px solid #E8EEF6"}}>
                       <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
-                        <div className="avatar" style={{width:38,height:38,fontSize:13}}>
-                          {e.photo ? <img src={`${BASE}/uploads/photos/${e.photo}`} alt="" style={{width:"100%",height:"100%",objectFit:"cover",borderRadius:"50%"}}/> : `${e.user?.prenom?.[0]}${e.user?.nom?.[0]}`}
+                        <div style={{width:38,height:38,borderRadius:"50%",overflow:"hidden",background:"#0A2540",display:"flex",alignItems:"center",justifyContent:"center",border:"2px solid #F7B500",flexShrink:0}}>
+                          {e.photo ? <img src={`${BASE}/uploads/photos/${e.photo}`} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/> : <span style={{color:"#F7B500",fontWeight:800,fontSize:13}}>{e.user?.prenom?.[0]}{e.user?.nom?.[0]}</span>}
                         </div>
                         <div>
                           <div style={{fontWeight:600,fontSize:13,color:"#0A2540"}}>{e.user?.prenom} {e.user?.nom}</div>
@@ -378,14 +378,8 @@ async function envoyerMessage() {
                         </div>
                       </div>
                       <div style={{display:"flex",gap:6}}>
-                        <button className="btn btn-s" style={{flex:1,justifyContent:"center",fontSize:11,padding:"6px"}}
-                          onClick={() => { setMsgExpert(e); setMsgModal(true); }}>
-                          💬
-                        </button>
-                        <button className="btn btn-g" style={{flex:1,justifyContent:"center",fontSize:11,padding:"6px"}}
-                          onClick={() => { setSelectedExpert(e); setRdvModal(true); }}>
-                          📅
-                        </button>
+                        <button className="btn btn-s" style={{flex:1,justifyContent:"center",fontSize:11,padding:"6px"}} onClick={() => { setMsgExpert(e); setMsgModal(true); }}>💬</button>
+                        <button className="btn btn-g" style={{flex:1,justifyContent:"center",fontSize:11,padding:"6px"}} onClick={() => { setSelectedExpert(e); setRdvModal(true); }}>📅</button>
                       </div>
                     </div>
                   ))}
@@ -467,45 +461,32 @@ async function envoyerMessage() {
             {experts.length === 0 ? (
               <div className="card" style={{padding:40,textAlign:"center",color:"#8A9AB5"}}>
                 <div style={{fontSize:40,marginBottom:12}}>🎯</div>
-                <div style={{fontWeight:700,fontSize:16,marginBottom:6}}>Aucun expert disponible</div>
+                <div style={{fontWeight:700,fontSize:16}}>Aucun expert disponible</div>
               </div>
             ) : (
               <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(300px,1fr))",gap:16}}>
                 {experts.map(e => (
-                  <div key={e.id} className="expert-card">
-                    {/* Photo */}
+                  <div key={e.id} style={{background:"#fff",border:"1px solid #E8EEF6",borderRadius:16,padding:20,transition:"all .2s"}}
+                    onMouseEnter={el => { (el.currentTarget as HTMLDivElement).style.boxShadow="0 8px 28px rgba(10,37,64,.1)"; (el.currentTarget as HTMLDivElement).style.borderColor="rgba(247,181,0,.3)"; }}
+                    onMouseLeave={el => { (el.currentTarget as HTMLDivElement).style.boxShadow="none"; (el.currentTarget as HTMLDivElement).style.borderColor="#E8EEF6"; }}>
                     <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:14}}>
-                      <div style={{width:60,height:60,borderRadius:"50%",overflow:"hidden",background:"#0A2540",display:"flex",alignItems:"center",justifyContent:"center",border:"2px solid #F7B500",flexShrink:0}}>
-                        {e.photo ? (
-                          <img src={`${BASE}/uploads/photos/${e.photo}`} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}} onError={(ev) => { (ev.currentTarget as HTMLImageElement).style.display="none"; }}/>
-                        ) : (
-                          <span style={{color:"#F7B500",fontWeight:800,fontSize:20}}>{e.user?.prenom?.[0]}{e.user?.nom?.[0]}</span>
-                        )}
+                      <div style={{width:60,height:60,borderRadius:"50%",overflow:"hidden",background:"#0A2540",display:"flex",alignItems:"center",justifyContent:"center",border:"3px solid #F7B500",flexShrink:0}}>
+                        {e.photo ? <img src={`${BASE}/uploads/photos/${e.photo}`} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}} onError={(ev) => { (ev.currentTarget as HTMLImageElement).style.display="none"; }}/> : <span style={{color:"#F7B500",fontWeight:800,fontSize:20}}>{e.user?.prenom?.[0]}{e.user?.nom?.[0]}</span>}
                       </div>
                       <div>
                         <div style={{fontWeight:700,fontSize:15,color:"#0A2540"}}>{e.user?.prenom} {e.user?.nom}</div>
-                        <div style={{fontSize:12,color:"#8A9AB5",marginTop:2}}>{e.domaine || "-"}</div>
+                        <div style={{fontSize:12,color:"#8A9AB5",marginTop:2}}>{e.domaine||"-"}</div>
                         <span className="badge-ok" style={{marginTop:6,display:"inline-block"}}>✅ Disponible</span>
                       </div>
                     </div>
-
-                    {/* Infos */}
                     <div style={{display:"flex",flexDirection:"column",gap:5,marginBottom:14}}>
                       {e.experience  && <div style={{fontSize:12,color:"#6B7280"}}>💼 {e.experience}</div>}
                       {e.localisation && <div style={{fontSize:12,color:"#6B7280"}}>📍 {e.localisation}</div>}
                       {e.description  && <div style={{fontSize:12,color:"#6B7280",lineHeight:1.5}}>{e.description.substring(0,100)}{e.description.length>100?"...":""}</div>}
                     </div>
-
-                    {/* Boutons */}
                     <div style={{display:"flex",gap:8}}>
-                      <button className="btn btn-s" style={{flex:1,justifyContent:"center"}}
-                        onClick={() => { setMsgExpert(e); setMsgModal(true); }}>
-                        💬 Message
-                      </button>
-                      <button className="btn btn-g" style={{flex:1,justifyContent:"center"}}
-                        onClick={() => { setSelectedExpert(e); setRdvModal(true); }}>
-                        📅 Rendez-vous
-                      </button>
+                      <button className="btn btn-s" style={{flex:1,justifyContent:"center"}} onClick={() => { setMsgExpert(e); setMsgModal(true); }}>💬 Message</button>
+                      <button className="btn btn-g" style={{flex:1,justifyContent:"center"}} onClick={() => { setSelectedExpert(e); setRdvModal(true); }}>📅 Rendez-vous</button>
                     </div>
                   </div>
                 ))}
@@ -531,18 +512,14 @@ async function envoyerMessage() {
                   <div>
                     <div style={{fontWeight:700,fontSize:14,color:"#0A2540"}}>{r.expert?.user?.prenom} {r.expert?.user?.nom}</div>
                     <div style={{fontSize:12,color:"#8A9AB5"}}>{r.expert?.domaine}</div>
-                    <div style={{fontSize:13,color:"#6B7280",marginTop:4}}>
-                      {new Date(r.date_rdv).toLocaleDateString("fr-FR",{weekday:"long",year:"numeric",month:"long",day:"numeric"})}
-                    </div>
+                    <div style={{fontSize:13,color:"#6B7280",marginTop:4}}>{new Date(r.date_rdv).toLocaleDateString("fr-FR",{weekday:"long",year:"numeric",month:"long",day:"numeric"})}</div>
                   </div>
                 </div>
                 <div style={{display:"flex",alignItems:"center",gap:10}}>
                   <span style={{background:r.statut==="confirme"?"#ECFDF5":r.statut==="annule"?"#FEF2F2":"#FFF8E1",color:r.statut==="confirme"?"#059669":r.statut==="annule"?"#DC2626":"#B45309",border:`1px solid ${r.statut==="confirme"?"#A7F3D0":r.statut==="annule"?"#FECACA":"#F7B500"}`,borderRadius:99,padding:"3px 10px",fontSize:11,fontWeight:700}}>
                     {r.statut==="confirme"?"✅ Confirmé":r.statut==="annule"?"❌ Annulé":"⏳ En attente"}
                   </span>
-                  {r.statut!=="annule" && (
-                    <button className="btn btn-r" style={{fontSize:12,padding:"6px 12px"}} onClick={() => annulerRdv(r.id)}>Annuler</button>
-                  )}
+                  {r.statut!=="annule" && <button className="btn btn-r" style={{fontSize:12,padding:"6px 12px"}} onClick={() => annulerRdv(r.id)}>Annuler</button>}
                 </div>
               </div>
             ))}
@@ -552,22 +529,23 @@ async function envoyerMessage() {
         {/* ══ MESSAGES ══ */}
         {tab === "messages" && (
           <div className="card" style={{overflow:"hidden",display:"grid",gridTemplateColumns:"280px 1fr",height:560}}>
-            {/* Liste conversations */}
             <div style={{borderRight:"1px solid #E8EEF6",overflowY:"auto"}}>
               <div style={{padding:"13px 16px",borderBottom:"1px solid #F1F5F9",fontWeight:700,fontSize:13,color:"#0A2540",background:"#FAFBFE"}}>
-                Conversations
+                💬 Conversations ({convList.length})
               </div>
               {convList.length === 0 ? (
-                <div style={{padding:40,textAlign:"center",color:"#8A9AB5",fontSize:13}}>Aucune conversation</div>
+                <div style={{padding:40,textAlign:"center",color:"#8A9AB5",fontSize:13}}>
+                  <div style={{fontSize:32,marginBottom:8}}>💬</div>
+                  Aucune conversation
+                </div>
               ) : convList.map((c: any) => {
                 const last = c.messages[c.messages.length - 1];
                 return (
-                  <div key={c.otherId}
-                    onClick={() => { setSelectedConv(c); loadConversation(c.otherId); }}
+                  <div key={c.otherId} onClick={() => { setSelectedConv(c); loadConversation(c.otherId); }}
                     style={{padding:"12px 14px",cursor:"pointer",borderBottom:"1px solid #F1F5F9",background:selectedConv?.otherId===c.otherId?"#FFFBEB":"transparent"}}>
                     <div style={{display:"flex",alignItems:"center",gap:10}}>
-                      <div className="avatar" style={{width:36,height:36,fontSize:13}}>
-                        {c.otherName.split(" ").map((w: string) => w[0]).join("").slice(0,2).toUpperCase()}
+                      <div style={{width:38,height:38,borderRadius:"50%",background:"#0A2540",color:"#F7B500",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:13,flexShrink:0}}>
+                        {c.otherName.split(" ").map((w: string) => w[0]||"").join("").slice(0,2).toUpperCase()||"?"}
                       </div>
                       <div style={{flex:1,minWidth:0}}>
                         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
@@ -581,13 +559,11 @@ async function envoyerMessage() {
                 );
               })}
             </div>
-
-            {/* Zone conversation */}
             {selectedConv ? (
-              <div style={{display:"flex",flexDirection:"column"}}>
+              <div style={{display:"flex",flexDirection:"column",height:"100%"}}>
                 <div style={{padding:"12px 18px",borderBottom:"1px solid #F1F5F9",display:"flex",alignItems:"center",gap:12,background:"#FAFBFE"}}>
-                  <div className="avatar" style={{width:36,height:36,fontSize:13}}>
-                    {selectedConv.otherName.split(" ").map((w: string) => w[0]).join("").slice(0,2).toUpperCase()}
+                  <div style={{width:36,height:36,borderRadius:"50%",background:"#0A2540",color:"#F7B500",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:13}}>
+                    {selectedConv.otherName.split(" ").map((w: string) => w[0]||"").join("").slice(0,2).toUpperCase()}
                   </div>
                   <div style={{fontWeight:700,fontSize:14,color:"#0A2540"}}>{selectedConv.otherName}</div>
                 </div>
@@ -596,28 +572,73 @@ async function envoyerMessage() {
                     const isMe = m.sender_id === user?.id;
                     return (
                       <div key={m.id} style={{display:"flex",justifyContent:isMe?"flex-end":"flex-start"}}>
-                        <div className={isMe?"msg-me":"msg-other"}>
+                        <div style={{background:isMe?"#0A2540":"#F1F5F9",color:isMe?"#fff":"#0A2540",borderRadius:isMe?"14px 14px 2px 14px":"14px 14px 14px 2px",padding:"10px 14px",fontSize:13.5,maxWidth:"75%"}}>
                           <div>{m.contenu}</div>
-                          <div style={{fontSize:10,opacity:.45,marginTop:4}}>
-                            {new Date(m.createdAt).toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"})}
-                          </div>
+                          <div style={{fontSize:10,opacity:.45,marginTop:4}}>{new Date(m.createdAt).toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"})}</div>
                         </div>
                       </div>
                     );
                   })}
                 </div>
                 <div style={{padding:"12px 16px",borderTop:"1px solid #F1F5F9",display:"flex",gap:10}}>
-                  <input className="inp" style={{flex:1}} placeholder="Écrire un message..." value={replyText} onChange={e => setReplyText(e.target.value)} onKeyDown={e => e.key==="Enter" && envoyerReponse()} />
-                  <button className="btn btn-g" onClick={envoyerReponse} disabled={!replyText.trim()}>📤 Envoyer</button>
+                  <input className="inp" style={{flex:1}} placeholder="Écrire..." value={replyText} onChange={e => setReplyText(e.target.value)} onKeyDown={e => e.key==="Enter" && envoyerReponse()} />
+                  <button className="btn btn-g" onClick={envoyerReponse} disabled={!replyText.trim()}>📤</button>
                 </div>
               </div>
             ) : (
-              <div style={{display:"flex",alignItems:"center",justifyContent:"center",color:"#B8C4D6",fontSize:14,flexDirection:"column",gap:12}}>
-                <div style={{fontSize:40}}>💬</div>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"center",color:"#B8C4D6",flexDirection:"column",gap:12}}>
+                <div style={{fontSize:48}}>💬</div>
                 <div>Sélectionnez une conversation</div>
                 <button className="btn btn-g" onClick={() => setTab("experts")}>Contacter un expert</button>
               </div>
             )}
+          </div>
+        )}
+
+        {/* ══ TÉMOIGNAGES ══ */}
+        {tab === "temoignages" && (
+          <div style={{maxWidth:720,margin:"0 auto"}}>
+            {/* Formulaire */}
+            <div className="card" style={{padding:24,marginBottom:20}}>
+              <div style={{fontWeight:700,fontSize:15,color:"#0A2540",marginBottom:16}}>⭐ Écrire un témoignage</div>
+              <div style={{background:"#EFF6FF",border:"1px solid #BFDBFE",borderRadius:10,padding:"12px 16px",fontSize:13,color:"#1D4ED8",marginBottom:16}}>
+                ℹ️ Votre témoignage sera examiné par l'admin avant d'être publié sur la page d'accueil.
+              </div>
+              <form onSubmit={envoyerTemoignage}>
+                <label className="lbl">Votre témoignage *</label>
+                <textarea className="inp" style={{minHeight:120,marginBottom:14}}
+                  placeholder="Partagez votre expérience avec la plateforme BEH..."
+                  value={temoText} onChange={e => setTemoText(e.target.value)} required />
+                <div style={{display:"flex",justifyContent:"flex-end"}}>
+                  <button type="submit" className="btn btn-g" disabled={sendingTemo || !temoText.trim()}>
+                    {sendingTemo ? "Envoi en cours..." : "📤 Envoyer à l'admin"}
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            {/* Mes témoignages */}
+            <div style={{fontWeight:700,fontSize:15,color:"#0A2540",marginBottom:12}}>📋 Mes témoignages</div>
+            {temoignages.length === 0 ? (
+              <div className="card" style={{padding:32,textAlign:"center",color:"#8A9AB5"}}>
+                <div style={{fontSize:36,marginBottom:8}}>⭐</div>
+                <div style={{fontWeight:600}}>Aucun témoignage pour l'instant</div>
+              </div>
+            ) : temoignages.map(t => (
+              <div key={t.id} className="card" style={{padding:"16px 20px",marginBottom:12}}>
+                <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:12}}>
+                  <div style={{flex:1}}>
+                    <p style={{fontSize:14,color:"#334155",lineHeight:1.7,marginBottom:8}}>"{t.texte}"</p>
+                    <div style={{fontSize:11,color:"#8A9AB5"}}>{new Date(t.createdAt).toLocaleDateString("fr-FR",{year:"numeric",month:"long",day:"numeric"})}</div>
+                  </div>
+                  <div>
+                    {t.statut==="en_attente" && <span className="badge-wait">⏳ En attente</span>}
+                    {t.statut==="valide"     && <span className="badge-ok">✅ Publié</span>}
+                    {t.statut==="refuse"     && <span className="badge-no">❌ Refusé</span>}
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         )}
 

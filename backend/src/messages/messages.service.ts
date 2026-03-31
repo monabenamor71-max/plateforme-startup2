@@ -15,6 +15,22 @@ export class MessagesService {
     return this.messageRepo.save(msg);
   }
 
+  async getMyMessages(userId: number) {
+    return this.messageRepo.find({
+      where: [{ sender_id: userId }, { receiver_id: userId }],
+      relations: ['sender', 'receiver'],
+      order: { createdAt: 'DESC' },
+    });
+  }
+
+  async getExpertMessages(userId: number) {
+    return this.messageRepo.find({
+      where: [{ sender_id: userId }, { receiver_id: userId }],
+      relations: ['sender', 'receiver'],
+      order: { createdAt: 'DESC' },
+    });
+  }
+
   async getConversation(user1_id: number, user2_id: number) {
     return this.messageRepo.find({
       where: [
@@ -23,17 +39,6 @@ export class MessagesService {
       ],
       relations: ['sender', 'receiver'],
       order: { createdAt: 'ASC' },
-    });
-  }
-
-  async getMyMessages(userId: number) {
-    return this.messageRepo.find({
-      where: [
-        { sender_id: userId },
-        { receiver_id: userId },
-      ],
-      relations: ['sender', 'receiver'],
-      order: { createdAt: 'DESC' },
     });
   }
 
