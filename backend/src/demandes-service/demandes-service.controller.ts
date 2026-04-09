@@ -1,44 +1,61 @@
-import { Controller, Get, Post, Patch, Delete, Body, Param, Req, UseGuards } from "@nestjs/common";
-import { DemandesServiceService } from "./demandes-service.service";
-import { JwtAuthGuard } from "../auth/jwt-auth.guard";
+import { Controller, Get, Post, Patch, Delete, Body, Param, UseGuards, Req } from '@nestjs/common';
+import { DemandesServiceService } from './demandes-service.service';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { RolesGuard } from '../auth/roles.guard';
+import { Roles } from '../auth/roles.decorator';
 
-@Controller("demandes-service")
+@Controller('demandes-service')
 export class DemandesServiceController {
-  constructor(private svc: DemandesServiceService) {}
+  constructor(private readonly service: DemandesServiceService) {}
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @Get('all')
+  getAll() {
+    return this.service.getAll();
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('mes-demandes')
+  getMesDemandes(@Req() req: any) {
+    return this.service.getMesDemandes(req.user.id);
+  }
 
   @UseGuards(JwtAuthGuard)
   @Post()
-  create(@Req() req: any, @Body() body: any) {
-    return this.svc.create(req.user.id, body);
+  create(@Body() data: any, @Req() req: any) {
+    data.user_id = req.user.id;
+    return this.service.create(data);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @Patch(':id/statut')
+  updateStatut(@Param('id') id: string, @Body() body: { statut: string; commentaire?: string }) {
+    return this.service.updateStatut(+id, body.statut, body.commentaire);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @Delete(':id')
+  supprimer(@Param('id') id: string) {
+    return this.service.supprimer(+id);
   }
 
   @UseGuards(JwtAuthGuard)
-  @Get("mes-demandes")
-  mesDemandes(@Req() req: any) {
-    return this.svc.getMesDemandes(req.user.id);
+  @Post('formation/:formationId')
+  createFormationDemande(@Param('formationId') formationId: string, @Req() req: any) {
+    return this.service.createFormationDemande(req.user.id, +formationId);
   }
 
-  @UseGuards(JwtAuthGuard)
-  @Get("all")
-  all() {
-    return this.svc.getAll();
-  }
-
-  @UseGuards(JwtAuthGuard)
-  @Patch(":id/valider")
-  valider(@Param("id") id: string, @Body() body: any) {
-    return this.svc.valider(+id, body.commentaire);
-  }
-
-  @UseGuards(JwtAuthGuard)
-  @Patch(":id/refuser")
-  refuser(@Param("id") id: string, @Body() body: any) {
-    return this.svc.refuser(+id, body.commentaire);
-  }
-
-  @UseGuards(JwtAuthGuard)
-  @Delete(":id")
-  supprimer(@Param("id") id: string) {
-    return this.svc.supprimer(+id);
+@Patch('formation/:demandeId/accept')
+acceptFormationDemande(@Param('demandeId') demandeId: string) {
+  return this.service.acceptFormationDemande(+demandeId);
+}
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @Patch('formation/:demandeId/reject')
+  rejectFormationDemande(@Param('demandeId') demandeId: string) {
+    return this.service.rejectFormationDemande(+demandeId);
   }
 }

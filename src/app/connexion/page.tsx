@@ -30,13 +30,6 @@ export default function Connexion() {
         throw new Error(data.message || "Erreur de connexion");
       }
 
-      // 🔧 Optionnel : forcer un rôle pour les tests (choisir un seul)
-      // Par exemple, pour forcer admin sur un email précis :
-      if (email === "admin@example.com") {
-        data.user.role = "admin";
-      }
-      // Ne pas assigner plusieurs rôles ! Conserver le rôle réel de l'API
-
       localStorage.setItem("token", data.access_token);
       localStorage.setItem("user", JSON.stringify(data.user));
 
@@ -44,20 +37,15 @@ export default function Connexion() {
       setDebug(`Rôle détecté : ${role}`);
 
       // Redirection selon le rôle
-      let redirectUrl = "/";
       if (role === "admin") {
-        redirectUrl = "/dashboard/admin";
+        window.location.href = "/dashboard/admin";
       } else if (role === "expert") {
-        redirectUrl = "/dashboard/expert";
+        window.location.href = "/dashboard/expert";
       } else if (role === "startup") {
-        redirectUrl = "/dashboard/startup";
+        window.location.href = "/dashboard/startup";
       } else {
-        // rôle inconnu → page d'accueil
-        redirectUrl = "/";
+        window.location.href = "/";
       }
-
-      setDebug(`Redirection vers ${redirectUrl}...`);
-      window.location.href = redirectUrl;
     } catch (err: any) {
       setError(err.message);
       setDebug(`Erreur : ${err.message}`);
@@ -131,7 +119,7 @@ export default function Connexion() {
             />
 
             <div className="forgot-link">
-              <Link href="/forgot-password">Mot de passe oublié ?</Link>
+              <Link href="/mot-de-passe-oublie">Mot de passe oublié ?</Link>
             </div>
 
             <button className="btn" type="submit" disabled={loading}>

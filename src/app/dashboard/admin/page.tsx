@@ -1,10 +1,11 @@
+// app/dashboard/admin/page.tsx
 "use client";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 const BASE = "http://localhost:3001";
-type Tab = "experts" | "startups" | "users" | "temoignages" | "contacts" | "histoire" | "blog" | "commentaires" | "formations";
+type Tab = "experts" | "startups" | "users" | "temoignages" | "contacts" | "histoire" | "blog" | "commentaires" | "formations" | "demandes";
 
 function StarDisplay({ rating, size = 16 }: { rating: number; size?: number }) {
   return (
@@ -29,6 +30,7 @@ export default function DashboardAdmin() {
   const [comments, setComments] = useState<any[]>([]);
   const [contactMsgs, setContactMsgs] = useState<any[]>([]);
   const [formations, setFormations] = useState<any[]>([]);
+  const [demandes, setDemandes] = useState<any[]>([]);
 
   // Stats
   const [nbExperts, setNbExperts] = useState<number>(0);
@@ -47,7 +49,7 @@ export default function DashboardAdmin() {
   const [articleImageFile, setArticleImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState("");
 
-  // Formations (sans podcasts)
+  // Formations
   const [showFormationModal, setShowFormationModal] = useState(false);
   const [editingFormation, setEditingFormation] = useState<any>(null);
   const [formationForm, setFormationForm] = useState({
@@ -80,6 +82,13 @@ export default function DashboardAdmin() {
   const [replyText, setReplyText] = useState("");
   const [sendingReply, setSendingReply] = useState(false);
 
+  // Demandes service – réponse
+  const [replyDemandeModal, setReplyDemandeModal] = useState<{ open: boolean; demandeId: number; startupNom: string; email: string }>({
+    open: false, demandeId: 0, startupNom: "", email: "",
+  });
+  const [replyDemandeText, setReplyDemandeText] = useState("");
+  const [sendingReplyDemande, setSendingReplyDemande] = useState(false);
+
   const tk = () => (typeof window !== "undefined" ? localStorage.getItem("token") || "" : "");
   const hdr = () => ({ Authorization: `Bearer ${tk()}` });
   const hdrJ = () => ({ Authorization: `Bearer ${tk()}`, "Content-Type": "application/json" });
@@ -89,7 +98,6 @@ export default function DashboardAdmin() {
     setTimeout(() => setToast({ text: "", ok: true }), 3200);
   }
 
-  // Vérification admin
   useEffect(() => {
     if (typeof window === "undefined") return;
     const raw = localStorage.getItem("user");
@@ -110,12 +118,12 @@ export default function DashboardAdmin() {
       loadContactMessages();
       loadStats();
       loadFormations();
+      loadDemandes();
     } catch (e) {
       router.replace("/connexion");
     }
   }, [router]);
 
-  /* ---- Loaders ---- */
   async function loadStats() {
     try {
       const [e, s] = await Promise.all([
@@ -151,6 +159,20 @@ export default function DashboardAdmin() {
     } catch {}
   }
 
+  async function loadDemandes() {
+    try {
+      const r = await fetch(`${BASE}/demandes-service/all`, { headers: hdr() });
+      if (r.ok) {
+        const data = await r.json();
+        setDemandes(Array.isArray(data) ? data : []);
+      } else {
+        console.error("Erreur chargement demandes", await r.text());
+      }
+    } catch (e) {
+      console.error("Erreur réseau loadDemandes", e);
+    }
+  }
+
   async function loadHistoire() {
     try {
       const r = await fetch(`${BASE}/histoire`);
@@ -179,7 +201,7 @@ export default function DashboardAdmin() {
     } catch {}
   }
 
-  /* ---- Formations (CRUD) ---- */
+  // Formations CRUD
   async function sauvegarderFormation(e: React.FormEvent) {
     e.preventDefault();
     const fd = new FormData();
@@ -187,12 +209,8 @@ export default function DashboardAdmin() {
       if (v !== null && v !== undefined) fd.append(k, String(v));
     });
     if (formationImageFile) fd.append("image", formationImageFile);
-
-    const url = editingFormation
-      ? `${BASE}/formations/admin/${editingFormation.id}`
-      : `${BASE}/formations/admin/create`;
+    const url = editingFormation ? `${BASE}/formations/admin/${editingFormation.id}` : `${BASE}/formations/admin/create`;
     const method = editingFormation ? "PUT" : "POST";
-
     const r = await fetch(url, { method, headers: hdr(), body: fd });
     if (r.ok) {
       notify(editingFormation ? "✅ Formation modifiée !" : "✅ Formation créée !");
@@ -284,7 +302,71 @@ export default function DashboardAdmin() {
     setShowFormationModal(true);
   }
 
-  /* ---- Histoire / À propos ---- */
+  // Demandes service (génériques)
+  async function repondreDemande(demandeId: number, reponse: string) {
+    const r = await fetch(`${BASE}/demandes-service/admin/${demandeId}/repondre`, {
+      method: "POST",
+      headers: hdrJ(),
+      body: JSON.stringify({ reponse }),
+    });
+    if (r.ok) {
+      notify("✅ Réponse envoyée !");
+      loadDemandes();
+    } else notify("Erreur", false);
+  }
+
+  // NOUVELLES FONCTIONS pour les demandes de formation
+  async function accepterDemandeFormation(demandeId: number) {
+    try {
+      const r = await fetch(`${BASE}/demandes-service/formation/${demandeId}/accept`, {
+        method: "PATCH",
+        headers: hdrJ(),
+      });
+      const data = await r.json();
+      if (r.ok) {
+        notify("✅ Demande acceptée, place réservée !");
+        loadDemandes();
+        loadFormations(); // Met à jour les places disponibles
+      } else {
+        notify(data.message || `Erreur ${r.status}`, false);
+      }
+    } catch (err) {
+      console.error("Erreur réseau", err);
+      notify("Erreur de connexion au serveur", false);
+    }
+  }
+
+  async function refuserDemandeFormation(demandeId: number) {
+    try {
+      const r = await fetch(`${BASE}/demandes-service/formation/${demandeId}/reject`, {
+        method: "PATCH",
+        headers: hdrJ(),
+      });
+      const data = await r.json();
+      if (r.ok) {
+        notify("❌ Demande refusée");
+        loadDemandes();
+      } else {
+        notify(data.message || `Erreur ${r.status}`, false);
+      }
+    } catch (err) {
+      notify("Erreur de connexion", false);
+    }
+  }
+
+  async function changerStatutDemande(demandeId: number, statut: string) {
+    const r = await fetch(`${BASE}/demandes-service/admin/${demandeId}/statut`, {
+      method: "PATCH",
+      headers: hdrJ(),
+      body: JSON.stringify({ statut }),
+    });
+    if (r.ok) {
+      notify(`Statut mis à jour : ${statut}`);
+      loadDemandes();
+    } else notify("Erreur", false);
+  }
+
+  // Histoire
   async function saveHistoire(e: React.FormEvent) {
     e.preventDefault();
     setSavingH(true);
@@ -311,7 +393,7 @@ export default function DashboardAdmin() {
     setHForm((p: any) => ({ ...p, [key]: val }));
   }
 
-  /* ---- Experts / Startups / Users / Témoignages / Contact / Blog / Commentaires (inchangés) ---- */
+  // Experts / Startups / Users / Témoignages / Contact / Blog / Commentaires (inchangés)
   async function valider(type: string, id: number) {
     const r = await fetch(`${BASE}/admin/${type}/${id}/valider`, { method: "PATCH", headers: hdr() });
     if (r.ok) {
@@ -524,7 +606,8 @@ export default function DashboardAdmin() {
   const msgsNonLus = contactMsgs.filter(m => !m.is_read).length;
   const brouillons = articles.filter(a => a.statut === "brouillon").length;
   const formationsBrouillons = formations.filter(f => f.statut === "brouillon").length;
-  const totalAttente = enAttenteExperts.length + enAttenteStartups.length;
+  const demandesEnAttente = demandes.filter(d => d.statut === "en_attente").length;
+  const totalAttente = enAttenteExperts.length + enAttenteStartups.length + demandesEnAttente;
 
   const S = { background: "#fff", border: "1px solid #E8EEF6", borderRadius: 14, padding: "20px 22px", marginBottom: 16 };
   const secTitle = (icon: string, text: string) => (
@@ -596,9 +679,7 @@ export default function DashboardAdmin() {
                   <label className="lbl">Titre *</label>
                   <input className="inp" required value={formationForm.titre} onChange={e => setFormationForm({ ...formationForm, titre: e.target.value })} />
                 </div>
-
-                <div className="fg">
-                  <label className="lbl">Domaine *</label>
+                <div className="fg"><label className="lbl">Domaine *</label>
                   <select className="inp" value={formationForm.domaine} onChange={e => setFormationForm({ ...formationForm, domaine: e.target.value })} required>
                     <option value="">Sélectionner un domaine</option>
                     <option value="Marketing">📢 Marketing</option>
@@ -611,109 +692,48 @@ export default function DashboardAdmin() {
                     <option value="Entrepreneuriat">🚀 Entrepreneuriat</option>
                   </select>
                 </div>
-
-                <div className="fg">
-                  <label className="lbl">Formateur (optionnel)</label>
-                  <input className="inp" value={formationForm.formateur} onChange={e => setFormationForm({ ...formationForm, formateur: e.target.value })} placeholder="Nom du formateur" />
-                </div>
-
-                <div className="fg">
-                  <label className="lbl">Statut</label>
+                <div className="fg"><label className="lbl">Formateur</label><input className="inp" value={formationForm.formateur} onChange={e => setFormationForm({ ...formationForm, formateur: e.target.value })} /></div>
+                <div className="fg"><label className="lbl">Statut</label>
                   <select className="inp" value={formationForm.statut} onChange={e => setFormationForm({ ...formationForm, statut: e.target.value })}>
                     <option value="brouillon">📝 Brouillon</option>
                     <option value="publie">✅ Publié</option>
                     <option value="archive">📦 Archivé</option>
                   </select>
                 </div>
-
-                <div className="fg">
-                  <label className="lbl">Type de tarif</label>
+                <div className="fg"><label className="lbl">Type de tarif</label>
                   <select className="inp" value={formationForm.type} onChange={e => setFormationForm({ ...formationForm, type: e.target.value })}>
                     <option value="gratuit">🎁 Gratuit</option>
                     <option value="payant">💰 Payant</option>
                   </select>
                 </div>
-
                 {formationForm.type === "payant" && (
-                  <div className="fg">
-                    <label className="lbl">Prix (DT)</label>
-                    <input className="inp" value={formationForm.prix} onChange={e => setFormationForm({ ...formationForm, prix: e.target.value })} placeholder="ex: 500 DT" />
-                  </div>
+                  <div className="fg"><label className="lbl">Prix (DT)</label><input className="inp" value={formationForm.prix} onChange={e => setFormationForm({ ...formationForm, prix: e.target.value })} /></div>
                 )}
-
-                <div className="fg">
-                  <label className="lbl">Mode</label>
+                <div className="fg"><label className="lbl">Mode</label>
                   <select className="inp" value={formationForm.mode} onChange={e => setFormationForm({ ...formationForm, mode: e.target.value })}>
                     <option value="en_ligne">💻 En ligne</option>
                     <option value="presentiel">🏢 Présentiel</option>
                   </select>
                 </div>
-
                 {formationForm.mode === "presentiel" && (
-                  <div className="fg">
-                    <label className="lbl">Localisation</label>
-                    <input className="inp" value={formationForm.localisation} onChange={e => setFormationForm({ ...formationForm, localisation: e.target.value })} placeholder="Adresse, ville, pays" />
-                  </div>
+                  <div className="fg"><label className="lbl">Localisation</label><input className="inp" value={formationForm.localisation} onChange={e => setFormationForm({ ...formationForm, localisation: e.target.value })} /></div>
                 )}
-
-                <div className="fg">
-                  <label className="lbl">Durée</label>
-                  <input className="inp" value={formationForm.duree} onChange={e => setFormationForm({ ...formationForm, duree: e.target.value })} placeholder="ex: 3 jours, 20 heures" />
-                </div>
-
-                <div className="fg">
-                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <input type="checkbox" checked={formationForm.certifiante} onChange={e => setFormationForm({ ...formationForm, certifiante: e.target.checked })} />
-                    <label>Certifiante (délivre un certificat)</label>
-                  </div>
-                </div>
-
-                <div className="fg">
-                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <input type="checkbox" checked={formationForm.places_limitees} onChange={e => setFormationForm({ ...formationForm, places_limitees: e.target.checked })} />
-                    <label>Places limitées</label>
-                  </div>
-                </div>
-
+                <div className="fg"><label className="lbl">Durée</label><input className="inp" value={formationForm.duree} onChange={e => setFormationForm({ ...formationForm, duree: e.target.value })} /></div>
+                <div className="fg"><div style={{ display: "flex", alignItems: "center", gap: 10 }}><input type="checkbox" checked={formationForm.certifiante} onChange={e => setFormationForm({ ...formationForm, certifiante: e.target.checked })} /><label>Certifiante</label></div></div>
+                <div className="fg"><div style={{ display: "flex", alignItems: "center", gap: 10 }}><input type="checkbox" checked={formationForm.places_limitees} onChange={e => setFormationForm({ ...formationForm, places_limitees: e.target.checked })} /><label>Places limitées</label></div></div>
                 {formationForm.places_limitees && (
-                  <div className="fg">
-                    <label className="lbl">Places disponibles</label>
-                    <input className="inp" type="number" value={formationForm.places_disponibles} onChange={e => setFormationForm({ ...formationForm, places_disponibles: e.target.value })} />
-                  </div>
+                  <div className="fg"><label className="lbl">Places disponibles</label><input className="inp" type="number" value={formationForm.places_disponibles} onChange={e => setFormationForm({ ...formationForm, places_disponibles: e.target.value })} /></div>
                 )}
-
-                <div style={{ gridColumn: "1/-1" }} className="fg">
-                  <label className="lbl">Description *</label>
-                  <textarea className="inp" required rows={4} value={formationForm.description} onChange={e => setFormationForm({ ...formationForm, description: e.target.value })} />
-                </div>
-
-                <div className="fg">
-                  <label className="lbl">Image</label>
-                  <div style={{ border: "1.5px dashed #DDE4EF", borderRadius: 10, padding: 14, background: "#F7F9FC", position: "relative", cursor: "pointer" }}>
-                    <input type="file" accept="image/*" onChange={e => { if (e.target.files?.[0]) { setFormationImageFile(e.target.files[0]); setFormationImagePreview(URL.createObjectURL(e.target.files[0])); } }} style={{ position: "absolute", inset: 0, opacity: 0, cursor: "pointer" }} />
-                    <div style={{ textAlign: "center" }}>
-                      {formationImagePreview ? (
-                        <img src={formationImagePreview} style={{ maxWidth: "100%", maxHeight: 100, borderRadius: 8 }} />
-                      ) : (
-                        <>
-                          <div style={{ fontSize: 24 }}>🖼️</div>
-                          <div>Uploader une image</div>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                </div>
+                <div style={{ gridColumn: "1/-1" }} className="fg"><label className="lbl">Description *</label><textarea className="inp" required rows={4} value={formationForm.description} onChange={e => setFormationForm({ ...formationForm, description: e.target.value })} /></div>
+                <div className="fg"><label className="lbl">Image</label><div style={{ border: "1.5px dashed #DDE4EF", borderRadius: 10, padding: 14, background: "#F7F9FC", position: "relative", cursor: "pointer" }}><input type="file" accept="image/*" onChange={e => { if (e.target.files?.[0]) { setFormationImageFile(e.target.files[0]); setFormationImagePreview(URL.createObjectURL(e.target.files[0])); } }} style={{ position: "absolute", inset: 0, opacity: 0, cursor: "pointer" }} /><div style={{ textAlign: "center" }}>{formationImagePreview ? <img src={formationImagePreview} style={{ maxWidth: "100%", maxHeight: 100, borderRadius: 8 }} /> : <><div style={{ fontSize: 24 }}>🖼️</div><div>Uploader une image</div></>}</div></div></div>
               </div>
-              <div style={{ display: "flex", justifyContent: "flex-end", gap: 12, marginTop: 20 }}>
-                <button type="button" className="btn btn-gray" onClick={() => { setShowFormationModal(false); resetFormationForm(); }}>Annuler</button>
-                <button type="submit" className="btn btn-green">{editingFormation ? "💾 Modifier" : "✅ Créer"}</button>
-              </div>
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: 12, marginTop: 20 }}><button type="button" className="btn btn-gray" onClick={() => { setShowFormationModal(false); resetFormationForm(); }}>Annuler</button><button type="submit" className="btn btn-green">{editingFormation ? "💾 Modifier" : "✅ Créer"}</button></div>
             </form>
           </div>
         </div>
       )}
 
-      {/* Modal Réponse contact (inchangée) */}
+      {/* Modal Réponse contact */}
       {replyModal.open && (
         <div className="modal-bg" onClick={() => setReplyModal({ ...replyModal, open: false })}>
           <div className="modal" style={{ maxWidth: 500 }} onClick={e => e.stopPropagation()}>
@@ -724,16 +744,30 @@ export default function DashboardAdmin() {
             <form onSubmit={envoyerReponse} style={{ padding: "24px" }}>
               <div className="fg"><label className="lbl">Email destinataire</label><input className="inp" value={replyModal.email} disabled style={{ background: "#F8FAFC" }} /></div>
               <div className="fg"><label className="lbl">Votre réponse *</label><textarea className="inp" rows={5} placeholder="Écrivez votre réponse..." value={replyText} onChange={e => setReplyText(e.target.value)} required style={{ resize: "vertical" }} /></div>
-              <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
-                <button type="button" className="btn btn-gray" onClick={() => setReplyModal({ ...replyModal, open: false })}>Annuler</button>
-                <button type="submit" className="btn btn-green" disabled={sendingReply}>{sendingReply ? "⏳ Envoi..." : "📤 Envoyer"}</button>
-              </div>
+              <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}><button type="button" className="btn btn-gray" onClick={() => setReplyModal({ ...replyModal, open: false })}>Annuler</button><button type="submit" className="btn btn-green" disabled={sendingReply}>{sendingReply ? "⏳ Envoi..." : "📤 Envoyer"}</button></div>
             </form>
           </div>
         </div>
       )}
 
-      {/* Modal détails expert/startup (inchangée) */}
+      {/* Modal Réponse demande de service */}
+      {replyDemandeModal.open && (
+        <div className="modal-bg" onClick={() => setReplyDemandeModal({ ...replyDemandeModal, open: false })}>
+          <div className="modal" style={{ maxWidth: 500 }} onClick={e => e.stopPropagation()}>
+            <div style={{ padding: "18px 24px", borderBottom: "1px solid #F1F5F9", display: "flex", alignItems: "center", justifyContent: "space-between", background: "#FAFBFE" }}>
+              <span style={{ fontWeight: 700, fontSize: 16, color: "#0A2540" }}>📝 Répondre à la demande de {replyDemandeModal.startupNom}</span>
+              <button className="btn btn-gray" onClick={() => setReplyDemandeModal({ ...replyDemandeModal, open: false })}>✕</button>
+            </div>
+            <form onSubmit={async (e) => { e.preventDefault(); if (!replyDemandeText.trim()) { notify("Écrivez une réponse", false); return; } setSendingReplyDemande(true); await repondreDemande(replyDemandeModal.demandeId, replyDemandeText); setReplyDemandeModal({ open: false, demandeId: 0, startupNom: "", email: "" }); setReplyDemandeText(""); setSendingReplyDemande(false); }} style={{ padding: "24px" }}>
+              <div className="fg"><label className="lbl">Email de la startup</label><input className="inp" value={replyDemandeModal.email} disabled style={{ background: "#F8FAFC" }} /></div>
+              <div className="fg"><label className="lbl">Votre réponse *</label><textarea className="inp" rows={5} placeholder="Écrivez votre réponse (statut, informations complémentaires, etc.)..." value={replyDemandeText} onChange={e => setReplyDemandeText(e.target.value)} required style={{ resize: "vertical" }} /></div>
+              <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}><button type="button" className="btn btn-gray" onClick={() => setReplyDemandeModal({ ...replyDemandeModal, open: false })}>Annuler</button><button type="submit" className="btn btn-green" disabled={sendingReplyDemande}>{sendingReplyDemande ? "⏳ Envoi..." : "📤 Envoyer"}</button></div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal détails expert/startup (inchangé) */}
       {selected && (
         <div className="modal-bg" onClick={() => setSelected(null)}>
           <div className="modal" onClick={e => e.stopPropagation()}>
@@ -778,10 +812,7 @@ export default function DashboardAdmin() {
                           ));
                         } catch { return null; }
                       })()}
-                      <div style={{ display: "flex", gap: 10, marginTop: 12 }}>
-                        <button className="btn btn-green" onClick={() => { validerModification(selected.data.id); setSelected(null); }}>✅ Valider</button>
-                        <button className="btn btn-red" onClick={() => { refuserModification(selected.data.id); setSelected(null); }}>❌ Refuser</button>
-                      </div>
+                      <div style={{ display: "flex", gap: 10, marginTop: 12 }}><button className="btn btn-green" onClick={() => { validerModification(selected.data.id); setSelected(null); }}>✅ Valider</button><button className="btn btn-red" onClick={() => { refuserModification(selected.data.id); setSelected(null); }}>❌ Refuser</button></div>
                     </div>
                   )}
                 </>
@@ -814,7 +845,7 @@ export default function DashboardAdmin() {
         </div>
       )}
 
-      {/* Modal Article (inchangée) */}
+      {/* Modal Article */}
       {showArticleModal && (
         <div className="modal-bg" onClick={() => { setShowArticleModal(false); resetArticleForm(); }}>
           <div className="modal" style={{ maxWidth: 760 }} onClick={e => e.stopPropagation()}>
@@ -832,7 +863,7 @@ export default function DashboardAdmin() {
                 <div className="fg"><label className="lbl">Statut</label><select className="inp" value={articleForm.statut} onChange={e => setArticleForm({ ...articleForm, statut: e.target.value })}><option value="brouillon">Brouillon</option><option value="publie">Publié</option><option value="archive">Archivé</option></select></div>
                 <div style={{ gridColumn: "1/-1" }} className="fg"><label className="lbl">Description *</label><textarea className="inp" required rows={3} value={articleForm.description} onChange={e => setArticleForm({ ...articleForm, description: e.target.value })} /></div>
                 <div style={{ gridColumn: "1/-1" }} className="fg"><label className="lbl">Contenu (HTML supporté)</label><textarea className="inp" rows={8} value={articleForm.contenu} onChange={e => setArticleForm({ ...articleForm, contenu: e.target.value })} style={{ fontFamily: "monospace", fontSize: 12.5 }} /><div style={{ fontSize: 11, color: "#94A3B8", marginTop: 4 }}>Balises supportées : &lt;h2&gt;, &lt;p&gt;, &lt;ul&gt;, &lt;li&gt;, &lt;strong&gt;, &lt;blockquote&gt;</div></div>
-                <div className="fg"><label className="lbl">Image de couverture</label><div style={{ border: "1.5px dashed #DDE4EF", borderRadius: 10, padding: 14, background: "#F7F9FC", position: "relative", cursor: "pointer" }} onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.borderColor = "#F7B500"} onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.borderColor = "#DDE4EF"}><input type="file" accept="image/*" onChange={e => { if (e.target.files?.[0]) { setArticleImageFile(e.target.files[0]); setImagePreview(URL.createObjectURL(e.target.files[0])); } }} style={{ position: "absolute", inset: 0, opacity: 0, cursor: "pointer", width: "100%", height: "100%" }} /><div style={{ textAlign: "center" }}>{imagePreview ? <img src={imagePreview} style={{ maxWidth: "100%", maxHeight: 100, borderRadius: 8, objectFit: "cover" }} /> : <><div style={{ fontSize: 24, marginBottom: 6 }}>🖼️</div><div style={{ fontSize: 13, fontWeight: 600, color: "#0A2540" }}>Uploader une image</div><div style={{ fontSize: 11, color: "#8A9AB5" }}>JPG, PNG, WebP</div></>}</div></div></div>
+                <div className="fg"><label className="lbl">Image de couverture</label><div style={{ border: "1.5px dashed #DDE4EF", borderRadius: 10, padding: 14, background: "#F7F9FC", position: "relative", cursor: "pointer" }}><input type="file" accept="image/*" onChange={e => { if (e.target.files?.[0]) { setArticleImageFile(e.target.files[0]); setImagePreview(URL.createObjectURL(e.target.files[0])); } }} style={{ position: "absolute", inset: 0, opacity: 0, cursor: "pointer", width: "100%", height: "100%" }} /><div style={{ textAlign: "center" }}>{imagePreview ? <img src={imagePreview} style={{ maxWidth: "100%", maxHeight: 100, borderRadius: 8, objectFit: "cover" }} /> : <><div style={{ fontSize: 24, marginBottom: 6 }}>🖼️</div><div style={{ fontSize: 13, fontWeight: 600, color: "#0A2540" }}>Uploader une image</div><div style={{ fontSize: 11, color: "#8A9AB5" }}>JPG, PNG, WebP</div></>}</div></div></div>
               </div>
               <div style={{ display: "flex", justifyContent: "flex-end", gap: 12, marginTop: 20 }}><button type="button" className="btn btn-gray" onClick={() => { setShowArticleModal(false); resetArticleForm(); }}>Annuler</button><button type="submit" className="btn btn-green">{editingArticle ? "💾 Modifier" : "✅ Créer"}</button></div>
             </form>
@@ -915,6 +946,7 @@ export default function DashboardAdmin() {
               { id: "blog", label: "📝 Blog", count: brouillons },
               { id: "commentaires", label: "💬 Commentaires", count: comments.length },
               { id: "formations", label: "📚 Formations", count: formationsBrouillons },
+              { id: "demandes", label: "📋 Demandes service", count: demandesEnAttente },
             ].map(t => (
               <button key={t.id} className={`tab${tab === t.id ? " active" : ""}`} onClick={() => setTab(t.id as Tab)}>
                 {t.label}
@@ -957,7 +989,7 @@ export default function DashboardAdmin() {
             </table>
           ) : tab === "users" ? (
             <div style={{ padding: "20px 24px" }}>
-              <div style={{ fontWeight: 700, fontSize: 17, color: "#0A2540", marginBottom: 20 }}>👥 Utilisateurs ({users.length}) <span style={{ fontSize: 13, color: "#8A9AB5", fontWeight: 400 }}>— Comptes admin exclus</span></div>
+              <div style={{ fontWeight: 700, fontSize: 17, marginBottom: 20 }}>👥 Utilisateurs ({users.length})</div>
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead><tr><th>Utilisateur</th><th>Email</th><th>Rôle</th><th>Statut</th><th>Actions</th></tr></thead>
                 <tbody>
@@ -965,12 +997,11 @@ export default function DashboardAdmin() {
                     <tr key={u.id}>
                       <td><div style={{ display: "flex", alignItems: "center", gap: 10 }}><Avatar nom={u.nom} prenom={u.prenom} photo={u.photo} size={38} /><div>{u.prenom} {u.nom}</div></div></td>
                       <td>{u.email}</td>
-                      <td><span style={{ background: u.role === "expert" ? "#8B5CF6" : u.role === "startup" ? "#10B981" : "#6B7280", color: "#fff", borderRadius: 99, padding: "2px 10px", fontSize: 11, fontWeight: 600 }}>{u.role === "expert" ? "Expert" : u.role === "startup" ? "Startup" : "Client"}</span></td>
+                      <td><span style={{ background: u.role === "expert" ? "#8B5CF6" : u.role === "startup" ? "#10B981" : "#6B7280", color: "#fff", borderRadius: 99, padding: "2px 10px", fontSize: 11 }}>{u.role === "expert" ? "Expert" : u.role === "startup" ? "Startup" : "Client"}</span></td>
                       <td>{u.statut === "actif" ? <span className="badge-ok">✅ Actif</span> : u.statut === "en_attente" ? <span className="badge-wait">⏳ En attente</span> : <span className="badge-no">❌ Inactif</span>}</td>
-                      <td><button className="btn btn-red" onClick={() => supprimerUser(u.id)} style={{ padding: "6px 12px", fontSize: 12 }}>🗑 Supprimer</button></td>
+                      <td><button className="btn btn-red" onClick={() => supprimerUser(u.id)}>🗑 Supprimer</button></td>
                     </tr>
                   ))}
-                  {users.length === 0 && <tr><td colSpan={5} style={{ textAlign: "center", padding: 40, color: "#8A9AB5" }}>Aucun utilisateur</td></tr>}
                 </tbody>
               </table>
             </div>
@@ -989,41 +1020,35 @@ export default function DashboardAdmin() {
                   </div>
                 </div>
               ))}
-              {temoignages.length === 0 && <div style={{ padding: 60, textAlign: "center", color: "#8A9AB5" }}><div style={{ fontSize: 48, marginBottom: 14 }}>⭐</div><div style={{ fontWeight: 700, fontSize: 16 }}>Aucun témoignage</div></div>}
             </div>
           ) : tab === "contacts" ? (
             <div style={{ padding: "20px 24px" }}>
-              <div style={{ fontWeight: 700, fontSize: 17, color: "#0A2540", marginBottom: 20 }}>📩 Messages reçus ({contactMsgs.length})</div>
-              {contactMsgs.length === 0 ? (
-                <div style={{ padding: 60, textAlign: "center", color: "#8A9AB5" }}><div style={{ fontSize: 48, marginBottom: 14 }}>📭</div><div style={{ fontWeight: 700, fontSize: 16 }}>Aucun message</div></div>
-              ) : (
-                contactMsgs.map(msg => (
-                  <div key={msg.id} style={{ background: msg.is_read ? "#fff" : "#FFF8E1", border: `1px solid ${msg.is_read ? "#E8EEF6" : "#F7B500"}`, borderLeft: `4px solid ${msg.is_read ? "#E8EEF6" : "#F7B500"}`, borderRadius: 14, padding: "18px 20px", marginBottom: 12 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 10 }}>
-                          <div style={{ width: 44, height: 44, borderRadius: "50%", background: "#0A2540", color: "#F7B500", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 18 }}>{msg.prenom?.[0]?.toUpperCase() || "?"}</div>
-                          <div><div style={{ fontWeight: 700, color: "#0A2540" }}>{msg.prenom} {msg.nom}</div><div style={{ fontSize: 12, color: "#8A9AB5" }}>{msg.email}</div></div>
-                        </div>
-                        <div style={{ background: "#F8FAFC", borderRadius: 10, padding: "12px 16px", marginBottom: 8 }}>
-                          <div style={{ fontSize: 12, color: "#64748B", marginBottom: 5 }}>📌 Sujet : <strong>{msg.sujet}</strong></div>
-                          <p style={{ fontSize: 14, color: "#334155", lineHeight: 1.6, margin: 0 }}>{msg.message}</p>
-                        </div>
-                        <div style={{ fontSize: 11, color: "#B8C4D6" }}>📅 {new Date(msg.createdAt).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" })}</div>
+              {contactMsgs.length === 0 ? <div style={{ padding: 60, textAlign: "center", color: "#8A9AB5" }}>📭 Aucun message</div> : contactMsgs.map(msg => (
+                <div key={msg.id} style={{ background: msg.is_read ? "#fff" : "#FFF8E1", border: `1px solid ${msg.is_read ? "#E8EEF6" : "#F7B500"}`, borderLeft: `4px solid ${msg.is_read ? "#E8EEF6" : "#F7B500"}`, borderRadius: 14, padding: "18px 20px", marginBottom: 12 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 10 }}>
+                        <div style={{ width: 44, height: 44, borderRadius: "50%", background: "#0A2540", color: "#F7B500", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 18 }}>{msg.prenom?.[0]?.toUpperCase() || "?"}</div>
+                        <div><div style={{ fontWeight: 700 }}>{msg.prenom} {msg.nom}</div><div style={{ fontSize: 12, color: "#8A9AB5" }}>{msg.email}</div></div>
                       </div>
-                      <div style={{ display: "flex", gap: 8, flexShrink: 0, alignItems: "flex-start" }}>
-                        {!msg.is_read && <button className="btn btn-green" onClick={() => marquerLu(msg.id)} style={{ padding: "6px 12px", fontSize: 12 }}>✅ Lu</button>}
-                        <button className="btn btn-blue" onClick={() => setReplyModal({ open: true, messageId: msg.id, email: msg.email, nom: msg.nom, prenom: msg.prenom })} style={{ padding: "6px 12px", fontSize: 12 }}>✉️ Répondre</button>
-                        <button className="btn btn-red" onClick={() => supprimerMessage(msg.id)} style={{ padding: "6px 12px", fontSize: 12 }}>🗑</button>
+                      <div style={{ background: "#F8FAFC", borderRadius: 10, padding: "12px 16px", marginBottom: 8 }}>
+                        <div style={{ fontSize: 12, color: "#64748B", marginBottom: 5 }}>📌 Sujet : <strong>{msg.sujet}</strong></div>
+                        <p style={{ fontSize: 14, color: "#334155", lineHeight: 1.6, margin: 0 }}>{msg.message}</p>
                       </div>
+                      <div style={{ fontSize: 11, color: "#B8C4D6" }}>📅 {new Date(msg.createdAt).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" })}</div>
+                    </div>
+                    <div style={{ display: "flex", gap: 8, flexShrink: 0, alignItems: "flex-start" }}>
+                      {!msg.is_read && <button className="btn btn-green" onClick={() => marquerLu(msg.id)}>✅ Lu</button>}
+                      <button className="btn btn-blue" onClick={() => setReplyModal({ open: true, messageId: msg.id, email: msg.email, nom: msg.nom, prenom: msg.prenom })}>✉️ Répondre</button>
+                      <button className="btn btn-red" onClick={() => supprimerMessage(msg.id)}>🗑</button>
                     </div>
                   </div>
-                ))
-              )}
+                </div>
+              ))}
             </div>
           ) : tab === "histoire" ? (
             <div style={{ padding: "24px 28px" }}>
-              <div style={{ fontWeight: 700, fontSize: 17, color: "#0A2540", marginBottom: 20 }}>📖 Modifier la page "À propos"</div>
+              <div style={{ fontWeight: 700, fontSize: 17, marginBottom: 20 }}>📖 Modifier la page "À propos"</div>
               <form onSubmit={saveHistoire}>
                 <div style={S}>{secTitle("🏠", "Section Héro")}<div className="fg"><label className="lbl">Année de création</label><input className="inp" value={hf("annee_creation")} onChange={e => setHF("annee_creation", e.target.value)} /></div><div className="fg"><label className="lbl">Description héro</label><textarea className="inp" rows={3} value={hf("description_hero")} onChange={e => setHF("description_hero", e.target.value)} /></div></div>
                 <div style={S}>{secTitle("👁", "Vision")}<div className="fg"><label className="lbl">Description vision</label><textarea className="inp" rows={3} value={hf("description_vision")} onChange={e => setHF("description_vision", e.target.value)} /></div>{[1, 2, 3, 4].map(n => <div key={n} className="fg"><label className="lbl">Point vision {n}</label><input className="inp" value={hf(`vision_point${n}`)} onChange={e => setHF(`vision_point${n}`, e.target.value)} /></div>)}</div>
@@ -1038,101 +1063,173 @@ export default function DashboardAdmin() {
           ) : tab === "blog" ? (
             <div style={{ padding: "20px 24px" }}>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 20 }}><div><div style={{ fontWeight: 700, fontSize: 17 }}>📝 Gestion du Blog</div><div style={{ fontSize: 13, color: "#8A9AB5" }}>{articles.length} article · {articles.filter(a => a.statut === "publie").length} publiés · {brouillons} brouillons</div></div><button className="btn btn-green" onClick={() => { resetArticleForm(); setShowArticleModal(true); }}>📝 Nouvel article</button></div>
-              {articles.length === 0 ? (
-                <div style={{ padding: 60, textAlign: "center", color: "#8A9AB5" }}><div style={{ fontSize: 48, marginBottom: 14 }}>📝</div><div>Aucun article</div></div>
-              ) : (
-                articles.map(a => (
-                  <div key={a.id} style={{ background: "#F8FAFC", borderRadius: 14, padding: "18px 20px", marginBottom: 12, border: `1.5px solid ${a.statut === "publie" ? "#A7F3D0" : a.statut === "brouillon" ? "#E8EEF6" : "#DDE4EF"}` }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16, flexWrap: "wrap" }}>
-                      <div style={{ flex: 1 }}><div style={{ fontWeight: 700, fontSize: 15 }}>{a.titre}</div><div style={{ display: "flex", gap: 6, marginBottom: 6, flexWrap: "wrap" }}><span style={{ background: "#EFF6FF", color: "#1D4ED8", borderRadius: 99, padding: "2px 10px", fontSize: 11 }}>{a.type}</span>{a.categorie && <span style={{ background: "#F1F5F9", color: "#475569", borderRadius: 99, padding: "2px 10px", fontSize: 11 }}>{a.categorie}</span>}{a.duree_lecture && <span style={{ background: "#F1F5F9", color: "#64748B", borderRadius: 99, padding: "2px 10px", fontSize: 11 }}>⏱ {a.duree_lecture}</span>}</div>{a.description && <p style={{ fontSize: 13, color: "#64748B" }}>{a.description}</p>}<div style={{ fontSize: 11, color: "#B8C4D6", marginTop: 5 }}>{new Date(a.createdAt).toLocaleDateString()} · {a.vues || 0} vues</div></div>
-                      <div style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-end" }}>
-                        {a.statut === "publie" && <span className="bo">✅ Publié</span>}
-                        {a.statut === "brouillon" && <span className="bw">📝 Brouillon</span>}
-                        {a.statut === "archive" && <span className="ba">📦 Archivé</span>}
-                        <div style={{ display: "flex", gap: 6 }}>
-                          {a.statut === "brouillon" && <button className="btn btn-green" style={{ fontSize: 12, padding: "4px 10px" }} onClick={() => publierArticle(a.id)}>✅ Publier</button>}
-                          <button className="btn btn-blue" style={{ fontSize: 12, padding: "4px 10px" }} onClick={() => ouvrirEditionArticle(a)}>✏️</button>
-                          <button className="btn btn-red" style={{ fontSize: 12, padding: "4px 10px" }} onClick={() => supprimerArticle(a.id)}>🗑</button>
-                        </div>
+              {articles.map(a => (
+                <div key={a.id} style={{ background: "#F8FAFC", borderRadius: 14, padding: "18px 20px", marginBottom: 12, border: `1.5px solid ${a.statut === "publie" ? "#A7F3D0" : a.statut === "brouillon" ? "#E8EEF6" : "#DDE4EF"}` }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16, flexWrap: "wrap" }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 700, fontSize: 15 }}>{a.titre}</div>
+                      <div style={{ display: "flex", gap: 6, marginBottom: 6, flexWrap: "wrap" }}><span style={{ background: "#EFF6FF", color: "#1D4ED8", borderRadius: 99, padding: "2px 10px", fontSize: 11 }}>{a.type}</span>{a.categorie && <span style={{ background: "#F1F5F9", color: "#475569", borderRadius: 99, padding: "2px 10px", fontSize: 11 }}>{a.categorie}</span>}{a.duree_lecture && <span style={{ background: "#F1F5F9", color: "#64748B", borderRadius: 99, padding: "2px 10px", fontSize: 11 }}>⏱ {a.duree_lecture}</span>}</div>
+                      <p style={{ fontSize: 13, color: "#64748B" }}>{a.description}</p>
+                      <div style={{ fontSize: 11, color: "#B8C4D6", marginTop: 5 }}>{new Date(a.createdAt).toLocaleDateString()} · {a.vues || 0} vues</div>
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-end" }}>
+                      {a.statut === "publie" && <span className="bo">✅ Publié</span>}
+                      {a.statut === "brouillon" && <span className="bw">📝 Brouillon</span>}
+                      {a.statut === "archive" && <span className="ba">📦 Archivé</span>}
+                      <div style={{ display: "flex", gap: 6 }}>
+                        {a.statut === "brouillon" && <button className="btn btn-green" style={{ fontSize: 12, padding: "4px 10px" }} onClick={() => publierArticle(a.id)}>✅ Publier</button>}
+                        <button className="btn btn-blue" onClick={() => ouvrirEditionArticle(a)}>✏️</button>
+                        <button className="btn btn-red" onClick={() => supprimerArticle(a.id)}>🗑</button>
                       </div>
                     </div>
                   </div>
-                ))
-              )}
+                </div>
+              ))}
             </div>
           ) : tab === "commentaires" ? (
             <div style={{ padding: "20px 24px" }}>
               <div style={{ fontWeight: 700, fontSize: 17, marginBottom: 20 }}>💬 Commentaires en attente ({comments.length})</div>
-              {comments.length === 0 ? (
-                <div style={{ padding: 60, textAlign: "center", color: "#8A9AB5" }}><div style={{ fontSize: 48, marginBottom: 14 }}>💬</div><div>Aucun commentaire</div></div>
-              ) : (
-                comments.map(c => (
-                  <div key={c.id} style={{ background: "#FFF8E1", borderRadius: 14, padding: "18px 20px", marginBottom: 12, border: "1px solid #F7B500" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 12 }}>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
-                          <div style={{ width: 40, height: 40, borderRadius: "50%", background: "#0A2540", color: "#F7B500", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800 }}>{c.nom?.[0]?.toUpperCase() || "?"}</div>
-                          <div><div style={{ fontWeight: 700 }}>{c.nom}</div><div style={{ fontSize: 12, color: "#8A9AB5" }}>{c.email} · {new Date(c.createdAt).toLocaleDateString()}</div></div>
-                        </div>
-                        <div style={{ background: "#fff", borderRadius: 10, padding: "12px 16px", border: "1px solid #E8EEF6" }}><p style={{ fontSize: 14, color: "#334155", lineHeight: 1.6 }}>{c.comment}</p></div>
-                        <div style={{ fontSize: 12, color: "#64748B", marginTop: 6 }}>📝 Article ID : {c.articleId}</div>
+              {comments.map(c => (
+                <div key={c.id} style={{ background: "#FFF8E1", borderRadius: 14, padding: "18px 20px", marginBottom: 12, border: "1px solid #F7B500" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 12 }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+                        <div style={{ width: 40, height: 40, borderRadius: "50%", background: "#0A2540", color: "#F7B500", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800 }}>{c.nom?.[0]?.toUpperCase() || "?"}</div>
+                        <div><div style={{ fontWeight: 700 }}>{c.nom}</div><div style={{ fontSize: 12, color: "#8A9AB5" }}>{c.email} · {new Date(c.createdAt).toLocaleDateString()}</div></div>
                       </div>
-                      <div style={{ display: "flex", gap: 8 }}>
-                        <button className="btn btn-green" onClick={() => approuverComment(c.id)}>✅ Approuver</button>
-                        <button className="btn btn-red" onClick={() => refuserComment(c.id)}>❌ Refuser</button>
-                        <button className="btn btn-gray" onClick={() => supprimerComment(c.id)}>🗑</button>
-                      </div>
+                      <div style={{ background: "#fff", borderRadius: 10, padding: "12px 16px", border: "1px solid #E8EEF6" }}><p style={{ fontSize: 14, color: "#334155", lineHeight: 1.6 }}>{c.comment}</p></div>
+                      <div style={{ fontSize: 12, color: "#64748B", marginTop: 6 }}>📝 Article ID : {c.articleId}</div>
+                    </div>
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <button className="btn btn-green" onClick={() => approuverComment(c.id)}>✅ Approuver</button>
+                      <button className="btn btn-red" onClick={() => refuserComment(c.id)}>❌ Refuser</button>
+                      <button className="btn btn-gray" onClick={() => supprimerComment(c.id)}>🗑</button>
                     </div>
                   </div>
-                ))
-              )}
+                </div>
+              ))}
             </div>
           ) : tab === "formations" ? (
             <div style={{ padding: "20px 24px" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 20 }}>
-                <div><div style={{ fontWeight: 700, fontSize: 17 }}>📚 Formations ({formations.length})</div><div style={{ fontSize: 13, color: "#8A9AB5" }}>{formations.filter(f => f.statut === "publie").length} publiées · {formationsBrouillons} brouillons</div></div>
-                <button className="btn btn-green" onClick={ouvrirAjoutFormation}>➕ Nouvelle formation</button>
-              </div>
-              {formations.length === 0 ? (
-                <div style={{ padding: 60, textAlign: "center", color: "#8A9AB5" }}>
-                  <div style={{ fontSize: 48, marginBottom: 14 }}>📚</div>
-                  <div>Aucune formation</div>
-                  <button className="btn btn-gold" style={{ marginTop: 16 }} onClick={ouvrirAjoutFormation}>➕ Créer</button>
-                </div>
-              ) : (
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 20 }}><div><div style={{ fontWeight: 700, fontSize: 17 }}>📚 Formations ({formations.length})</div><div style={{ fontSize: 13, color: "#8A9AB5" }}>{formations.filter(f => f.statut === "publie").length} publiées · {formationsBrouillons} brouillons</div></div><button className="btn btn-green" onClick={ouvrirAjoutFormation}>➕ Nouvelle formation</button></div>
+              {formations.length === 0 ? <div style={{ padding: 60, textAlign: "center", color: "#8A9AB5" }}>📚 Aucune formation</div> : (
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 16 }}>
                   {formations.map(f => (
                     <div key={f.id} style={{ background: "#F8FAFC", borderRadius: 14, padding: 16, border: `1px solid ${f.statut === "publie" ? "#A7F3D0" : f.statut === "brouillon" ? "#F7B500" : "#DDE4EF"}` }}>
                       <div style={{ display: "flex", gap: 12 }}>
                         {f.image && <img src={`${BASE}/uploads/formations/${f.image}`} style={{ width: 80, height: 80, borderRadius: 10, objectFit: "cover" }} onError={e => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />}
                         <div style={{ flex: 1 }}>
-                          <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginBottom: 6 }}>
-                            <span style={{ background: "#F7B500", color: "#fff", borderRadius: 99, padding: "2px 8px", fontSize: 11 }}>📚 Formation</span>
-                            {f.statut === "publie" && <span className="bo">✅ Publié</span>}
-                            {f.statut === "brouillon" && <span className="bw">📝 Brouillon</span>}
-                          </div>
+                          <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginBottom: 6 }}><span style={{ background: "#F7B500", color: "#fff", borderRadius: 99, padding: "2px 8px", fontSize: 11 }}>📚 Formation</span>{f.statut === "publie" && <span className="bo">✅ Publié</span>}{f.statut === "brouillon" && <span className="bw">📝 Brouillon</span>}</div>
                           <div style={{ fontWeight: 700 }}>{f.titre}</div>
                           {f.domaine && <div style={{ fontSize: 11, color: "#64748B", marginTop: 4 }}>📁 {f.domaine}</div>}
                           {f.formateur && <div style={{ fontSize: 12, color: "#64748B" }}>👨‍🏫 {f.formateur}</div>}
-                          <div style={{ marginTop: 6, display: "flex", flexWrap: "wrap", gap: 8 }}>
-                            {f.type === "gratuit" ? <span style={{ fontSize: 11, color: "#22C55E" }}>🎁 Gratuit</span> : f.prix && <span style={{ fontSize: 11, color: "#F7B500" }}>💰 {f.prix} DT</span>}
-                            {f.duree && <span style={{ fontSize: 11, color: "#64748B" }}>⏱ {f.duree}</span>}
-                            {f.mode === "en_ligne" ? <span style={{ fontSize: 11, color: "#3B82F6" }}>💻 En ligne</span> : <span style={{ fontSize: 11, color: "#10B981" }}>🏢 Présentiel</span>}
-                            {f.localisation && <span style={{ fontSize: 11, color: "#64748B" }}>📍 {f.localisation}</span>}
-                            {f.certifiante && <span style={{ fontSize: 11, color: "#8B5CF6" }}>🎓 Certifiante</span>}
-                            {f.places_limitees && <span style={{ fontSize: 11, color: "#EF4444" }}>🎟️ Places limitées ({f.places_disponibles || 0})</span>}
-                          </div>
+                          <div style={{ marginTop: 6, display: "flex", flexWrap: "wrap", gap: 8 }}>{f.type === "gratuit" ? <span style={{ fontSize: 11, color: "#22C55E" }}>🎁 Gratuit</span> : f.prix && <span style={{ fontSize: 11, color: "#F7B500" }}>💰 {f.prix} DT</span>}{f.duree && <span style={{ fontSize: 11, color: "#64748B" }}>⏱ {f.duree}</span>}{f.mode === "en_ligne" ? <span style={{ fontSize: 11, color: "#3B82F6" }}>💻 En ligne</span> : <span style={{ fontSize: 11, color: "#10B981" }}>🏢 Présentiel</span>}{f.localisation && <span style={{ fontSize: 11, color: "#64748B" }}>📍 {f.localisation}</span>}{f.certifiante && <span style={{ fontSize: 11, color: "#8B5CF6" }}>🎓 Certifiante</span>}{f.places_limitees && <span style={{ fontSize: 11, color: "#EF4444" }}>🎟️ Places limitées ({f.places_disponibles || 0})</span>}</div>
                         </div>
                       </div>
                       <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 12 }}>
                         {f.statut === "brouillon" && <button className="btn btn-green" style={{ fontSize: 12, padding: "4px 10px" }} onClick={() => publierFormation(f.id)}>✅ Publier</button>}
                         {f.statut === "publie" && <button className="btn btn-gray" style={{ fontSize: 12, padding: "4px 10px" }} onClick={() => archiverFormation(f.id)}>📦 Archiver</button>}
-                        <button className="btn btn-blue" style={{ fontSize: 12, padding: "4px 10px" }} onClick={() => ouvrirEditionFormation(f)}>✏️</button>
-                        <button className="btn btn-red" style={{ fontSize: 12, padding: "4px 10px" }} onClick={() => supprimerFormation(f.id)}>🗑</button>
+                        <button className="btn btn-blue" onClick={() => ouvrirEditionFormation(f)}>✏️</button>
+                        <button className="btn btn-red" onClick={() => supprimerFormation(f.id)}>🗑</button>
                       </div>
                     </div>
                   ))}
                 </div>
+              )}
+            </div>
+          ) : tab === "demandes" ? (
+            <div style={{ padding: "20px 24px" }}>
+              <div style={{ fontWeight: 700, fontSize: 17, marginBottom: 20 }}>📋 Demandes de service ({demandes.length})</div>
+              {demandes.length === 0 ? (
+                <div style={{ padding: 60, textAlign: "center", color: "#8A9AB5" }}>📋 Aucune demande</div>
+              ) : (
+                demandes.map(d => {
+                  const isFormationReq = d.service === "formation";
+                  return (
+                    <div key={d.id} style={{ background: "#fff", border: `1.5px solid ${d.statut === "en_attente" ? "#F7B500" : d.statut === "acceptee" ? "#A7F3D0" : "#E8EEF6"}`, borderRadius: 14, padding: "18px 20px", marginBottom: 12 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 12, marginBottom: 12 }}>
+                        <div>
+                          <div style={{ fontWeight: 700, fontSize: 15 }}>
+                            Service demandé : <span style={{ color: "#F7B500" }}>
+                              {isFormationReq ? "📚 Formation" : (d.service || "Personnalisé")}
+                            </span>
+                          </div>
+                          <div style={{ fontSize: 12, color: "#8A9AB5" }}>
+                            Startup : <strong>{d.startup?.nom_startup || d.startup?.user?.prenom || "N/A"}</strong> · {new Date(d.createdAt).toLocaleDateString()}
+                          </div>
+                        </div>
+                        <div>
+                          <span style={{ background: d.statut === "en_attente" ? "#FFF8E1" : d.statut === "acceptee" ? "#ECFDF5" : "#FEF2F2", color: d.statut === "en_attente" ? "#B45309" : d.statut === "acceptee" ? "#059669" : "#DC2626", borderRadius: 99, padding: "4px 12px", fontSize: 12, fontWeight: 700 }}>
+                            {d.statut === "en_attente" ? "⏳ En attente" : d.statut === "acceptee" ? "✅ Acceptée" : "❌ Refusée"}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Affichage spécifique pour les demandes de formation */}
+                      {isFormationReq && d.formation && (
+                        <div style={{ marginTop: 10, marginBottom: 12, background: "#F3E8FF", borderRadius: 10, padding: "10px 14px", border: "1px solid #DDD6FE" }}>
+                          <div style={{ fontWeight: 700, fontSize: 13, color: "#6B21A5" }}>🎓 Formation demandée : {d.formation.titre}</div>
+                          {d.formation.places_limitees && (
+                            <div style={{ fontSize: 12, marginTop: 4 }}>
+                              Places restantes : <strong style={{ color: d.formation.places_disponibles > 0 ? "#22C55E" : "#EF4444" }}>{d.formation.places_disponibles ?? 0}</strong>
+                            </div>
+                          )}
+                          {d.formation.prix && <div style={{ fontSize: 12, marginTop: 2 }}>Prix : {d.formation.prix} DT {d.formation.type === "gratuit" && "(Gratuit)"}</div>}
+                        </div>
+                      )}
+
+                      {/* Description pour les autres services */}
+                      {!isFormationReq && d.description && (
+                        <div style={{ background: "#F8FAFC", borderRadius: 12, padding: "12px 16px", marginBottom: 12 }}>
+                          <div style={{ fontSize: 12, color: "#64748B", marginBottom: 4 }}>📝 Description</div>
+                          <p style={{ fontSize: 14, color: "#0A2540", lineHeight: 1.6 }}>{d.description}</p>
+                        </div>
+                      )}
+
+                      {/* Infos communes */}
+                      {(d.budget || d.delai || d.objectif || d.telephone) && (
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 12 }}>
+                          {d.budget && <span className="badge-ok">💰 {d.budget}</span>}
+                          {d.delai && <span className="badge-ok">⏱ {d.delai}</span>}
+                          {d.objectif && <span className="badge-ok">🎯 {d.objectif}</span>}
+                          {d.telephone && <span className="badge-ok">📞 {d.telephone}</span>}
+                        </div>
+                      )}
+
+                      {d.commentaire_admin && (
+                        <div style={{ background: "#EFF6FF", borderRadius: 10, padding: "12px 16px", marginBottom: 12 }}>
+                          <div style={{ fontSize: 11, color: "#1D4ED8", fontWeight: 700, marginBottom: 4 }}>📩 Réponse admin :</div>
+                          <p style={{ fontSize: 13.5, color: "#0A2540" }}>{d.commentaire_admin}</p>
+                        </div>
+                      )}
+
+                      {/* Boutons d'action */}
+                      <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+                        {d.statut === "en_attente" && (
+                          <>
+                            {isFormationReq ? (
+                              <>
+                                <button className="btn btn-green" onClick={() => accepterDemandeFormation(d.id)}>✅ Accepter</button>
+                                <button className="btn btn-red" onClick={() => refuserDemandeFormation(d.id)}>❌ Refuser</button>
+                              </>
+                            ) : (
+                              <>
+                                <button className="btn btn-green" onClick={() => changerStatutDemande(d.id, "acceptee")}>✅ Accepter</button>
+                                <button className="btn btn-red" onClick={() => changerStatutDemande(d.id, "refusee")}>❌ Refuser</button>
+                                <button className="btn btn-blue" onClick={() => setReplyDemandeModal({ open: true, demandeId: d.id, startupNom: d.startup?.nom_startup || "Startup", email: d.startup?.user?.email || "" })}>✉️ Répondre</button>
+                              </>
+                            )}
+                          </>
+                        )}
+                        {(d.statut === "acceptee" || d.statut === "refusee") && (
+                          <button className="btn btn-gray" disabled style={{ opacity: 0.6 }}>
+                            {d.statut === "acceptee" ? "✅ Traitée" : "❌ Refusée"}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })
               )}
             </div>
           ) : null}
