@@ -248,7 +248,7 @@ export default function ExpertsPage() {
               Nos <span style={{ color: "#F7B500" }}>Experts</span>
             </h1>
             <p className="hci hci-3" style={{ fontSize: 17, color: "rgba(255,255,255,.8)", lineHeight: 1.8, margin: 0 }}>
-              Des professionnels validés pour accompagner votre startup dans chaque domaine clé.
+              Des experts qualifiés pour répondre à vos besoins dans différents domaines professionnels.
             </p>
           </div>
         </div>

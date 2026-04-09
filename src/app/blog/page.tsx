@@ -1,299 +1,384 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { FaArrowRight, FaSearch, FaClock, FaChevronRight } from "react-icons/fa";
+import { useRouter } from "next/navigation";
+import {
+  FaArrowRight, FaSearch, FaClock, FaEye,
+  FaLock, FaFilePdf, FaChevronDown, FaFilter,
+  FaFire, FaTag, FaTimes, FaCalendarAlt,
+} from "react-icons/fa";
 
-function useInView(threshold = 0.08) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [inView, setInView] = useState(false);
-  useEffect(() => {
-    const el = ref.current; if (!el) return;
-    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) { setInView(true); obs.disconnect(); } }, { threshold });
-    obs.observe(el); return () => obs.disconnect();
-  }, []);
-  return [ref, inView] as const;
-}
-function FadeUp({ children, delay = 0, className = "" }: { children: React.ReactNode; delay?: number; className?: string }) {
-  const [ref, inView] = useInView();
-  return (
-    <div ref={ref} className={className} style={{ opacity: inView?1:0, transform: inView?"translateY(0)":"translateY(24px)", transition: `opacity .6s cubic-bezier(.22,1,.36,1) ${delay}s, transform .6s cubic-bezier(.22,1,.36,1) ${delay}s` }}>
-      {children}
-    </div>
-  );
-}
+const BASE = "http://localhost:3001";
 
-const CATS = ["Tous", "Stratégie", "Financement", "Croissance", "Management", "Tech & Produit"];
-const COLORS: Record<string, string> = {
-  "Stratégie": "#3B82F6", "Financement": "#8B5CF6",
-  "Croissance": "#22C55E", "Management": "#F7B500", "Tech & Produit": "#EF4444",
-};
-
-const ARTICLES = [
-  { id:1,  cat:"Stratégie",    title:"Comment bâtir un Business Model solide avant de lever des fonds",      author:"Ahmed Benslimane", date:"28 fév",  readTime:"8 min",  featured:true  },
-  { id:2,  cat:"Financement",  title:"Les 7 critères que regardent vraiment les VCs en seed",                author:"Karim Benali",     date:"24 fév",  readTime:"6 min",  featured:false },
-  { id:3,  cat:"Croissance",   title:"De 0 à 1M€ ARR : la roadmap des startups SaaS qui réussissent",       author:"Sofia Mansouri",   date:"20 fév",  readTime:"9 min",  featured:false },
-  { id:4,  cat:"Management",   title:"OKR pour startups : implémenter sans tuer la culture d'équipe",        author:"Leila Osman",      date:"16 fév",  readTime:"7 min",  featured:false },
-  { id:5,  cat:"Tech & Produit",title:"Product-Market Fit : comment savoir si vous l'avez vraiment",         author:"Youssef Tazi",     date:"12 fév",  readTime:"5 min",  featured:false },
-  { id:6,  cat:"Stratégie",    title:"Audit organisationnel : pourquoi le faire avant d'embaucher",          author:"Ahmed Benslimane", date:"8 fév",   readTime:"6 min",  featured:false },
-  { id:7,  cat:"Financement",  title:"Valorisation pre-money : méthodes et pièges à éviter",                author:"Karim Benali",     date:"4 fév",   readTime:"10 min", featured:false },
-  { id:8,  cat:"Croissance",   title:"Cold outreach B2B : le guide pour obtenir 35% de taux de réponse",    author:"Sofia Mansouri",   date:"1 fév",   readTime:"8 min",  featured:false },
-  { id:9,  cat:"Management",   title:"Le système de feedback continu qui remplace les revues annuelles",     author:"Leila Osman",      date:"27 jan",  readTime:"6 min",  featured:false },
+const CATEGORIES = [
+  "Toutes","Finance & Marchés","IA & Digital","RH & Organisation",
+  "Stratégie","Startup","Management","Marketing","Droit & Conformité","Économie",
 ];
 
-const NAV_SVC = [
-  {label:"Consulting",slug:"consulting"},{label:"Audit sur site",slug:"audit-sur-site"},
-  {label:"Accompagnement",slug:"accompagnement"},{label:"Formations",slug:"formations"},
+const TYPES = [
+  { val:"", label:"Tout" },
+  { val:"article", label:"Articles" },
+  { val:"conseil", label:"Conseils" },
+  { val:"nouveaute", label:"Nouveautés" },
 ];
 
 export default function BlogPage() {
+  const router = useRouter();
+  const [articles, setArticles] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [categorie, setCategorie] = useState("Toutes");
+  const [typeFilter, setTypeFilter] = useState("");
+  const [showLockModal, setShowLockModal] = useState(false);
+  const [lockArticle, setLockArticle] = useState<any>(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [navOpen, setNavOpen] = useState(false);
-  const [cat, setCat] = useState("Tous");
-  const [q, setQ] = useState("");
 
-  const filtered = ARTICLES.filter(a =>
-    (cat === "Tous" || a.cat === cat) &&
-    (q === "" || a.title.toLowerCase().includes(q.toLowerCase()))
-  );
+  useEffect(() => {
+    const u = localStorage.getItem("user");
+    setIsLoggedIn(!!u);
+    fetch(`${BASE}/articles/publics`)
+      .then(r => r.ok ? r.json() : [])
+      .then(d => { setArticles(Array.isArray(d) ? d : []); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, []);
 
-  const featured = ARTICLES[0];
-  const rest = filtered.filter(a => !a.featured || cat !== "Tous" || q !== "");
+  function handleArticleClick(article: any) {
+    if (article.acces_prive && !isLoggedIn) {
+      setLockArticle(article);
+      setShowLockModal(true);
+      return;
+    }
+    router.push(`/blog/${article.id}`);
+  }
+
+  const SERVICES = [
+    { label:"Consulting", slug:"consulting" },
+    { label:"Audit sur site", slug:"audit-sur-site" },
+    { label:"Accompagnement", slug:"accompagnement" },
+    { label:"Formations", slug:"formations" },
+  ];
+
+  const filtered = articles.filter(a => {
+    const q = search.toLowerCase();
+    const matchSearch = !q ||
+      a.titre?.toLowerCase().includes(q) ||
+      a.description?.toLowerCase().includes(q) ||
+      (a.tags || []).some((t: string) => t.toLowerCase().includes(q)) ||
+      a.categorie?.toLowerCase().includes(q);
+    const matchCat = categorie === "Toutes" || a.categorie === categorie;
+    const matchType = !typeFilter || a.type === typeFilter;
+    return matchSearch && matchCat && matchType;
+  });
+
+  const tendance = filtered.filter(a => a.tres_tendance);
+  const autres = filtered.filter(a => !a.tres_tendance);
 
   return (
-    <div className="font-[Plus_Jakarta_Sans,sans-serif] bg-white min-h-screen text-[#0A2540]">
+    <div style={{ fontFamily:"'Outfit',sans-serif", background:"#fff", minHeight:"100vh" }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap');
-        @keyframes fd{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
-        .drop-item{display:flex;align-items:center;gap:10px;padding:10px 18px;color:#0A2540;text-decoration:none;font-size:14px;font-weight:600;transition:background .15s}
-        .drop-item:hover{background:#FFFBEB}
-        .btn-conn{border:2px solid #0A2540;color:#0A2540;background:transparent;padding:9px 22px;border-radius:9px;font-weight:700;font-size:14px;cursor:pointer;transition:all .22s;font-family:inherit}
-        .btn-conn:hover{background:#F7B500;border-color:#F7B500;transform:translateY(-2px)}
-        .btn-insc{background:#F7B500;color:#0A2540;border:2px solid #F7B500;padding:9px 22px;border-radius:9px;font-weight:800;font-size:14px;cursor:pointer;transition:all .22s;font-family:inherit}
-        .btn-insc:hover{background:#e6a800;transform:translateY(-2px)}
-
-        /* card */
-        .card{border-bottom:1px solid #f0f0f0;transition:background .2s;cursor:pointer}
-        .card:hover{background:#fafbff}
-        .card:hover .card-arrow{opacity:1;transform:translateX(0)}
-        .card-arrow{opacity:0;transform:translateX(-4px);transition:all .2s}
-
-        /* search */
-        .si{background:#f7f8fa;border:1.5px solid #eaedf2;border-radius:10px;padding:11px 16px 11px 42px;font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;font-weight:500;color:#0A2540;outline:none;width:100%;transition:border-color .2s,box-shadow .2s}
-        .si:focus{border-color:#3B82F6;box-shadow:0 0 0 3px rgba(59,130,246,.1);background:white}
-        .si::placeholder{color:#b0b7c3}
-
-        /* pill */
-        .pill{padding:7px 16px;border-radius:50px;font-size:13px;font-weight:700;cursor:pointer;border:1.5px solid #eaedf2;background:white;color:#6b7280;transition:all .2s;font-family:inherit;white-space:nowrap}
-        .pill:hover{border-color:#cbd5e1;color:#0A2540}
-        .pill.on{border-color:transparent}
-
-        /* featured */
-        .feat{border-radius:20px;overflow:hidden;border:1.5px solid #eaedf2;transition:box-shadow .3s,transform .3s}
-        .feat:hover{box-shadow:0 16px 48px rgba(10,37,64,.10);transform:translateY(-3px)}
-
-        /* nl */
-        .nl-i{background:#ffffff12;border:1.5px solid #ffffff22;border-radius:10px;padding:11px 16px;color:white;font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;font-weight:500;outline:none;flex:1;transition:border-color .2s}
-        .nl-i:focus{border-color:#F7B500}
-        .nl-i::placeholder{color:#ffffff44}
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Fraunces:ital,wght@0,700;0,900;1,700&display=swap');
+        *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+        ::selection{background:#F7B500;color:#0A2540;}
+        .nl{color:#475569;text-decoration:none;font-size:14.5px;font-weight:500;transition:color .2s;}
+        .nl:hover{color:#F7B500;}
+        .di{display:block;padding:10px 18px;color:#334155;text-decoration:none;font-size:14px;font-weight:500;transition:background .15s,color .15s;white-space:nowrap;}
+        .di:hover{background:#FFFBEB;color:#F7B500;}
+        .bno{border:2px solid #0A2540;color:#0A2540;background:transparent;padding:9px 22px;border-radius:9px;font-weight:700;font-size:13.5px;cursor:pointer;transition:all .22s;font-family:inherit;}
+        .bno:hover{background:#F7B500;border-color:#F7B500;}
+        .bns{background:#F7B500;color:#0A2540;border:none;padding:9px 22px;border-radius:9px;font-weight:800;font-size:13.5px;cursor:pointer;transition:all .22s;font-family:inherit;}
+        .bns:hover{background:#e6a800;box-shadow:0 8px 20px rgba(247,181,0,.38);}
+        @keyframes spin{to{transform:rotate(360deg)}}
+        @keyframes fadeIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+        .card-animation{animation:fadeIn .5s cubic-bezier(.22,1,.36,1) both;}
+        .search-inp{width:100%;background:#F8FAFC;border:1.5px solid #E2EAF4;border-radius:12px;padding:13px 16px 13px 44px;font-family:'Outfit',sans-serif;font-size:14px;color:#0A2540;outline:none;transition:all .2s;}
+        .search-inp:focus{border-color:#F7B500;box-shadow:0 0 0 3px rgba(247,181,0,.1);background:#fff;}
+        .cat-btn{border:1.5px solid #E2EAF4;border-radius:99px;padding:7px 16px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;background:#fff;color:#475569;white-space:nowrap;}
+        .cat-btn.active,.cat-btn:hover{border-color:#0A2540;background:#0A2540;color:#fff;}
+        .type-btn{border:1.5px solid #E2EAF4;border-radius:8px;padding:8px 16px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;background:#fff;color:#475569;}
+        .type-btn.active{border-color:#F7B500;background:#FFF8E1;color:#B45309;}
+        .modal-bg{position:fixed;inset:0;background:rgba(10,37,64,.6);z-index:999;display:flex;align-items:center;justify-content:center;padding:24px;backdrop-filter:blur(8px);}
+        .art-card{background:#fff;border-radius:20px;overflow:hidden;border:1px solid rgba(10,37,64,.07);box-shadow:0 4px 20px rgba(10,37,64,.06);display:flex;flex-direction:column;transition:transform .35s cubic-bezier(.22,1,.36,1),box-shadow .35s,border-color .35s;text-decoration:none;height:100%;}
+        .art-card:hover{transform:translateY(-8px);box-shadow:0 28px 60px rgba(10,37,64,.14);border-color:rgba(247,181,0,.3);}
+        .art-card:hover .art-img{transform:scale(1.05);}
+        .art-img{transition:transform .6s cubic-bezier(.22,1,.36,1);width:100%;height:100%;object-fit:cover;}
       `}</style>
 
-      {/* ── HEADER ── */}
-      <header className="bg-white sticky top-0 z-50 border-b border-[#f0f0f0]">
-        <div className="max-w-[1200px] mx-auto px-6 h-[70px] flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-3 no-underline">
+      {/* Modal accès réservé */}
+      {showLockModal && (
+        <div className="modal-bg" onClick={() => setShowLockModal(false)}>
+          <div style={{
+            background:"#fff", borderRadius:24, padding:"44px 40px",
+            maxWidth:420, width:"100%", textAlign:"center",
+            boxShadow:"0 40px 100px rgba(10,37,64,.3)",
+            position:"relative",
+          }} onClick={e => e.stopPropagation()}>
+            <button onClick={() => setShowLockModal(false)}
+              style={{ position:"absolute", top:14, right:16, background:"none", border:"none", fontSize:20, color:"#CBD5E1", cursor:"pointer" }}>
+              <FaTimes />
+            </button>
+            <div style={{
+              width:72, height:72, borderRadius:"50%",
+              background:"linear-gradient(135deg,#F7B500,#e6a800)",
+              display:"flex", alignItems:"center", justifyContent:"center",
+              margin:"0 auto 20px",
+              boxShadow:"0 10px 28px rgba(247,181,0,.3)",
+            }}>
+              <FaLock size={26} style={{ color:"#0A2540" }} />
+            </div>
+            <h3 style={{ fontFamily:"'Outfit',sans-serif", fontSize:22, fontWeight:800, color:"#0A2540", marginBottom:10 }}>
+              Contenu réservé aux membres
+            </h3>
+            <p style={{ color:"#64748B", fontSize:14.5, lineHeight:1.75, marginBottom:8 }}>
+              <strong style={{ color:"#0A2540" }}>« {lockArticle?.titre} »</strong>
+            </p>
+            <p style={{ color:"#64748B", fontSize:14, lineHeight:1.75, marginBottom:28 }}>
+              Créez un compte gratuit ou connectez-vous pour accéder à cet article
+            </p>
+            <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+              <Link href="/inscription" onClick={() => setShowLockModal(false)}>
+                <button style={{ width:"100%", background:"#0A2540", color:"#F7B500", border:"none", borderRadius:11, padding:"14px", fontFamily:"inherit", fontWeight:800, fontSize:15, cursor:"pointer" }}>
+                  Créer un compte gratuit
+                </button>
+              </Link>
+              <Link href="/connexion" onClick={() => setShowLockModal(false)}>
+                <button style={{ width:"100%", background:"transparent", color:"#0A2540", border:"1.5px solid #E2EAF4", borderRadius:11, padding:"12px", fontFamily:"inherit", fontWeight:600, fontSize:14, cursor:"pointer" }}>
+                  Se connecter
+                </button>
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Header */}
+      <header style={{ background:"#fff", position:"sticky", top:0, zIndex:100, boxShadow:"0 1px 0 #EEF2F7,0 4px 18px rgba(10,37,64,.05)" }}>
+        <div style={{ maxWidth:1280, margin:"0 auto", padding:"0 28px", height:76, display:"flex", alignItems:"center", justifyContent:"space-between", gap:20 }}>
+          <Link href="/" style={{ display:"flex", alignItems:"center", gap:11, textDecoration:"none", flexShrink:0 }}>
             <svg width="40" height="40" viewBox="0 0 46 46" fill="none">
-              <rect width="46" height="46" rx="12" fill="#0A2540"/>
-              <rect x="23" y="7" width="13" height="13" rx="2" transform="rotate(45 23 7)" fill="#F7B500" opacity="0.15"/>
-              <text x="50%" y="55%" dominantBaseline="middle" textAnchor="middle" fill="#F7B500" fontSize="15" fontWeight="900" fontFamily="Arial">BEH</text>
+              <rect width="46" height="46" rx="11" fill="#0A2540" />
+              <text x="50%" y="55%" dominantBaseline="middle" textAnchor="middle" fill="#F7B500" fontSize="14" fontWeight="900" fontFamily="Arial">BEH</text>
             </svg>
-            <div>
-              <div className="font-black text-[17px] text-[#0A2540] leading-none">Business <span className="text-[#F7B500]">Expert</span> Hub</div>
-              
-            </div>
+            <span style={{ fontWeight:700, fontSize:18, color:"#0A2540" }}>
+              Business <span style={{ color:"#F7B500" }}>Expert</span> Hub
+            </span>
           </Link>
-          <nav className="flex gap-6 items-center">
-            <Link href="/" className="text-[#0A2540] no-underline text-[14px] font-medium hover:text-[#F7B500] transition-colors">Accueil</Link>
-            <Link href="/a-propos" className="text-[#0A2540] no-underline text-[14px] font-medium hover:text-[#F7B500] transition-colors">À propos</Link>
-            <div className="relative" onMouseEnter={()=>setNavOpen(true)} onMouseLeave={()=>setNavOpen(false)}>
-              <span className="text-[#0A2540] text-[14px] font-medium cursor-pointer hover:text-[#F7B500] transition-colors">Services ▾</span>
-              {navOpen && <ul className="absolute top-full left-0 bg-white rounded-xl min-w-[200px] list-none p-[6px_0] m-0 z-[200] border border-gray-100" style={{boxShadow:"0 8px 30px rgba(0,0,0,.10)",animation:"fd .2s ease"}}>
-                {NAV_SVC.map(s=><li key={s.slug}><Link href={`/services/${s.slug}`} className="drop-item">{s.label}</Link></li>)}
-              </ul>}
+          <nav style={{ display:"flex", gap:20, alignItems:"center", flex:1, justifyContent:"center" }}>
+            <Link href="/" className="nl">Accueil</Link>
+            <Link href="/a-propos" className="nl">À propos</Link>
+            <div style={{ position:"relative" }} onMouseEnter={() => setNavOpen(true)} onMouseLeave={() => setNavOpen(false)}>
+              <span className="nl" style={{ cursor:"pointer", display:"flex", alignItems:"center", gap:4 }}>
+                Services <FaChevronDown size={9} />
+              </span>
+              {navOpen && (
+                <ul style={{ position:"absolute", top:"calc(100% + 10px)", left:0, background:"#fff", borderRadius:14, listStyle:"none", padding:"8px", margin:0, zIndex:200, minWidth:210, boxShadow:"0 16px 48px rgba(10,37,64,.14)", border:"1px solid #EEF2F7" }}>
+                  {SERVICES.map(s => (
+                    <li key={s.slug}><Link href={`/services/${s.slug}`} className="di">{s.label}</Link></li>
+                  ))}
+                </ul>
+              )}
             </div>
-            <Link href="/experts" className="text-[#0A2540] no-underline text-[14px] font-medium hover:text-[#F7B500] transition-colors">Experts</Link>
-            <span className="text-[#F7B500] text-[14px] font-black">Blog</span>
-            <Link href="/contact" className="text-[#0A2540] no-underline text-[14px] font-medium hover:text-[#F7B500] transition-colors">Contact</Link>
+            <Link href="/experts" className="nl">Experts</Link>
+            <Link href="/blog" className="nl" style={{ color:"#F7B500", fontWeight:700 }}>Blog</Link>
+            <Link href="/contact" className="nl">Contact</Link>
           </nav>
-          <div className="flex gap-3">
-            <Link href="/connexion"><button className="btn-conn">Connexion</button></Link>
-            <Link href="/inscription"><button className="btn-insc">{"S'inscrire"}</button></Link>
+          <div style={{ display:"flex", gap:10, alignItems:"center", flexShrink:0 }}>
+            <Link href="/connexion"><button className="bno">Connexion</button></Link>
+            <Link href="/inscription"><button className="bns">S&apos;inscrire</button></Link>
           </div>
         </div>
       </header>
 
-      {/* ── PAGE HEADER ── */}
-      <div className="border-b border-[#f0f0f0]" style={{padding:"52px 24px 44px"}}>
-        <div className="max-w-[1200px] mx-auto">
-          <FadeUp>
-            <div className="flex items-center gap-2 mb-5 text-[13px] text-gray-400">
-              <Link href="/" className="hover:text-[#F7B500] transition-colors no-underline text-gray-400">Accueil</Link>
-              <span>›</span>
-              <span className="text-[#0A2540] font-semibold">Blog</span>
-            </div>
-            <div className="flex items-end justify-between gap-8">
-              <div>
-                <h1 className="font-black m-0 mb-3 leading-[1.08] text-[#0A2540]" style={{fontSize:"clamp(32px,4vw,52px)",letterSpacing:"-1.2px"}}>
-                  Blog &amp; Ressources
-                </h1>
-                <p className="text-gray-500 text-[16px] m-0 max-w-[480px] leading-[1.7]">
-                  Stratégie, financement, croissance — les méthodes terrain de nos experts pour scaler votre startup.
-                </p>
-              </div>
-              <div className="flex gap-10 flex-shrink-0">
-                {[["24","Articles"],["8","Auteurs"],["2.5k","Lecteurs/mois"]].map(([v,l])=>(
-                  <div key={l} className="text-right">
-                    <div className="font-black text-[28px] text-[#0A2540] leading-none">{v}</div>
-                    <div className="text-[12px] text-gray-400 font-semibold mt-1">{l}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </FadeUp>
+      {/* Hero Blog */}
+      <section style={{
+        background:"linear-gradient(135deg,#0A2540 0%,#1a3f6f 60%,#0d2850 100%)",
+        padding:"64px 28px 52px",
+        position:"relative", overflow:"hidden",
+      }}>
+        <div style={{ position:"absolute", inset:0, backgroundImage:"radial-gradient(rgba(255,255,255,.02) 1px,transparent 1px)", backgroundSize:"44px 44px", pointerEvents:"none" }} />
+        <div style={{ maxWidth:1200, margin:"0 auto", position:"relative", zIndex:10 }}>
+          <div style={{ display:"flex", alignItems:"center", gap:9, marginBottom:20, opacity:.7 }}>
+            <Link href="/" style={{ color:"rgba(255,255,255,.5)", textDecoration:"none", fontSize:13 }}>Accueil</Link>
+            <span style={{ color:"rgba(255,255,255,.3)" }}>›</span>
+            <span style={{ color:"#F7B500", fontSize:13, fontWeight:600 }}>Blog</span>
+          </div>
+          <h1 style={{
+            fontFamily:"'Fraunces',serif",
+            fontSize:"clamp(36px,5vw,64px)",
+            fontWeight:900, color:"#fff",
+            lineHeight:1.1, marginBottom:16,
+          }}>
+            Insights &amp; <span style={{ color:"#F7B500", fontStyle:"italic" }}>Expertises</span>
+          </h1>
+          <p style={{ fontSize:16, color:"rgba(255,255,255,.6)", maxWidth:520, lineHeight:1.85, marginBottom:36 }}>
+            Articles, conseils et analyses de nos experts pour accélérer la croissance de votre startup.
+          </p>
+
+         
+
+          {/* Stats */}
+          <div style={{ display:"flex", gap:28, marginTop:28 }}>
+            <div><span style={{ fontSize:22, fontWeight:800, color:"#F7B500" }}>{articles.length}</span><span style={{ fontSize:12, color:"rgba(255,255,255,.4)", marginLeft:6 }}>articles publiés</span></div>
+          </div>
+        </div>
+      </section>
+
+      {/* Filtres */}
+      <div style={{ background:"#fff", borderBottom:"1px solid #F1F5F9", padding:"0 28px", position:"sticky", top:76, zIndex:90, boxShadow:"0 2px 12px rgba(10,37,64,.04)" }}>
+        <div style={{ maxWidth:1200, margin:"0 auto", padding:"14px 0", display:"flex", alignItems:"center", gap:16, overflowX:"auto" }}>
+          <div style={{ display:"flex", alignItems:"center", gap:6, flexShrink:0 }}>
+            <FaFilter size={11} style={{ color:"#94A3B8" }} />
+            <span style={{ fontSize:12, color:"#94A3B8", fontWeight:700, textTransform:"uppercase", letterSpacing:"1px" }}>Filtrer</span>
+          </div>
+          <div style={{ display:"flex", gap:6, flexShrink:0 }}>
+            {TYPES.map(t => (
+              <button key={t.val} className={`type-btn${typeFilter===t.val?" active":""}`} onClick={() => setTypeFilter(t.val)}>
+                {t.label}
+              </button>
+            ))}
+          </div>
+          <div style={{ width:1, height:24, background:"#E2EAF4", flexShrink:0 }} />
+          <div style={{ display:"flex", gap:6, overflowX:"auto" }}>
+            {CATEGORIES.map(c => (
+              <button key={c} className={`cat-btn${categorie===c?" active":""}`} onClick={() => setCategorie(c)}>
+                {c}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
-      <div className="max-w-[1200px] mx-auto px-6 py-12">
-
-        {/* ── ARTICLE FEATURED (affiché seulement sans filtre) ── */}
-        {cat === "Tous" && q === "" && (
-          <FadeUp>
-            <Link href={`/blog/${featured.id}`} className="no-underline block feat mb-14 group">
-              <div className="grid grid-cols-[1fr_340px]">
-                {/* Visuel */}
-                <div className="relative flex flex-col justify-end p-10" style={{
-                  background:"linear-gradient(135deg,#0A2540 0%,#1a3a6e 70%,#0d2850 100%)",
-                  minHeight:280,
-                }}>
-                  {/* motif */}
-                  <div className="absolute inset-0 pointer-events-none" style={{backgroundImage:"radial-gradient(rgba(255,255,255,0.018) 1px,transparent 1px)",backgroundSize:"28px 28px"}}/>
-                  <div className="absolute top-8 right-8 w-24 h-24 pointer-events-none" style={{border:"1px solid rgba(247,181,0,0.12)",transform:"rotate(45deg)",borderRadius:4}}/>
-                  <div className="relative z-10">
-                    <span className="inline-block bg-[#F7B500] text-[#0A2540] font-black text-[10px] tracking-[2.5px] uppercase px-3 py-1.5 rounded-full mb-4">
-                      À la une
-                    </span>
-                    <h2 className="font-black text-white m-0 leading-[1.2]" style={{fontSize:"clamp(18px,2vw,24px)",maxWidth:480}}>
-                      {featured.title}
-                    </h2>
-                  </div>
-                </div>
-                {/* Méta */}
-                <div className="bg-white p-8 flex flex-col justify-between border-l border-[#f0f0f0]">
-                  <div>
-                    <span className="inline-block text-[11px] font-bold px-3 py-1 rounded-full mb-5"
-                      style={{background:`${COLORS[featured.cat]}12`,color:COLORS[featured.cat],border:`1px solid ${COLORS[featured.cat]}25`}}>
-                      {featured.cat}
-                    </span>
-                    <div className="text-[13px] text-gray-500 mb-1 font-semibold">{featured.author}</div>
-                    <div className="flex items-center gap-3 text-[12px] text-gray-400 font-semibold">
-                      <span>{featured.date} 2026</span>
-                      <span>·</span>
-                      <span className="flex items-center gap-1"><FaClock style={{fontSize:10}}/> {featured.readTime}</span>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 font-black text-[14px]" style={{color:COLORS[featured.cat]}}>
-                    Lire l&apos;article
-                    <FaArrowRight size={12} className="transition-transform duration-200 group-hover:translate-x-1"/>
-                  </div>
-                </div>
-              </div>
-            </Link>
-          </FadeUp>
-        )}
-
-        {/* ── FILTRES ── */}
-        <FadeUp delay={0.05}>
-          <div className="flex items-center gap-4 mb-8 flex-wrap">
-            {/* Search */}
-            <div className="relative flex-1 min-w-[200px] max-w-[320px]">
-              <FaSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#b0b7c3]" style={{fontSize:13}}/>
-              <input className="si" placeholder="Rechercher…" value={q} onChange={e=>setQ(e.target.value)}/>
-            </div>
-            {/* Pills */}
-            <div className="flex gap-2 flex-wrap">
-              {CATS.map(c=>{
-                const on = c === cat;
-                const col = c==="Tous" ? "#0A2540" : COLORS[c];
-                return (
-                  <button key={c} className={`pill ${on?"on":""}`} onClick={()=>setCat(c)}
-                    style={on ? {background:col,color:"white",borderColor:col} : {}}>
-                    {c}
-                  </button>
-                );
-              })}
-            </div>
+      {/* Contenu principal - Cartes avec images */}
+      <main style={{ maxWidth:1200, margin:"0 auto", padding:"48px 28px 80px" }}>
+        {loading ? (
+          <div style={{ textAlign:"center", padding:"80px 0" }}>
+            <div style={{ width:40, height:40, border:"3px solid #F7B500", borderTopColor:"transparent", borderRadius:"50%", animation:"spin .8s linear infinite", margin:"0 auto 16px" }} />
+            <div style={{ color:"#94A3B8", fontSize:14 }}>Chargement des articles...</div>
           </div>
-        </FadeUp>
-
-        {/* ── LISTE ARTICLES ── */}
-        {filtered.length === 0 ? (
-          <div className="py-20 text-center text-gray-400">
-            <div className="text-[44px] mb-3">🔍</div>
-            <div className="font-bold text-[16px]">Aucun article trouvé</div>
+        ) : filtered.length === 0 ? (
+          <div style={{ textAlign:"center", padding:"80px 0" }}>
+            <div style={{ fontSize:52, marginBottom:16 }}>📝</div>
+            <div style={{ fontWeight:700, fontSize:18, color:"#0A2540", marginBottom:8 }}>Aucun article trouvé</div>
+            <div style={{ color:"#94A3B8", fontSize:14 }}>Essayez d'autres filtres ou mots-clés</div>
+            <button onClick={() => { setSearch(""); setCategorie("Toutes"); setTypeFilter(""); }}
+              style={{ marginTop:20, background:"#0A2540", color:"#fff", border:"none", borderRadius:9, padding:"10px 22px", fontFamily:"inherit", fontWeight:700, fontSize:13, cursor:"pointer" }}>
+              Réinitialiser les filtres
+            </button>
           </div>
         ) : (
-          <div>
-            <FadeUp delay={0.08}>
-              <div className="text-[13px] text-gray-400 font-semibold mb-4">
-                {filtered.length} article{filtered.length>1?"s":""}{cat!=="Tous"&&<> · <span className="font-black" style={{color:COLORS[cat]}}>{cat}</span></>}
-              </div>
-            </FadeUp>
-
-            {/* Grid */}
-            <div className="grid grid-cols-3 gap-6">
-              {(cat==="Tous" && q==="" ? rest : filtered).map((art,i)=>{
-                const col = COLORS[art.cat] ?? "#3B82F6";
-                return (
-                  <FadeUp key={art.id} delay={i*0.06}>
-                    <Link href={`/blog/${art.id}`} className="no-underline block h-full group">
-                      <article className="bg-white rounded-[16px] h-full flex flex-col overflow-hidden border border-[#eaedf2] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_40px_rgba(10,37,64,0.10)] hover:border-[#d8dce8]">
-                        {/* Bande */}
-                        <div className="h-[3px]" style={{background:`linear-gradient(90deg,${col},${col}44)`}}/>
-                        <div className="p-6 flex-1 flex flex-col">
-                          {/* Cat */}
-                          <span className="inline-block text-[10px] font-black tracking-[1.5px] uppercase px-2.5 py-1 rounded-full mb-4 self-start"
-                            style={{background:`${col}10`,color:col,border:`1px solid ${col}22`}}>
-                            {art.cat}
-                          </span>
-                          {/* Titre */}
-                          <h3 className="font-black text-[#0A2540] m-0 mb-3 leading-[1.35] flex-1 transition-colors duration-200 group-hover:text-[#3B82F6]"
-                            style={{fontSize:15}}>
-                            {art.title}
-                          </h3>
-                          {/* Footer */}
-                          <div className="flex items-center justify-between mt-4 pt-4 border-t border-[#f5f5f7]">
-                            <div>
-                              <div className="text-[11px] font-bold text-[#0A2540]">{art.author.split(" ")[0]}</div>
-                              <div className="text-[11px] text-gray-400 font-semibold flex items-center gap-1 mt-0.5">
-                                <FaClock style={{fontSize:9}}/>{art.date} · {art.readTime}
-                              </div>
-                            </div>
-                            <FaChevronRight style={{color:col,fontSize:13}} className="transition-transform duration-200 group-hover:translate-x-1"/>
+          <>
+            {/* Section Très tendance */}
+            {tendance.length > 0 && (
+              <div style={{ marginBottom:48 }}>
+                <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:24 }}>
+                  <FaFire style={{ color:"#F7B500", fontSize:18 }} />
+                  <h2 style={{ fontSize:20, fontWeight:800, color:"#0A2540" }}>🔥 Très tendance</h2>
+                </div>
+                <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:28 }}>
+                  {tendance.map((art, i) => (
+                    <div key={art.id} className="card-animation" style={{ animationDelay: `${i * 0.1}s` }}>
+                      <div className="art-card" onClick={() => handleArticleClick(art)} style={{ cursor: "pointer" }}>
+                        <div style={{ position:"relative", height:200, background:"linear-gradient(135deg,#0A2540,#1a3f6f)", overflow:"hidden", flexShrink:0 }}>
+                          {art.image ? (
+                            <img src={`${BASE}/uploads/articles-img/${art.image}`} alt={art.titre} className="art-img" />
+                          ) : (
+                            <div style={{ width:"100%", height:"100%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:48, background:"#0A2540" }}>📝</div>
+                          )}
+                          <div style={{ position:"absolute", inset:0, background:"linear-gradient(180deg,transparent 40%,rgba(10,37,64,.6) 100%)" }} />
+                          <div style={{ position:"absolute", top:12, left:12 }}>
+                            <span style={{ background:"#F7B500", color:"#0A2540", borderRadius:99, padding:"4px 12px", fontSize:11, fontWeight:700 }}>
+                              {art.categorie || art.type || "Article"}
+                            </span>
+                          </div>
+                          <div style={{ position:"absolute", bottom:12, right:12, display:"flex", alignItems:"center", gap:5, background:"rgba(10,37,64,.75)", backdropFilter:"blur(8px)", borderRadius:99, padding:"3px 10px" }}>
+                            <FaClock size={10} style={{ color:"#F7B500" }} />
+                            <span style={{ fontSize:11, color:"#fff", fontWeight:600 }}>{art.duree_lecture || "5 min"}</span>
                           </div>
                         </div>
-                      </article>
-                    </Link>
-                  </FadeUp>
-                );
-              })}
-            </div>
-          </div>
+                        <div style={{ padding:"18px 20px", display:"flex", flexDirection:"column", flex:1 }}>
+                          <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:10 }}>
+                            <FaCalendarAlt size={11} style={{ color:"#94A3B8" }} />
+                            <span style={{ fontSize:11, color:"#94A3B8" }}>{new Date(art.createdAt).toLocaleDateString("fr-FR", { day:"numeric", month:"short", year:"numeric" })}</span>
+                            <span style={{ marginLeft:"auto", display:"flex", alignItems:"center", gap:3 }}>
+                              <FaEye size={10} style={{ color:"#94A3B8" }} />
+                              <span style={{ fontSize:11, color:"#94A3B8" }}>{art.vues || 0}</span>
+                            </span>
+                          </div>
+                          <h3 style={{ fontSize:16, fontWeight:800, color:"#0A2540", marginBottom:8, lineHeight:1.35 }}>{art.titre}</h3>
+                          <p style={{ fontSize:12.5, color:"#64748B", lineHeight:1.65, marginBottom:12, display:"-webkit-box", WebkitLineClamp:2, WebkitBoxOrient:"vertical", overflow:"hidden" }}>{art.description}</p>
+                          <div style={{ marginTop:"auto", display:"flex", alignItems:"center", gap:6, color:"#F7B500", fontSize:12, fontWeight:700 }}>
+                            Lire l'article <FaArrowRight size={10} />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Section Autres articles */}
+            {autres.length > 0 && (
+              <div>
+                <div style={{ marginBottom:24 }}>
+                  <h2 style={{ fontSize:20, fontWeight:800, color:"#0A2540" }}>📖 Tous les articles</h2>
+                </div>
+                <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:28 }}>
+                  {autres.map((art, i) => (
+                    <div key={art.id} className="card-animation" style={{ animationDelay: `${(tendance.length + i) * 0.1}s` }}>
+                      <div className="art-card" onClick={() => handleArticleClick(art)} style={{ cursor: "pointer" }}>
+                        <div style={{ position:"relative", height:200, background:"linear-gradient(135deg,#0A2540,#1a3f6f)", overflow:"hidden", flexShrink:0 }}>
+                          {art.image ? (
+                            <img src={`${BASE}/uploads/articles-img/${art.image}`} alt={art.titre} className="art-img" />
+                          ) : (
+                            <div style={{ width:"100%", height:"100%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:48, background:"#0A2540" }}>📝</div>
+                          )}
+                          <div style={{ position:"absolute", inset:0, background:"linear-gradient(180deg,transparent 40%,rgba(10,37,64,.6) 100%)" }} />
+                          <div style={{ position:"absolute", top:12, left:12 }}>
+                            <span style={{ background:art.couleur_point || "#3B82F6", color:"#fff", borderRadius:99, padding:"4px 12px", fontSize:11, fontWeight:700 }}>
+                              {art.categorie || art.type || "Article"}
+                            </span>
+                          </div>
+                          <div style={{ position:"absolute", bottom:12, right:12, display:"flex", alignItems:"center", gap:5, background:"rgba(10,37,64,.75)", backdropFilter:"blur(8px)", borderRadius:99, padding:"3px 10px" }}>
+                            <FaClock size={10} style={{ color:"#F7B500" }} />
+                            <span style={{ fontSize:11, color:"#fff", fontWeight:600 }}>{art.duree_lecture || "5 min"}</span>
+                          </div>
+                        </div>
+                        <div style={{ padding:"18px 20px", display:"flex", flexDirection:"column", flex:1 }}>
+                          <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:10 }}>
+                            <FaCalendarAlt size={11} style={{ color:"#94A3B8" }} />
+                            <span style={{ fontSize:11, color:"#94A3B8" }}>{new Date(art.createdAt).toLocaleDateString("fr-FR", { day:"numeric", month:"short", year:"numeric" })}</span>
+                            <span style={{ marginLeft:"auto", display:"flex", alignItems:"center", gap:3 }}>
+                              <FaEye size={10} style={{ color:"#94A3B8" }} />
+                              <span style={{ fontSize:11, color:"#94A3B8" }}>{art.vues || 0}</span>
+                            </span>
+                          </div>
+                          <h3 style={{ fontSize:16, fontWeight:800, color:"#0A2540", marginBottom:8, lineHeight:1.35 }}>{art.titre}</h3>
+                          <p style={{ fontSize:12.5, color:"#64748B", lineHeight:1.65, marginBottom:12, display:"-webkit-box", WebkitLineClamp:2, WebkitBoxOrient:"vertical", overflow:"hidden" }}>{art.description}</p>
+                          <div style={{ marginTop:"auto", display:"flex", alignItems:"center", gap:6, color:"#F7B500", fontSize:12, fontWeight:700 }}>
+                            Lire l'article <FaArrowRight size={10} />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Résultat recherche */}
+            {search && (
+              <div style={{ marginTop:32, padding:"12px 18px", background:"#F8FAFC", borderRadius:10, fontSize:13, color:"#64748B", textAlign:"center" }}>
+                <strong style={{ color:"#0A2540" }}>{filtered.length}</strong> résultat{filtered.length>1?"s":""} pour « <strong style={{ color:"#F7B500" }}>{search}</strong> »
+              </div>
+            )}
+          </>
         )}
-      </div>
+      </main>
 
-
-      {/* ── FOOTER ── */}
-      <footer className="bg-[#081B33] text-white py-7 px-6 text-center">
-        <p className="m-0 mb-1.5 text-[14px]">© 2026 Business Expert Hub</p>
-        <p className="text-white/40 text-[13px] m-0">Plateforme de mise en relation startups &amp; experts</p>
+      {/* Footer */}
+      <footer style={{ background:"#05101E", color:"rgba(255,255,255,.25)", padding:"28px", textAlign:"center", fontSize:13 }}>
+        © 2026 Business Expert Hub · Tous droits réservés
       </footer>
     </div>
   );

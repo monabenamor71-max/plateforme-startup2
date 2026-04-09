@@ -16,6 +16,10 @@ export class Temoignage {
   @Column({ type: "text" })
   texte: string;
 
+  // Nouvelle colonne pour la note (étoiles)
+  @Column({ type: "int", default: 5, nullable: true })
+  note: number; // 1 à 5 étoiles
+
   @Column({ type: "enum", enum: ["en_attente","valide","refuse"], default: "en_attente" })
   statut: string;
 

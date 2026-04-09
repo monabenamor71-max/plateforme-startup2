@@ -1,7 +1,12 @@
 "use client";
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { FaSearchPlus, FaArrowRight, FaArrowLeft, FaCheckCircle, FaChartLine, FaHandsHelping, FaGraduationCap, FaUsers, FaTrophy, FaClock, FaShieldAlt, FaChevronDown } from "react-icons/fa";
+import {
+  FaSearchPlus, FaArrowRight, FaArrowLeft,
+  FaChartLine, FaHandsHelping, FaGraduationCap, FaDesktop,
+  FaExclamationTriangle, FaUsers, FaTrophy, FaClock, FaShieldAlt,
+  FaCheck, FaLayerGroup,
+} from "react-icons/fa";
 
 function useInView(threshold = 0.1) {
   const ref = useRef<HTMLDivElement>(null);
@@ -15,124 +20,176 @@ function useInView(threshold = 0.1) {
 }
 function FadeUp({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
   const [ref, inView] = useInView();
-  return <div ref={ref} style={{ opacity:inView?1:0, transform:inView?"translateY(0)":"translateY(36px)", transition:`opacity .7s cubic-bezier(.22,1,.36,1) ${delay}s,transform .7s cubic-bezier(.22,1,.36,1) ${delay}s` }}>{children}</div>;
+  return (
+    <div ref={ref} style={{ opacity: inView ? 1 : 0, transform: inView ? "translateY(0)" : "translateY(24px)", transition: `opacity .65s cubic-bezier(.22,1,.36,1) ${delay}s, transform .65s cubic-bezier(.22,1,.36,1) ${delay}s` }}>
+      {children}
+    </div>
+  );
 }
 
 const COLOR = "#8B5CF6";
-const STEPS = [
-  { num:1, icon:"", title:"Brief & cadrage",          desc:"Objectifs, périmètre, contraintes et délais. Collecte des documents existants." },
-  { num:2, icon:"", title:"Visite & audit terrain",   desc:"Relevés, interviews, photos techniques, vérifications ciblées." },
-  { num:3, icon:"", title:"Études & dimensionnement", desc:"Calculs, simulations, choix techniques, plans & schémas." },
-  { num:4, icon:"", title:"Rapport & plan d'actions", desc:"Écarts, niveaux de criticité, priorisation et budgétisation." },
-  { num:5, icon:"", title:"Mise en conformité",       desc:"Accompagnement, tests, réception et DOE." },
+
+const PROBLEMES = [
+  { icon: "⚡", label: "Processus non maîtrisés", desc: "Vos équipes travaillent sans méthode claire, causant des retards répétés." },
+  { icon: "👁", label: "Manque de visibilité sur les opérations", desc: "Impossible de savoir ce qui se passe réellement sur le terrain." },
+  { icon: "📉", label: "Baisse de performance sans raison claire", desc: "Les résultats chutent mais l'origine du problème reste floue." },
+  { icon: "📋", label: "Absence d'audit interne sur les normes ISO", desc: "Votre conformité n'est ni vérifiée ni documentée régulièrement." },
+  { icon: "🏗", label: "Absence de tour manager", desc: "Aucun responsable pour coordonner les opérations terrain au quotidien." },
+  { icon: "🔀", label: "Écarts entre procédures et réalité terrain", desc: "Ce qui est écrit et ce qui se fait sont deux réalités différentes." },
+  { icon: "🤝", label: "Manque de coordination entre équipes", desc: "Chaque département travaille en silo, sans communication transversale." },
 ];
-const EXPERTISES = ["Sécurité incendie (SSI / sprinklers)","Électricité : schémas & sélectivité","ATEX / Machines","Conformité réglementaire","Analyse des risques industriels","Audit énergétique","Plans & schémas techniques","Mise aux normes industrielles"];
-const PLATES = [
-  { title:"PCI – Prévention & Lutte Incendie", desc:"Bases du feu, extincteurs, évacuation, SSI" },
-  { title:"Habilitation Électrique BR/BC/B1/B2",desc:"Normes NF C 18-510, consignation, VAT" },
-  { title:"ATEX Niveau 1 & 2",                 desc:"Zones ATEX, matériels certifiés, procédures" },
-  { title:"Audit Interne ISO 9001",             desc:"Techniques d'audit, non-conformités, rapport" },
+
+const METHODOLOGIE = [
+  { num: 1, color: "#8B5CF6", icon: "📋", title: "Préparation & Cadrage", desc: "Analyse des besoins et compréhension du contexte métier avant toute intervention.", tag: "" },
+  { num: 2, color: "#6366F1", icon: "🔍", title: "Audit Terrain", desc: "Observation in situ, entretiens et collecte de données qualitatives sur site.", tag: "" },
+  { num: 3, color: "#3B82F6", icon: "📊", title: "Analyse des Écarts", desc: "Identification des dysfonctionnements, risques et axes d'amélioration prioritaires.", tag: "" },
+  { num: 4, color: "#0EA5E9", icon: "📄", title: "Rapport de Synthèse", desc: "Documentation structurée des constats avec preuves et recommandations claires.", tag: "" },
+  { num: 5, color: "#22C55E", icon: "✅", title: "Plan d'Action", desc: "Feuille de route opérationnelle avec responsables, délais et indicateurs de suivi.", tag: "" },
 ];
-const LIVRABLES = ["Rapport d'audit complet","Grille d'écarts priorisés","Plans & schémas mis à jour","Plan d'actions budgétisé","Dossier de réception (DOE)","Suivi de mise en conformité"];
+
 const OTHERS = [
-  { slug:"consulting",     icon:<FaChartLine/>,   color:"#3B82F6", title:"Consulting",    badge:"Stratégie" },
-  { slug:"accompagnement", icon:<FaHandsHelping/>,color:"#F7B500", title:"Accompagnement",badge:"Suivi"     },
-  { slug:"formations",     icon:<FaGraduationCap/>,color:"#22C55E",title:"Formations",    badge:"Certif."   },
+  { slug: "consulting", icon: <FaChartLine />, color: "#3B82F6", title: "Consulting", badge: "Stratégie" },
+  { slug: "nos-plateformes", icon: <FaDesktop />, color: "#A3E635", title: "Nos Plateformes", badge: "Digital" },
+  { slug: "formations", icon: <FaGraduationCap />, color: "#F7B500", title: "Formations", badge: "Certif." },
 ];
-const NAV = [{label:"Consulting",slug:"consulting"},{label:"Audit sur site",slug:"audit-sur-site"},{label:"Accompagnement",slug:"accompagnement"},{label:"Formations",slug:"formations"}];
+
+const NAV = [
+  { label: "Consulting", slug: "consulting" },
+  { label: "Audit sur site", slug: "audit-sur-site" },
+  { label: "Nos Plateformes", slug: "nos-plateformes" },
+  { label: "Formations", slug: "formations" },
+];
 
 export default function AuditPage() {
   const [open, setOpen] = useState(false);
-  const [step, setStep] = useState<number|null>(null);
+  const [expandedP, setExpandedP] = useState<number | null>(null);
+
   return (
-    <div className="font-[Plus_Jakarta_Sans,sans-serif] text-gray-700 bg-white">
+    <div style={{ fontFamily: "'Plus Jakarta Sans',sans-serif", color: "#374151", background: "#fff" }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap');
+        *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
         @keyframes floatY{0%,100%{transform:translateY(-50%) rotate(45deg)}50%{transform:translateY(calc(-50% - 14px)) rotate(45deg)}}
         @keyframes fadeSlideDown{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}
         @keyframes heroIn{from{opacity:0;transform:translateY(28px)}to{opacity:1;transform:translateY(0)}}
-        .diamond-float{animation:floatY 7s ease-in-out infinite}
-        .h1,.h2,.h3,.h4{animation:heroIn .8s cubic-bezier(.22,1,.36,1) both}
-        .h1{animation-delay:.08s}.h2{animation-delay:.2s}.h3{animation-delay:.32s}.h4{animation-delay:.44s}
-        .sc{border:2px solid ${COLOR}22;border-radius:20px;background:white;transition:all .32s cubic-bezier(.22,1,.36,1);cursor:pointer;box-shadow:0 2px 14px rgba(10,37,64,.05)}
-        .sc:hover,.sc.on{border-color:${COLOR};background:${COLOR}05;transform:translateX(6px);box-shadow:0 10px 36px ${COLOR}20}
-        .sn{width:52px;height:52px;border-radius:16px;background:${COLOR}15;border:2px solid ${COLOR}30;color:${COLOR};display:flex;align-items:center;justify-content:center;font-weight:900;font-size:18px;flex-shrink:0;transition:all .3s}
-        .sc:hover .sn,.sc.on .sn{background:${COLOR};color:white;border-color:${COLOR};box-shadow:0 6px 20px ${COLOR}50}
-        .sd{max-height:0;overflow:hidden;opacity:0;transition:max-height .4s cubic-bezier(.22,1,.36,1),opacity .3s,margin-top .3s}
-        .sc.on .sd{max-height:100px;opacity:1;margin-top:10px}
-        .chip{display:inline-flex;align-items:center;gap:6px;background:${COLOR}10;color:#3b1f6e;border:1px solid ${COLOR}28;border-radius:50px;padding:7px 16px;font-size:13px;font-weight:600;transition:all .25s}
-        .chip:hover{background:${COLOR}20;border-color:${COLOR}55;transform:translateY(-2px)}
-        .liv{display:flex;align-items:center;gap:12px;padding:14px 20px;border-radius:12px;background:#faf8ff;border:1px solid ${COLOR}15;transition:all .25s}
-        .liv:hover{background:${COLOR}08;border-color:${COLOR}35;transform:translateX(6px)}
-        .pc{border:1.5px solid ${COLOR}18;border-radius:16px;background:white;padding:22px;transition:all .3s;box-shadow:0 2px 12px rgba(10,37,64,.05)}
-        .pc:hover{transform:translateY(-6px);box-shadow:0 20px 44px ${COLOR}18;border-color:${COLOR}40}
-        .oc{border:1.5px solid rgba(10,37,64,.08);border-radius:16px;background:white;padding:22px;transition:all .3s;text-decoration:none;display:block;box-shadow:0 2px 12px rgba(10,37,64,.05)}
-        .oc:hover{transform:translateY(-7px);box-shadow:0 20px 44px rgba(10,37,64,.12)}
+        @keyframes slideInLeft{from{opacity:0;transform:translateX(-28px)}to{opacity:1;transform:translateX(0)}}
+        @keyframes slideInRight{from{opacity:0;transform:translateX(28px)}to{opacity:1;transform:translateX(0)}}
+        @keyframes popIn{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:scale(1)}}
+        .diamond-float{animation:floatY 7s ease-in-out infinite;position:absolute;pointer-events:none;}
+        .h1{animation:heroIn .8s cubic-bezier(.22,1,.36,1) .08s both}
+        .h2{animation:heroIn .8s cubic-bezier(.22,1,.36,1) .2s both}
+        .h3{animation:heroIn .8s cubic-bezier(.22,1,.36,1) .32s both}
+        .h4{animation:heroIn .8s cubic-bezier(.22,1,.36,1) .44s both}
         .drop-item{display:flex;align-items:center;gap:10px;padding:10px 18px;color:#0A2540;text-decoration:none;font-size:14px;font-weight:600;transition:background .15s}
         .drop-item:hover{background:#FFFBEB}
         .btn-conn{border:2px solid #0A2540;color:#0A2540;background:transparent;padding:9px 22px;border-radius:9px;font-weight:700;font-size:14px;cursor:pointer;transition:all .22s;font-family:inherit}
         .btn-conn:hover{background:#F7B500;border-color:#F7B500;transform:translateY(-2px)}
         .btn-insc{background:#F7B500;color:#0A2540;border:2px solid #F7B500;padding:9px 22px;border-radius:9px;font-weight:800;font-size:14px;cursor:pointer;transition:all .22s;font-family:inherit}
-        .btn-insc:hover{background:#e6a800;transform:translateY(-2px);box-shadow:0 8px 22px rgba(247,181,0,.38)}
+        .btn-insc:hover{background:#e6a800;transform:translateY(-2px)}
         .bar{width:4px;border-radius:99px;background:${COLOR};flex-shrink:0}
+        .oc{border:1.5px solid rgba(10,37,64,.08);border-radius:16px;background:white;padding:22px;transition:all .3s;text-decoration:none;display:block;box-shadow:0 2px 12px rgba(10,37,64,.05)}
+        .oc:hover{transform:translateY(-7px);box-shadow:0 20px 44px rgba(10,37,64,.12)}
+        .pb-card{background:#fff;border:1.5px solid #F1F5F9;border-radius:14px;padding:16px 18px;cursor:pointer;transition:all .25s cubic-bezier(.22,1,.36,1);margin-bottom:10px;display:flex;align-items:flex-start;gap:14px;}
+        .pb-card:hover{border-color:rgba(139,92,246,.35);background:rgba(139,92,246,.03);transform:translateX(5px);}
+        .pb-card.active{border-color:rgba(139,92,246,.5);background:rgba(139,92,246,.04);}
+        .pb-detail{overflow:hidden;transition:max-height .35s cubic-bezier(.22,1,.36,1),opacity .3s;max-height:0;opacity:0;}
+        .pb-detail.open{max-height:60px;opacity:1;}
+        .meth-step{position:relative;display:flex;gap:20px;align-items:flex-start;margin-bottom:0;}
+        .meth-line{position:absolute;left:21px;top:44px;bottom:-32px;width:2px;background:linear-gradient(#8B5CF6,#22C55E);opacity:.25;}
+        .meth-dot{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;border:2.5px solid;}
+        .meth-body{background:#F8FAFC;border:1px solid #E8EEF6;border-radius:14px;padding:18px 20px;flex:1;transition:all .3s;}
+        .meth-body:hover{background:#fff;box-shadow:0 8px 28px rgba(139,92,246,.12);border-color:rgba(139,92,246,.25);transform:translateX(4px);}
+        .stat-card{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:18px;padding:22px;transition:all .3s;animation:slideInRight .5s ease both;}
+        .stat-card:hover{transform:translateY(-4px);background:rgba(255,255,255,.12);}
+        .nav-link-w{color:#0A2540;text-decoration:none;font-size:15px;font-weight:500;transition:color .2s;}
+        .nav-link-w:hover{color:#F7B500;}
       `}</style>
 
-      <header className="bg-white sticky top-0 z-[100]" style={{boxShadow:"0 2px 12px rgba(0,0,0,0.07)"}}>
-        <div className="max-w-[1200px] mx-auto px-6 h-[72px] flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-3 no-underline">
-            <svg width="44" height="44" viewBox="0 0 46 46" fill="none"><rect width="46" height="46" rx="12" fill="#0A2540"/><rect x="23" y="7" width="13" height="13" rx="2" transform="rotate(45 23 7)" fill="#F7B500" opacity="0.15"/><text x="50%" y="55%" dominantBaseline="middle" textAnchor="middle" fill="#F7B500" fontSize="15" fontWeight="900" fontFamily="Arial" letterSpacing="0.5">BEH</text></svg>
-            <div><div className="font-black text-[18px] text-[#0A2540] leading-none">Business <span className="text-[#F7B500]">Expert</span> Hub</div><div className="text-[10px] text-gray-400 uppercase tracking-[0.8px] mt-[3px] font-semibold">Plateforme Experts &amp; Startups</div></div>
+      {/* ══ HEADER ══ */}
+      <header style={{ background: "#fff", position: "sticky", top: 0, zIndex: 100, boxShadow: "0 2px 12px rgba(0,0,0,.07)" }}>
+        <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 24px", height: 72, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <Link href="/" style={{ display: "flex", alignItems: "center", gap: 11, textDecoration: "none" }}>
+            <svg width="44" height="44" viewBox="0 0 46 46" fill="none">
+              <rect width="46" height="46" rx="12" fill="#0A2540" />
+              <rect x="23" y="7" width="13" height="13" rx="2" transform="rotate(45 23 7)" fill="#F7B500" opacity="0.15" />
+              <text x="50%" y="55%" dominantBaseline="middle" textAnchor="middle" fill="#F7B500" fontSize="15" fontWeight="900" fontFamily="Arial">BEH</text>
+            </svg>
+            <span style={{ fontWeight: 800, fontSize: 18, color: "#0A2540", letterSpacing: "-0.3px" }}>
+              Business <span style={{ color: "#F7B500" }}>Expert</span> Hub
+            </span>
           </Link>
-          <nav className="flex gap-7 items-center">
-            <Link href="/" className="text-[#0A2540] no-underline text-[15px] font-medium hover:text-[#F7B500]">Accueil</Link>
-            <Link href="/a-propos" className="text-[#0A2540] no-underline text-[15px] font-medium hover:text-[#F7B500]">À propos</Link>
-            <div className="relative" onMouseEnter={()=>setOpen(true)} onMouseLeave={()=>setOpen(false)}>
-              <span className="text-[#F7B500] font-bold text-[15px] cursor-pointer">Services ▾</span>
-              {open && <ul className="absolute top-full left-0 bg-white rounded-xl min-w-[210px] list-none p-[8px_0] m-0 z-[200]" style={{boxShadow:"0 8px 30px rgba(0,0,0,.12)",animation:"fadeSlideDown .2s ease"}}>
-                {NAV.map(s=><li key={s.slug}><Link href={`/services/${s.slug}`} className="drop-item">{s.label}</Link></li>)}
-              </ul>}
+          <nav style={{ display: "flex", gap: 24, alignItems: "center" }}>
+            <Link href="/" className="nav-link-w">Accueil</Link>
+            <Link href="/a-propos" className="nav-link-w">À propos</Link>
+            <div style={{ position: "relative" }} onMouseEnter={() => setOpen(true)} onMouseLeave={() => setOpen(false)}>
+              <span style={{ color: "#F7B500", fontWeight: 700, fontSize: 15, cursor: "pointer" }}>Services ▾</span>
+              {open && (
+                <ul style={{ position: "absolute", top: "calc(100% + 10px)", left: 0, background: "#fff", borderRadius: 14, listStyle: "none", padding: "8px 0", zIndex: 200, minWidth: 210, boxShadow: "0 8px 30px rgba(0,0,0,.12)", animation: "fadeSlideDown .2s ease" }}>
+                  {NAV.map(s => <li key={s.slug}><Link href={`/services/${s.slug}`} className="drop-item">{s.label}</Link></li>)}
+                </ul>
+              )}
             </div>
-            <Link href="/experts" className="text-[#0A2540] no-underline text-[15px] font-medium hover:text-[#F7B500]">Experts</Link>
-            <Link href="/blog" className="text-[#0A2540] no-underline text-[15px] font-medium hover:text-[#F7B500]">Blog</Link>
-            <Link href="/contact" className="text-[#0A2540] no-underline text-[15px] font-medium hover:text-[#F7B500]">Contact</Link>
+            <Link href="/experts" className="nav-link-w">Experts</Link>
+            <Link href="/blog" className="nav-link-w">Blog</Link>
+            <Link href="/contact" className="nav-link-w">Contact</Link>
           </nav>
-          <div className="flex gap-3">
+          <div style={{ display: "flex", gap: 10 }}>
             <Link href="/connexion"><button className="btn-conn">Connexion</button></Link>
             <Link href="/inscription"><button className="btn-insc">{"S'inscrire"}</button></Link>
           </div>
         </div>
       </header>
 
-      <section className="relative text-white overflow-hidden" style={{background:"linear-gradient(135deg,#0A2540 0%,#2d1b5e 60%,#1a0d3d 100%)",padding:"80px 24px 100px"}}>
-        {[{w:420,r:-80,d:"0s"},{w:250,r:110,d:"1.5s"}].map((d,i)=>(
-          <div key={i} className="diamond-float absolute pointer-events-none" style={{width:d.w,height:d.w,right:d.r,top:"50%",transform:"translateY(-50%) rotate(45deg)",background:"rgba(139,92,246,0.08)",border:"1px solid rgba(139,92,246,0.14)",animationDelay:d.d}}/>
-        ))}
-        <div className="absolute pointer-events-none" style={{top:-100,left:"28%",width:500,height:500,borderRadius:"50%",background:"radial-gradient(circle,rgba(139,92,246,0.08) 0%,transparent 65%)"}}/>
-        <div className="max-w-[1200px] mx-auto relative z-10">
-          <div className="flex items-center gap-2 mb-7 text-[13px] text-white/50">
-            <Link href="/" className="text-white/50 no-underline hover:text-[#F7B500]">Accueil</Link><span>›</span>
-            <Link href="/services" className="text-white/50 no-underline hover:text-[#F7B500]">Services</Link><span>›</span>
-            <span style={{color:"#A78BFA"}} className="font-semibold">Audit sur site</span>
+      {/* ══ HERO ══ */}
+      <section style={{ background: "linear-gradient(135deg,#0A2540 0%,#2d1b5e 60%,#1a0d3d 100%)", padding: "80px 24px 100px", position: "relative", overflow: "hidden", color: "#fff" }}>
+        <div className="diamond-float" style={{ width: 420, height: 420, right: -80, top: "50%", background: "rgba(139,92,246,.08)", border: "1px solid rgba(139,92,246,.14)", borderRadius: 24, animationDelay: "0s" }} />
+        <div className="diamond-float" style={{ width: 250, height: 250, right: 110, top: "50%", background: "rgba(139,92,246,.05)", border: "1px solid rgba(139,92,246,.1)", borderRadius: 16, animationDelay: "-1.5s" }} />
+        <div style={{ maxWidth: 1200, margin: "0 auto", position: "relative", zIndex: 10 }}>
+          <div style={{ fontSize: 13, color: "rgba(255,255,255,.5)", marginBottom: 28, display: "flex", alignItems: "center", gap: 8 }}>
+            <Link href="/" style={{ color: "rgba(255,255,255,.5)", textDecoration: "none" }}>Accueil</Link><span>›</span>
+            <Link href="/services" style={{ color: "rgba(255,255,255,.5)", textDecoration: "none" }}>Services</Link><span>›</span>
+            <span style={{ color: "#A78BFA", fontWeight: 600 }}>Audit sur site</span>
           </div>
-          <div className="grid grid-cols-2 gap-16 items-center">
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 64, alignItems: "center" }}>
             <div>
-              <div className="h1 flex items-center gap-3 mb-7">
-                <div className="w-[58px] h-[58px] rounded-[18px] flex items-center justify-center text-[24px]" style={{background:"rgba(139,92,246,0.2)",border:"1.5px solid rgba(139,92,246,0.4)",color:"#A78BFA"}}><FaSearchPlus/></div>
-                <span className="inline-block bg-[#8B5CF6] text-white font-black text-[12px] tracking-[3px] uppercase px-4 py-2 rounded-full">Terrain</span>
+              <div className="h1" style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 28 }}>
+                <div style={{ width: 64, height: 64, borderRadius: 20, background: "rgba(139,92,246,.2)", border: "1.5px solid rgba(139,92,246,.5)", color: "#A78BFA", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26 }}><FaSearchPlus /></div>
+                <span style={{ background: "#8B5CF6", color: "#fff", fontWeight: 800, fontSize: 12, letterSpacing: "3px", textTransform: "uppercase", padding: "8px 18px", borderRadius: 99 }}>Audit Terrain</span>
               </div>
-              <h1 className="h2 font-black m-0 mb-6 leading-[1.05]" style={{fontSize:"clamp(38px,5vw,64px)"}}>Audit<br/><span style={{color:"#A78BFA"}}>sur site</span></h1>
-              <p className="h3 text-[17px] text-white/70 leading-[1.85] mb-9 max-w-[500px]">Analyse approfondie de vos processus et installations par nos auditeurs certifiés. Relevés terrain, interviews et rapport de conformité détaillé en 5 étapes.</p>
-              <div className="h4 flex gap-3 flex-wrap">
-                <Link href="/inscription" className="inline-flex items-center gap-2 px-7 py-3.5 rounded-[12px] font-black text-[15px] no-underline text-[#0A2540]" style={{background:"#F7B500"}}>Demander un audit <FaArrowRight size={13}/></Link>
-                <Link href="/contact" className="inline-flex items-center gap-2 px-7 py-3.5 rounded-[12px] font-bold text-[15px] no-underline text-white" style={{background:"rgba(255,255,255,0.08)",border:"2px solid rgba(255,255,255,0.22)"}}>Nous contacter</Link>
+              <h1 className="h2" style={{ fontWeight: 900, fontSize: "clamp(38px,5vw,64px)", margin: "0 0 20px", lineHeight: 1.1 }}>
+                Audit <span style={{ color: "#A78BFA" }}>sur site</span>
+              </h1>
+              <p className="h3" style={{ fontSize: 17, color: "rgba(255,255,255,.75)", lineHeight: 1.9, marginBottom: 28, maxWidth: 520 }}>
+                Vous avez des problèmes de performance, mais vous ne savez pas exactement d'où ils viennent ?
+              </p>
+              <div style={{ background: "rgba(255,255,255,.08)", border: "1px solid rgba(255,255,255,.15)", borderRadius: 14, padding: "16px 22px", marginBottom: 32 }}>
+                <p style={{ fontSize: 14.5, color: "rgba(255,255,255,.85)", lineHeight: 1.8 }}>
+                  Avec <strong style={{ color: "#F7B500" }}>Business Expert Hub</strong>, identifiez les blocages réels et obtenez un plan d'action concret en 5 jours !
+                </p>
+              </div>
+              <div className="h4" style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+                <Link href="/inscription" style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "#F7B500", color: "#0A2540", padding: "14px 30px", borderRadius: 99, fontWeight: 800, fontSize: 15, textDecoration: "none", transition: "all .25s" }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.transform = "translateY(-3px)"; (e.currentTarget as HTMLAnchorElement).style.boxShadow = "0 8px 24px rgba(247,181,0,.4)"; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.transform = "translateY(0)"; (e.currentTarget as HTMLAnchorElement).style.boxShadow = "none"; }}>
+                  Demander un audit <FaArrowRight size={13} />
+                </Link>
+                <Link href="/contact" style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(255,255,255,.08)", border: "1.5px solid rgba(255,255,255,.22)", color: "#fff", padding: "14px 28px", borderRadius: 99, fontWeight: 700, fontSize: 15, textDecoration: "none", transition: "all .25s" }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.background = "rgba(255,255,255,.16)"; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.background = "rgba(255,255,255,.08)"; }}>
+                  Nous contacter
+                </Link>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              {[{icon:<FaUsers/>,val:"80+",label:"Audits réalisés",c:"#8B5CF6"},{icon:<FaTrophy/>,val:"98%",label:"Rapports livrés à temps",c:"#F7B500"},{icon:<FaClock/>,val:"5 j",label:"Délai rapport moyen",c:"#22C55E"},{icon:<FaShieldAlt/>,val:"100%",label:"Conformité garantie",c:"#EF4444"}].map((s,i)=>(
-                <div key={i} className="rounded-[18px] p-5" style={{background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.1)"}}>
-                  <div className="w-9 h-9 rounded-[10px] flex items-center justify-center mb-3 text-[14px]" style={{background:`${s.c}25`,color:s.c}}>{s.icon}</div>
-                  <div className="text-[26px] font-black text-white leading-none mb-1">{s.val}</div>
-                  <div className="text-[12px] text-white/45 font-semibold leading-snug">{s.label}</div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+              {[
+                
+                { icon: <FaTrophy />, val: "98%", label: "Clients satisfaits", c: "#F7B500" },
+                { icon: <FaClock />, val: "5 jours", label: "Délai de rapport", c: "#22C55E" },
+              ].map((s, i) => (
+                <div key={i} className="stat-card" style={{ animationDelay: `${0.2 + i * 0.1}s` }}>
+                  <div style={{ width: 42, height: 42, borderRadius: 12, background: `${s.c}25`, color: s.c, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 14, fontSize: 16 }}>{s.icon}</div>
+                  <div style={{ fontSize: 28, fontWeight: 900, color: "#fff", lineHeight: 1, marginBottom: 6 }}>{s.val}</div>
+                  <div style={{ fontSize: 12.5, color: "rgba(255,255,255,.5)", fontWeight: 600 }}>{s.label}</div>
                 </div>
               ))}
             </div>
@@ -140,79 +197,166 @@ export default function AuditPage() {
         </div>
       </section>
 
-      <div className="max-w-[1200px] mx-auto px-6">
-        <FadeUp><section className="py-16 border-b border-gray-100">
-          <div className="flex items-center gap-3 mb-8"><div className="bar h-8"/><h2 className="font-black text-[#0A2540] m-0 text-[26px]">Domaines d&apos;expertise</h2></div>
-          <div className="flex flex-wrap gap-3">{EXPERTISES.map((ex,i)=><span key={i} className="chip"><FaCheckCircle style={{color:COLOR,fontSize:11}}/>{ex}</span>)}</div>
-        </section></FadeUp>
+      {/* ══ CORPS ══ */}
+      <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 24px" }}>
 
-        <section className="py-16 border-b border-gray-100">
+        {/* ── Problèmes ── */}
+        <section style={{ padding: "72px 0", borderBottom: "1px solid #F1F5F9" }}>
           <FadeUp>
-            <div className="flex items-center gap-3 mb-2"><div className="bar h-8"/><h2 className="font-black text-[#0A2540] m-0 text-[26px]">Méthodologie d&apos;intervention</h2></div>
-            <p className="text-gray-500 text-[15px] mb-10 pl-4">5 étapes pour un audit terrain rigoureux — cliquez pour les détails</p>
+            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
+              <div className="bar" style={{ height: 28 }} />
+              <h2 style={{ fontWeight: 800, color: "#0A2540", fontSize: 24 }}>Vous reconnaissez ces situations ?</h2>
+            </div>
+            <p style={{ color: "#64748B", fontSize: 14.5, marginBottom: 32, paddingLeft: 16 }}>
+              Cliquez sur chaque problème pour comprendre son impact réel.
+            </p>
           </FadeUp>
-          <div className="relative">
-            <div className="absolute pointer-events-none" style={{left:25,top:26,bottom:26,width:2,background:`linear-gradient(to bottom,${COLOR},${COLOR}15)`}}/>
-            <div className="flex flex-col gap-4">
-              {STEPS.map((s,i)=>(
-                <FadeUp key={i} delay={i*0.09}>
-                  <div className={`sc ${step===i?"on":""}`} style={{padding:"22px 26px"}} onClick={()=>setStep(step===i?null:i)}>
-                    <div className="flex items-start gap-4">
-                      <div className="sn">{s.num}</div>
-                      <div className="flex-1">
-                        <div className="flex items-center justify-between gap-4">
-                          <div className="flex items-center gap-3"><span className="text-[22px] leading-none">{s.icon}</span><h3 className="font-black text-[#0A2540] m-0 text-[17px] leading-snug">{s.title}</h3></div>
-                          <FaChevronDown className="text-gray-400 flex-shrink-0 transition-transform duration-300" style={{transform:step===i?"rotate(180deg)":"rotate(0deg)",fontSize:14}}/>
-                        </div>
-                        <div className="sd"><p className="text-gray-500 m-0 text-[14px] leading-[1.78]">{s.desc}</p></div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 32px" }}>
+            {PROBLEMES.map((p, i) => (
+              <FadeUp key={i} delay={i * 0.06}>
+                <div>
+                  <div
+                    className={`pb-card${expandedP === i ? " active" : ""}`}
+                    style={{ animationDelay: `${i * 0.08}s` }}
+                    onClick={() => setExpandedP(expandedP === i ? null : i)}>
+                    <div style={{ width: 42, height: 42, borderRadius: 12, background: expandedP === i ? "rgba(139,92,246,.12)" : "#FEF2F2", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0, transition: "all .25s" }}>
+                      {p.icon}
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <span style={{ fontWeight: 700, fontSize: 14.5, color: "#0A2540" }}>{p.label}</span>
+                      <div className={`pb-detail${expandedP === i ? " open" : ""}`}>
+                        <p style={{ fontSize: 13, color: "#64748B", lineHeight: 1.65, paddingTop: 6 }}>{p.desc}</p>
                       </div>
+                    </div>
+                    <span style={{ color: "#C4B5FD", fontSize: 18, transition: "transform .3s", transform: expandedP === i ? "rotate(45deg)" : "rotate(0deg)" }}>+</span>
+                  </div>
+                </div>
+              </FadeUp>
+            ))}
+          </div>
+        </section>
+
+        {/* ── Méthodologie ── */}
+        <section style={{ padding: "72px 0", borderBottom: "1px solid #F1F5F9" }}>
+          <FadeUp>
+            <div style={{ textAlign: "center", marginBottom: 52 }}>
+              <div style={{ width: 60, height: 3, background: COLOR, margin: "0 auto 20px", borderRadius: 2 }} />
+              <h2 style={{ fontWeight: 900, color: "#0A2540", fontSize: "clamp(26px,3.5vw,36px)", marginBottom: 14 }}>Notre méthodologie d'intervention</h2>
+              <p style={{ color: "#64748B", fontSize: 15, maxWidth: 580, margin: "0 auto" }}>
+                Une approche terrain structurée en <strong style={{ color: COLOR }}>5 étapes</strong> pour des résultats concrets et actionnables
+              </p>
+            </div>
+          </FadeUp>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 64px" }}>
+            <div>
+              {METHODOLOGIE.map((m, i) => (
+                <FadeUp key={m.num} delay={i * 0.1}>
+                  <div className="meth-step" style={{ marginBottom: i < METHODOLOGIE.length - 1 ? 32 : 0, position: "relative" }}>
+                    {i < METHODOLOGIE.length - 1 && (
+                      <div style={{ position: "absolute", left: 21, top: 44, bottom: -32, width: 2, background: `linear-gradient(${m.color},${METHODOLOGIE[i + 1].color})`, opacity: 0.3 }} />
+                    )}
+                    <div className="meth-dot" style={{ background: `${m.color}14`, borderColor: m.color, color: m.color }}>
+                      <span style={{ fontSize: 16, fontWeight: 900 }}>{m.num}</span>
+                    </div>
+                    <div className="meth-body">
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                        <span style={{ fontWeight: 800, fontSize: 15, color: "#0A2540" }}>{m.title}</span>
+                        <span style={{ background: `${m.color}15`, color: m.color, fontSize: 11, fontWeight: 700, padding: "3px 10px", borderRadius: 99, letterSpacing: "0.5px" }}>{m.tag}</span>
+                      </div>
+                      <p style={{ fontSize: 13, color: "#64748B", lineHeight: 1.7, margin: 0 }}>{m.desc}</p>
                     </div>
                   </div>
                 </FadeUp>
               ))}
             </div>
+            <FadeUp delay={0.2}>
+              <div style={{ background: "linear-gradient(135deg,#0A2540,#2d1b5e)", borderRadius: 24, padding: 36, color: "#fff", height: "fit-content", position: "sticky", top: 100 }}>
+                <div style={{ fontSize: 36, marginBottom: 16 }}></div>
+                <h3 style={{ fontWeight: 900, fontSize: 22, marginBottom: 14, lineHeight: 1.2 }}>
+                  Résultats attendus<br /><span style={{ color: "#A78BFA" }}>après l'audit</span>
+                </h3>
+                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                  {[
+                    
+                    ["Identification de tous les écarts critiques", "#A78BFA"],
+                    ["Plan d'action priorisé et chiffré", "#F7B500"],
+                    ["Recommandations normes ISO si applicable", "#60A5FA"],
+                    ["Suivi post-audit inclus sur 30 jours", "#A3E635"],
+                  ].map(([txt, c], i) => (
+                    <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+                      <div style={{ width: 22, height: 22, borderRadius: 6, background: `${c}22`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 1 }}>
+                        <FaCheck size={9} color={c} />
+                      </div>
+                      <span style={{ fontSize: 13.5, color: "rgba(255,255,255,.8)", lineHeight: 1.6 }}>{txt}</span>
+                    </div>
+                  ))}
+                </div>
+                <Link href="/inscription" style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "#F7B500", color: "#0A2540", padding: "13px 26px", borderRadius: 12, fontWeight: 800, fontSize: 14, textDecoration: "none", marginTop: 24, width: "100%", justifyContent: "center", transition: "all .2s" }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.background = "#e6a800"; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.background = "#F7B500"; }}>
+                  Demander un audit <FaArrowRight size={12} />
+                </Link>
+              </div>
+            </FadeUp>
           </div>
         </section>
 
-        <FadeUp><section className="py-16 border-b border-gray-100">
-          <div className="rounded-[26px] overflow-hidden relative" style={{background:"linear-gradient(135deg,#2d1b5e,#0A2540)",padding:"52px 56px"}}>
-            <div className="absolute top-0 right-0 w-[340px] h-[340px] pointer-events-none" style={{background:"radial-gradient(circle,rgba(139,92,246,0.15) 0%,transparent 65%)"}}/>
-            <div className="relative z-10 flex items-center justify-between gap-8">
-              <div>
-                <h3 className="font-black text-white text-[28px] m-0 mb-3">Besoin d&apos;un audit <span style={{color:"#A78BFA"}}>terrain ?</span></h3>
-                <p className="text-white/55 text-[16px] m-0 max-w-[460px] leading-[1.7]">Nos auditeurs certifiés interviennent sous 72h et vous remettent un rapport complet sous 5 jours ouvrés.</p>
-              </div>
-              <div className="flex flex-col gap-3 flex-shrink-0">
-                <Link href="/inscription" className="inline-flex items-center gap-2 px-7 py-3.5 rounded-[12px] font-black text-[15px] no-underline text-[#0A2540] whitespace-nowrap" style={{background:"#F7B500"}}>Demander un audit <FaArrowRight size={13}/></Link>
-                <Link href="/contact" className="inline-flex items-center justify-center gap-2 px-7 py-3 rounded-[12px] font-bold text-[14px] no-underline text-white whitespace-nowrap" style={{background:"rgba(255,255,255,0.08)",border:"1.5px solid rgba(255,255,255,0.2)"}}>Poser une question</Link>
+        {/* ── CTA ── */}
+        <FadeUp>
+          <section style={{ padding: "72px 0", borderBottom: "1px solid #F1F5F9" }}>
+            <div style={{ background: "linear-gradient(135deg,#0A2540 0%,#2d1b5e 100%)", borderRadius: 28, padding: "60px 52px", textAlign: "center", position: "relative", overflow: "hidden" }}>
+              <div style={{ position: "absolute", inset: 0, backgroundImage: "radial-gradient(rgba(255,255,255,.03) 1px,transparent 1px)", backgroundSize: "32px 32px", pointerEvents: "none" }} />
+              <div style={{ position: "relative", zIndex: 10 }}>
+                <div style={{ width: 70, height: 70, borderRadius: 20, background: "rgba(247,181,0,.15)", border: "1px solid rgba(247,181,0,.3)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 24px" }}>
+                  <FaSearchPlus size={28} color="#F7B500" />
+                </div>
+                <h2 style={{ color: "#fff", fontWeight: 900, fontSize: "clamp(24px,4vw,36px)", marginBottom: 14 }}>Demandez votre audit personnalisé</h2>
+                <p style={{ color: "rgba(255,255,255,.65)", fontSize: 15, lineHeight: 1.8, maxWidth: 520, margin: "0 auto 32px" }}>
+                  Contactez-nous pour un diagnostic personnalisé de vos processus terrain.
+                </p>
+                <Link href="/inscription" style={{ display: "inline-flex", alignItems: "center", gap: 12, background: "#F7B500", color: "#0A2540", fontWeight: 800, fontSize: 16, borderRadius: 99, padding: "16px 48px", textDecoration: "none", boxShadow: "0 12px 32px rgba(247,181,0,.35)", transition: "transform .2s" }}
+                  onMouseEnter={e => (e.currentTarget as HTMLAnchorElement).style.transform = "scale(1.04)"}
+                  onMouseLeave={e => (e.currentTarget as HTMLAnchorElement).style.transform = "scale(1)"}>
+                  Demander un audit <FaArrowRight size={13} />
+                </Link>
               </div>
             </div>
-          </div>
-        </section></FadeUp>
+          </section>
+        </FadeUp>
 
-        <FadeUp><section className="py-16">
-          <div className="flex items-center justify-between mb-8">
-            <div className="flex items-center gap-3"><div className="bar h-8"/><h2 className="font-black text-[#0A2540] m-0 text-[22px]">Autres services</h2></div>
-            <Link href="/services" className="flex items-center gap-2 font-bold text-[14px] no-underline hover:underline" style={{color:COLOR}}><FaArrowLeft size={11}/>Tous les services</Link>
-          </div>
-          <div className="grid grid-cols-3 gap-4">
-            {OTHERS.map((s,i)=>(
-              <Link key={i} href={`/services/${s.slug}`} className="oc">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="w-10 h-10 rounded-[12px] flex items-center justify-center text-[16px]" style={{background:`${s.color}15`,color:s.color}}>{s.icon}</div>
-                  <span className="text-[11px] font-bold px-2.5 py-1 rounded-full uppercase tracking-[1px]" style={{background:`${s.color}12`,color:s.color}}>{s.badge}</span>
-                </div>
-                <div className="font-black text-[#0A2540] text-[15px] mb-2">{s.title}</div>
-                <div className="flex items-center gap-1.5 text-[13px] font-bold" style={{color:s.color}}>Découvrir <FaArrowRight size={10}/></div>
+        {/* ── Autres services ── */}
+        <FadeUp>
+          <section style={{ paddingBottom: "80px" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 28 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <div className="bar" style={{ height: 32 }} />
+                <h2 style={{ fontWeight: 800, color: "#0A2540", margin: 0, fontSize: 22 }}>Nos autres services</h2>
+              </div>
+              <Link href="/services" style={{ display: "flex", alignItems: "center", gap: 6, fontWeight: 700, fontSize: 14, color: COLOR, textDecoration: "none" }}>
+                <FaArrowLeft size={10} /> Tous les services
               </Link>
-            ))}
-          </div>
-        </section></FadeUp>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 20 }}>
+              {OTHERS.map((s, i) => (
+                <Link key={i} href={`/services/${s.slug}`} className="oc">
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+                    <div style={{ width: 46, height: 46, borderRadius: 13, background: `${s.color}12`, color: s.color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 19 }}>{s.icon}</div>
+                    <span style={{ background: `${s.color}12`, color: s.color, borderRadius: 99, padding: "4px 12px", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "1px" }}>{s.badge}</span>
+                  </div>
+                  <div style={{ fontWeight: 800, color: "#0A2540", fontSize: 15, marginBottom: 7 }}>{s.title}</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 5, color: s.color, fontWeight: 700, fontSize: 13 }}>
+                    Découvrir <FaArrowRight size={10} />
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </section>
+        </FadeUp>
       </div>
 
-      <footer className="bg-[#081B33] text-white py-7 px-6 text-center">
-        <p className="m-0 mb-1.5 text-[14px]">© 2026 Business Expert Hub</p>
-        <p className="text-white/40 text-[13px] m-0">Plateforme de mise en relation startups &amp; experts</p>
+      <footer style={{ background: "#081B33", color: "#fff", padding: "32px", textAlign: "center" }}>
+        <p style={{ margin: "0 0 6px", fontSize: 14 }}>© 2026 Business Expert Hub — Audit sur site</p>
+        <p style={{ color: "rgba(255,255,255,.4)", fontSize: 12, margin: 0 }}>Solutions personnalisées disponibles sur devis</p>
       </footer>
     </div>
   );

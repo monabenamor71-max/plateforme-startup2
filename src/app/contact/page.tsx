@@ -1,7 +1,6 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import {
   FaEnvelope, FaPhone, FaMapMarkerAlt,
   FaFacebookF, FaLinkedinIn, FaInstagram,
@@ -53,13 +52,15 @@ function FadeUp({ children, delay = 0, className = "" }: { children: React.React
 /* ══════════════════════════════════════
    DONNÉES
 ══════════════════════════════════════ */
+// Liste déroulante modifiée selon la demande
 const SUBJECTS = [
-  "Question générale",
-  "Demande de consulting",
-  "Inscription expert",
-  "Partenariat",
-  "Support technique",
-  "Autre",
+  "Diagnostic gratuit",
+  "Audit sur site",
+  "Démo plateforme",
+  "Conseil",
+  "Réclamation",
+  "Formations",
+  "Contact avec expert",
 ];
 
 const SOCIALS = [

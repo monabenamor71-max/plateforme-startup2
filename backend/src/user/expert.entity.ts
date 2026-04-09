@@ -1,22 +1,22 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from "typeorm";
-import { User } from "./user.entity";
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
+import { User } from './user.entity';
 
-@Entity("experts")
+@Entity('experts')
 export class Expert {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column()
+  @Column({ nullable: true })
   user_id: number;
 
-  @ManyToOne(() => User)
-  @JoinColumn({ name: "user_id" })
+  @ManyToOne(() => User, { eager: true })
+  @JoinColumn({ name: 'user_id' })
   user: User;
 
   @Column({ nullable: true })
   domaine: string;
 
-  @Column({ type: "text", nullable: true })
+  @Column({ type: 'text', nullable: true })
   description: string;
 
   @Column({ nullable: true })
@@ -24,6 +24,9 @@ export class Expert {
 
   @Column({ nullable: true })
   portfolio: string;
+
+  @Column({ nullable: true })
+  photo: string;
 
   @Column({ nullable: true })
   experience: string;
@@ -35,14 +38,20 @@ export class Expert {
   disponibilite: string;
 
   @Column({ nullable: true })
-  photo: string;
+  telephone: string;
 
-  @Column({ type: "enum", enum: ["en_attente","valide","refuse"], default: "en_attente" })
+  @Column({ default: 'en_attente' })
   statut: string;
 
-  @Column({ nullable: true, type: "text" })
+  @Column({ default: false })
+  modification_demandee: boolean;
+
+  @Column({ type: 'text', nullable: true })
   modifications_en_attente: string;
 
-  @Column({ type: "boolean", default: false })
-  modification_demandee: boolean;
+  @CreateDateColumn()
+  createdAt: Date;
+
+  @UpdateDateColumn()
+  updatedAt: Date;
 }
