@@ -1,4 +1,5 @@
 "use client";
+
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -83,12 +84,10 @@ function Reveal({ children, delay = 0 }: { children: React.ReactNode; delay?: nu
   );
 }
 
-// Composant d'étoiles réutilisable
 function StarRating({ rating, onRate, onHover, size = 28, showLabel = false }: { rating: number; onRate?: (n: number) => void; onHover?: (n: number) => void; size?: number; showLabel?: boolean }) {
   const [hover, setHover] = useState(0);
   const displayHover = onHover !== undefined ? hover : 0;
   const currentRating = displayHover > 0 ? displayHover : rating;
-  
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
       <div style={{ display: "flex", gap: 4 }}>
@@ -159,14 +158,26 @@ export default function DashboardStartup() {
     setTimeout(() => setToast({ text: "", ok: true }), 3500);
   }
 
+  // Vérification de l'authentification
   useEffect(() => {
-    const u = typeof window !== "undefined" ? localStorage.getItem("user") : null;
-    if (!u) { router.push("/connexion"); return; }
-    const p = JSON.parse(u);
-    if (p.role !== "startup") { router.push("/"); return; }
-    setUser(p);
-    loadAll();
-    loadPub();
+    const token = localStorage.getItem("token");
+    const userStr = localStorage.getItem("user");
+    if (!token || !userStr) {
+      router.push("/connexion");
+      return;
+    }
+    try {
+      const parsed = JSON.parse(userStr);
+      if (parsed.role !== "startup") {
+        router.push("/");
+        return;
+      }
+      setUser(parsed);
+      loadAll();
+      loadPub();
+    } catch (e) {
+      router.push("/connexion");
+    }
   }, []);
 
   useEffect(() => { msgEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [conversation]);
@@ -540,7 +551,6 @@ export default function DashboardStartup() {
             </div>
           </section>
 
-          {/* TÉMOIGNAGES AVEC ÉTOILES SUR ACCUEIL */}
           {pubTemos.length > 0 && (
             <section style={{ padding: "72px 28px", background: "#F8FAFC" }}>
               <div style={{ maxWidth: 820, margin: "0 auto" }}>
@@ -554,12 +564,9 @@ export default function DashboardStartup() {
                   <>
                     <div style={{ background: "#0A2540", borderRadius: 24, padding: "40px 48px", position: "relative", border: "1px solid rgba(247,181,0,.18)", opacity: tAnim ? 0 : 1, transform: tAnim ? "scale(.97)" : "scale(1)", transition: "all .3s" }}>
                       <FaQuoteLeft style={{ position: "absolute", top: 24, left: 32, fontSize: 36, color: "rgba(247,181,0,.15)" }} />
-                      
-                      {/* Étoiles affichées au-dessus du témoignage */}
                       <div style={{ display: "flex", justifyContent: "center", marginBottom: 20 }}>
                         <StarRating rating={curTemo.note || 5} size={24} showLabel={true} />
                       </div>
-                      
                       <p style={{ fontFamily: "'Cormorant Garamond',serif", fontStyle: "italic", color: "#fff", lineHeight: 1.82, textAlign: "center", marginBottom: 28, fontSize: "clamp(16px,2vw,21px)", fontWeight: 500 }}>
                         &ldquo;{curTemo.texte}&rdquo;
                       </p>
@@ -711,7 +718,7 @@ export default function DashboardStartup() {
         </div>
       )}
 
-      {/* ══ AUTRES ONGLETS ══ */}
+      {/* ══ AUTRES ONGLETS (profil, experts, rdv, messages, temoignages) ══ */}
       {["profil", "experts", "rdv", "messages", "temoignages"].includes(tab) && (
         <div style={{ maxWidth: 1200, margin: "0 auto", padding: "32px 24px" }}>
 
@@ -901,10 +908,9 @@ export default function DashboardStartup() {
             </div>
           )}
 
-          {/* TÉMOIGNAGES AVEC ÉTOILES */}
+          {/* TÉMOIGNAGES */}
           {tab === "temoignages" && (
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
-              {/* Formulaire d'envoi avec étoiles */}
               <div className="card" style={{ overflow: "hidden" }}>
                 <div style={{ padding: "18px 24px", borderBottom: "1px solid #F1F5F9", background: "#FAFBFE" }}>
                   <div style={{ fontWeight: 700, fontSize: 16, color: "#0A2540" }}>✍️ Partager mon expérience</div>
@@ -913,16 +919,9 @@ export default function DashboardStartup() {
                   <div style={{ background: "#F0F9FF", border: "1px solid #BAE6FD", borderRadius: 12, padding: "12px 16px", marginBottom: 16, fontSize: 13, color: "#0369A1" }}>
                     💡 Votre témoignage sera examiné avant d'être publié sur la page d'accueil.
                   </div>
-                  
-                  {/* Sélection des étoiles */}
                   <label className="lbl">Votre note (étoiles)</label>
                   <div style={{ marginBottom: 20 }}>
-                    <StarRating 
-                      rating={newTemoNote} 
-                      onRate={setNewTemoNote} 
-                      onHover={setHoveredNote} 
-                      size={34} 
-                    />
+                    <StarRating rating={newTemoNote} onRate={setNewTemoNote} onHover={setHoveredNote} size={34} />
                     <div style={{ marginTop: 8, fontSize: 13, color: "#8A9AB5" }}>
                       {newTemoNote === 1 && "★ Très insatisfait"}
                       {newTemoNote === 2 && "★★ Insatisfait"}
@@ -931,23 +930,13 @@ export default function DashboardStartup() {
                       {newTemoNote === 5 && "★★★★★ Très satisfait"}
                     </div>
                   </div>
-                  
                   <label className="lbl">Votre témoignage</label>
-                  <textarea 
-                    className="inp" 
-                    rows={6} 
-                    placeholder="Partagez votre expérience avec BEH..." 
-                    value={newTemo} 
-                    onChange={e => setNewTemo(e.target.value)} 
-                    style={{ marginBottom: 16 }} 
-                  />
+                  <textarea className="inp" rows={6} placeholder="Partagez votre expérience avec BEH..." value={newTemo} onChange={e => setNewTemo(e.target.value)} style={{ marginBottom: 16 }} />
                   <button className="btn btn-gold" style={{ width: "100%", justifyContent: "center", padding: "12px" }} onClick={envoyerTemoignage}>
                     <FaPaperPlane /> Envoyer mon témoignage
                   </button>
                 </div>
               </div>
-              
-              {/* Liste des témoignages avec étoiles */}
               <div className="card" style={{ overflow: "hidden" }}>
                 <div style={{ padding: "18px 24px", borderBottom: "1px solid #F1F5F9", background: "#FAFBFE" }}>
                   <div style={{ fontWeight: 700, fontSize: 16, color: "#0A2540" }}>Mes témoignages ({temoignages.length})</div>
@@ -960,15 +949,10 @@ export default function DashboardStartup() {
                       <div key={t.id} style={{ background: "#F8FAFC", borderRadius: 12, padding: "14px 16px", marginBottom: 12, border: "1px solid #E8EEF6" }}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
                           <div style={{ fontSize: 11, color: "#8A9AB5" }}>{new Date(t.createdAt).toLocaleDateString("fr-FR")}</div>
-                          <span style={{ 
-                            background: t.statut === "valide" ? "#ECFDF5" : t.statut === "refuse" ? "#FEF2F2" : "#FFF8E1", 
-                            color: t.statut === "valide" ? "#059669" : t.statut === "refuse" ? "#DC2626" : "#B45309", 
-                            borderRadius: 99, padding: "2px 9px", fontSize: 11, fontWeight: 700 
-                          }}>
+                          <span style={{ background: t.statut === "valide" ? "#ECFDF5" : t.statut === "refuse" ? "#FEF2F2" : "#FFF8E1", color: t.statut === "valide" ? "#059669" : t.statut === "refuse" ? "#DC2626" : "#B45309", borderRadius: 99, padding: "2px 9px", fontSize: 11, fontWeight: 700 }}>
                             {t.statut === "valide" ? "✅ Publié" : t.statut === "refuse" ? "❌ Refusé" : "⏳ En attente"}
                           </span>
                         </div>
-                        {/* Affichage des étoiles */}
                         <div style={{ marginBottom: 10 }}>
                           <StarRating rating={t.note || 5} size={18} showLabel={true} />
                         </div>

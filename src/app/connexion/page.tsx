@@ -1,55 +1,70 @@
 "use client";
+
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 export default function Connexion() {
-  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [debug, setDebug] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  setLoading(true);
-  setError("");
-  try {
-    const res = await fetch("http://localhost:3001/auth/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.message || "Erreur de connexion");
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+    setDebug("Envoi de la requête...");
 
-    // 🔧 FORCER LE RÔLE ADMIN POUR CET EMAIL (à retirer après correction BDD)
-    if (email === "admin@gmail.com") {
-      data.user.role = "admin";
+    try {
+      const res = await fetch("http://localhost:3001/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await res.json();
+      setDebug(`Réponse reçue (status ${res.status})`);
+
+      if (!res.ok) {
+        throw new Error(data.message || "Erreur de connexion");
+      }
+
+      // 🔧 Optionnel : forcer un rôle pour les tests (choisir un seul)
+      // Par exemple, pour forcer admin sur un email précis :
+      if (email === "admin@example.com") {
+        data.user.role = "admin";
+      }
+      // Ne pas assigner plusieurs rôles ! Conserver le rôle réel de l'API
+
+      localStorage.setItem("token", data.access_token);
+      localStorage.setItem("user", JSON.stringify(data.user));
+
+      const role = data.user?.role;
+      setDebug(`Rôle détecté : ${role}`);
+
+      // Redirection selon le rôle
+      let redirectUrl = "/";
+      if (role === "admin") {
+        redirectUrl = "/dashboard/admin";
+      } else if (role === "expert") {
+        redirectUrl = "/dashboard/expert";
+      } else if (role === "startup") {
+        redirectUrl = "/dashboard/startup";
+      } else {
+        // rôle inconnu → page d'accueil
+        redirectUrl = "/";
+      }
+
+      setDebug(`Redirection vers ${redirectUrl}...`);
+      window.location.href = redirectUrl;
+    } catch (err: any) {
+      setError(err.message);
+      setDebug(`Erreur : ${err.message}`);
+      setLoading(false);
     }
+  };
 
-    localStorage.setItem("token", data.access_token);
-    localStorage.setItem("user", JSON.stringify(data.user));
-
-    // Redirection
-    const role = data.user?.role;
-    if (role === "admin") {
-      window.location.href = "/dashboard/admin";
-    } else {
-      const routes: Record<string, string> = {
-        admin: "/dashboard/admin",
-        expert: "/dashboard/expert",
-        startup: "/dashboard/startup",
-        client: "/dashboard/client",
-      };
-      window.location.href = routes[role] ?? "/";
-    }
-  } catch (err: any) {
-    setError(err.message);
-  } finally {
-    setLoading(false);
-  }
-};
   return (
     <>
       <style>{`
@@ -66,6 +81,7 @@ export default function Connexion() {
         .inp{width:100%;background:#F7F9FC;border:1.5px solid #DDE4EF;border-radius:11px;padding:12px 16px;font-family:'Outfit',sans-serif;font-size:14px;color:#0A2540;outline:none;margin-bottom:16px;transition:border-color .2s,box-shadow .2s;}
         .inp:focus{border-color:#F7B500;box-shadow:0 0 0 3px rgba(247,181,0,.12);}
         .err{background:#FEF2F2;border:1px solid #FECACA;border-left:4px solid #EF4444;border-radius:12px;padding:13px 16px;font-size:13px;color:#DC2626;margin-bottom:20px;}
+        .debug{background:#EFF6FF;border:1px solid #93C5FD;border-left:4px solid #3B82F6;border-radius:12px;padding:10px 14px;font-size:12px;color:#1E40AF;margin-bottom:16px;}
         .btn{width:100%;background:#0A2540;color:#fff;border:none;border-radius:12px;padding:15px;font-family:'Outfit',sans-serif;font-size:15px;font-weight:700;cursor:pointer;transition:all .2s;}
         .btn:hover:not(:disabled){background:#F7B500;color:#0A2540;}
         .btn:disabled{opacity:.55;cursor:not-allowed;}
@@ -89,6 +105,7 @@ export default function Connexion() {
           <div className="subtitle">Accédez à votre espace BEH</div>
 
           {error && <div className="err">{error}</div>}
+          {debug && <div className="debug">{debug}</div>}
 
           <form onSubmit={handleSubmit}>
             <label className="lbl">Email</label>
