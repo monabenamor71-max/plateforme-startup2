@@ -30,9 +30,6 @@ export class DemandeService {
   description: string;
 
   @Column({ nullable: true })
-  budget: string;
-
-  @Column({ nullable: true })
   delai: string;
 
   @Column({ nullable: true })
@@ -56,6 +53,13 @@ export class DemandeService {
 
   @Column({ name: 'note_suivi', nullable: true })
   note_suivi: string;
+
+  // ⭐ NOUVEAUX CHAMPS
+  @Column({ type: 'json', nullable: true })
+  experts_notifies: number[];
+
+  @Column({ type: 'json', nullable: true })
+  experts_acceptes: number[];
 
   @CreateDateColumn({ name: 'createdAt' })
   createdAt: Date;

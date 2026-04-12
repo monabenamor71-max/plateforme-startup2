@@ -20,8 +20,8 @@ export class Formation {
   @Column({ default: "payant" })
   type: string;
 
-  @Column({ nullable: true })
-  prix: string;
+  @Column({ type: 'int', nullable: true })
+  prix: number;   // ✅ type number (pas string)
 
   @Column({ default: false })
   places_limitees: boolean;
@@ -49,6 +49,25 @@ export class Formation {
 
   @Column({ default: false })
   a_la_une: boolean;
+
+  @Column({ type: 'date', nullable: true })
+  dateDebut: Date;
+
+  @Column({ type: 'date', nullable: true })
+  dateFin: Date;
+
+  // ✅ CHAMPS MANQUANTS (ajoutez-les impérativement)
+  @Column({ nullable: true })
+  expertId: number;
+
+  @Column({ nullable: true })
+  lien_formation: string;
+
+  @Column({ nullable: true })
+  niveau: string;
+
+  @Column({ default: false })
+  gratuit: boolean;
 
   @CreateDateColumn()
   createdAt: Date;

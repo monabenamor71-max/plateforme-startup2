@@ -98,7 +98,8 @@ export default function ExpertsPage() {
         experience:  e.experience || "",
         tarif:       e.tarif || "",
         localisation: e.localisation || "",
-        disponible:  e.disponible,
+        // ✅ Correction : utiliser e.disponibilite (string) et non e.disponible (booléen)
+        disponible:  e.disponibilite === "disponible",
         photo:       e.photo || null,
       }));
 

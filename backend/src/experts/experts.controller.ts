@@ -31,6 +31,12 @@ export class ExpertsController {
     return this.expertsService.updateProfil(req.user.id, body);
   }
 
+  @Patch('disponibilite')
+  @UseGuards(JwtAuthGuard)
+  updateDisponibilite(@Request() req: any, @Body('disponibilite') disponibilite: string) {
+    return this.expertsService.updateDisponibilite(req.user.id, disponibilite);
+  }
+
   @Post('photo')
   @UseGuards(JwtAuthGuard)
   @UseInterceptors(FileInterceptor('photo', {

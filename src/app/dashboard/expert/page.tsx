@@ -1,4 +1,5 @@
 "use client";
+
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
@@ -15,6 +16,8 @@ export default function DashboardExpert() {
   const [dispos, setDispos] = useState<any[]>([]);
   const [mesFormations, setMesFormations] = useState<any[]>([]);
   const [demandesAssignees, setDemandesAssignees] = useState<any[]>([]);
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [showNotifModal, setShowNotifModal] = useState(false);
   const [toast, setToast] = useState({ text:"", ok:true });
   const [editingProfil, setEditingProfil] = useState(false);
   const [savingProfil, setSavingProfil] = useState(false);
@@ -26,20 +29,36 @@ export default function DashboardExpert() {
   const [dispoModal, setDispoModal] = useState(false);
   const [newDispo, setNewDispo] = useState({ date:"", heureDebut:"", heureFin:"" });
   const [showFormModal, setShowFormModal] = useState(false);
+  const [formImageFile, setFormImageFile] = useState<File | null>(null);
+  const [formImagePreview, setFormImagePreview] = useState("");
+  const [uploadingImage, setUploadingImage] = useState(false);
   const [formPropoData, setFormPropoData] = useState({
     titre:"", description:"", duree:"", localisation:"",
     en_ligne:false, lien_formation:"", nom_formateur:"",
-    places_limitees:"", niveau:"", prix:0, gratuit:false, image:""
+    places_limitees:"", places_disponibles:"", niveau:"", prix:0, gratuit:false,
+    certifiante:false, dateDebut:"", dateFin:"", domaine:"",
   });
   const [form, setForm] = useState({
     domaine:"", description:"", localisation:"",
-    telephone:"", experience:"", disponible:true,
+    telephone:"", experience:"",
   });
   const msgEndRef = useRef<HTMLDivElement>(null);
 
   const tk  = () => localStorage.getItem("token") || "";
   const hdr = () => ({ Authorization:`Bearer ${tk()}` });
   const hdrJ= () => ({ Authorization:`Bearer ${tk()}`, "Content-Type":"application/json" });
+
+  // ─── NOTIFICATIONS : rechargement périodique ───
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (tab === "dashboard" || tab === "demandes") {
+        loadDemandesAssignees();
+        loadNotifications();
+        loadMessages();
+      }
+    }, 15000);
+    return () => clearInterval(interval);
+  }, [tab]);
 
   useEffect(() => {
     const u = localStorage.getItem("user");
@@ -52,6 +71,7 @@ export default function DashboardExpert() {
     loadRdvs();
     loadMesFormations();
     loadDemandesAssignees();
+    loadNotifications();
   }, []);
 
   useEffect(() => { msgEndRef.current?.scrollIntoView({ behavior:"smooth" }); }, [convMessages]);
@@ -61,11 +81,38 @@ export default function DashboardExpert() {
     setTimeout(()=>setToast({text:"",ok:true}), 3500);
   }
 
+  // ─── CHARGEMENT DES DONNÉES ───
   async function loadDemandesAssignees() {
     try {
-      const r = await fetch(`${BASE}/demandes-service/expert/assignees`, { headers:hdr() });
-      if (r.ok) setDemandesAssignees(await r.json());
-    } catch(e) {}
+      const r = await fetch(`${BASE}/demandes-service/expert/assignees`, { headers: hdr() });
+      if (r.ok) {
+        const data = await r.json();
+        setDemandesAssignees(Array.isArray(data) ? data : []);
+        console.log("✅ Missions assignées :", data.length);
+      } else {
+        setDemandesAssignees([]);
+      }
+    } catch(e) {
+      console.error("Erreur chargement demandes assignées", e);
+      setDemandesAssignees([]);
+    }
+  }
+
+  async function loadNotifications() {
+    try {
+      const r = await fetch(`${BASE}/demandes-service/expert/notifications`, { headers: hdr() });
+      if (r.ok) {
+        const data = await r.json();
+        setNotifications(Array.isArray(data) ? data : []);
+        console.log("✅ Notifications chargées :", data.length);
+      } else {
+        console.error("Erreur HTTP notifications", r.status);
+        setNotifications([]);
+      }
+    } catch (e) {
+      console.error("Erreur réseau notifications", e);
+      setNotifications([]);
+    }
   }
 
   async function loadProfile() {
@@ -79,7 +126,7 @@ export default function DashboardExpert() {
         setForm({
           domaine:d.domaine||"", description:d.description||"",
           localisation:d.localisation||"", telephone:d.telephone||"",
-          experience:d.experience||"", disponible:d.disponibilite!=="non disponible",
+          experience:d.experience||"",
         });
         if (d.id) loadDispos(d.id);
       }
@@ -119,6 +166,24 @@ export default function DashboardExpert() {
       const r = await fetch(`${BASE}/services-plateforme/expert/mes-formations`, { headers:hdr() });
       if (r.ok) setMesFormations(await r.json());
     } catch(e) {}
+  }
+
+  async function updateDisponibilite(nouvelleValeur: string) {
+    try {
+      const r = await fetch(`${BASE}/experts/disponibilite`, {
+        method: "PATCH",
+        headers: hdrJ(),
+        body: JSON.stringify({ disponibilite: nouvelleValeur })
+      });
+      if (r.ok) {
+        notify(`✅ Disponibilité mise à jour : ${nouvelleValeur === "disponible" ? "Disponible" : "Non disponible"}`);
+        loadProfile();
+      } else {
+        notify("❌ Erreur lors de la mise à jour de la disponibilité", false);
+      }
+    } catch(e) {
+      notify("Erreur réseau", false);
+    }
   }
 
   async function saveProfil(e:React.FormEvent) {
@@ -185,22 +250,108 @@ export default function DashboardExpert() {
     } catch(e) { notify("Erreur", false); }
   }
 
+  function resetFormModal() {
+    setFormPropoData({
+      titre:"", description:"", duree:"", localisation:"",
+      en_ligne:false, lien_formation:"", nom_formateur:"",
+      places_limitees:"", places_disponibles:"", niveau:"", prix:0, gratuit:false,
+      certifiante:false, dateDebut:"", dateFin:"", domaine:"",
+    });
+    setFormImageFile(null);
+    setFormImagePreview("");
+  }
+
   async function proposerFormation(e:React.FormEvent) {
     e.preventDefault();
+    if (!formPropoData.titre || !formPropoData.description) {
+      notify("Veuillez remplir le titre et la description", false);
+      return;
+    }
+    setUploadingImage(true);
     try {
-      const r = await fetch(`${BASE}/services-plateforme/expert/proposer`, {
-        method:"POST", headers:hdrJ(),
-        body:JSON.stringify({ ...formPropoData, type:"formation" }),
+      const formData = new FormData();
+      formData.append("titre", formPropoData.titre);
+      formData.append("description", formPropoData.description);
+      formData.append("duree", formPropoData.duree);
+      formData.append("localisation", formPropoData.localisation);
+      formData.append("en_ligne", String(formPropoData.en_ligne));
+      formData.append("lien_formation", formPropoData.lien_formation);
+      formData.append("nom_formateur", formPropoData.nom_formateur);
+      formData.append("domaine", formPropoData.domaine);
+      formData.append("places_limitees", formPropoData.places_limitees);
+      formData.append("places_disponibles", formPropoData.places_disponibles);
+      formData.append("niveau", formPropoData.niveau);
+      formData.append("prix", String(formPropoData.prix));
+      formData.append("gratuit", String(formPropoData.gratuit));
+      formData.append("certifiante", String(formPropoData.certifiante));
+      formData.append("dateDebut", formPropoData.dateDebut);
+      formData.append("dateFin", formPropoData.dateFin);
+      formData.append("type", "formation");
+      if (formImageFile) formData.append("image", formImageFile);
+
+      const r = await fetch(`${BASE}/formations/services-plateforme/expert/proposer`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${tk()}` },
+        body: formData,
       });
       if (r.ok) {
         notify("✅ Formation proposée ! En attente de validation admin.");
         setShowFormModal(false);
-        setFormPropoData({ titre:"", description:"", duree:"", localisation:"", en_ligne:false, lien_formation:"", nom_formateur:"", places_limitees:"", niveau:"", prix:0, gratuit:false, image:"" });
+        resetFormModal();
         loadMesFormations();
-      } else notify("Erreur", false);
-    } catch(e) { notify("Erreur", false); }
+      } else {
+        const err = await r.text();
+        notify(`Erreur: ${err}`, false);
+      }
+    } catch(e) {
+      notify("Erreur réseau", false);
+    }
+    setUploadingImage(false);
   }
 
+  function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (file) {
+      setFormImageFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => setFormImagePreview(reader.result as string);
+      reader.readAsDataURL(file);
+    }
+  }
+
+  // --- GESTION DES NOTIFICATIONS DE DEMANDE (URL corrigée) ---
+  async function accepterNotification(demandeId: number) {
+    try {
+      const r = await fetch(`${BASE}/demandes-service/${demandeId}/accepter-mission`, { method: 'PATCH', headers: hdrJ() });
+      if (r.ok) {
+        notify("✅ Vous avez accepté la mission ! L'admin va vous assigner.");
+        await loadNotifications();
+        await loadDemandesAssignees();
+      } else {
+        const err = await r.text();
+        notify(`Erreur: ${err}`, false);
+      }
+    } catch(e) {
+      notify("Erreur réseau", false);
+    }
+  }
+
+  async function refuserNotification(demandeId: number) {
+    try {
+      const r = await fetch(`${BASE}/demandes-service/${demandeId}/refuser-mission`, { method: 'PATCH', headers: hdrJ() });
+      if (r.ok) {
+        notify("❌ Mission refusée");
+        await loadNotifications();
+      } else {
+        const err = await r.text();
+        notify(`Erreur: ${err}`, false);
+      }
+    } catch(e) {
+      notify("Erreur réseau", false);
+    }
+  }
+
+  // --- Calculs pour l'interface ---
   const conversations = messages.reduce((acc:any, m:any) => {
     const otherId = m.sender_id===user?.id ? m.receiver_id : m.sender_id;
     const otherName = m.sender_id===user?.id
@@ -218,34 +369,44 @@ export default function DashboardExpert() {
 
   if (!user) return null;
 
+  const S = `
+    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap');
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:'Outfit',sans-serif;background:#F2F5F9;}
+    .card{background:#fff;border:1px solid #E8EEF6;border-radius:16px;}
+    .btn{font-family:'Outfit',sans-serif;font-weight:600;border:none;border-radius:8px;cursor:pointer;padding:9px 18px;font-size:13px;transition:all .18s;display:inline-flex;align-items:center;gap:6px;}
+    .btn-p{background:#0A2540;color:#fff;}.btn-p:hover{background:#F7B500;color:#0A2540;}
+    .btn-g{background:#F7B500;color:#0A2540;}.btn-g:hover{background:#e6a800;}
+    .btn-s{background:#F1F5F9;color:#475569;}.btn-s:hover{background:#E2E8F0;}
+    .btn-gr{background:#ECFDF5;color:#059669;}.btn-gr:hover{background:#059669;color:#fff;}
+    .btn-r{background:#FEF2F2;color:#DC2626;}.btn-r:hover{background:#DC2626;color:#fff;}
+    .btn-bl{background:#EFF6FF;color:#1D4ED8;}.btn-bl:hover{background:#1D4ED8;color:#fff;}
+    .btn:disabled{opacity:.55;cursor:not-allowed;}
+    .tab{background:none;border:none;cursor:pointer;padding:14px 4px;font-size:13px;font-weight:500;color:#7D8FAA;border-bottom:2px solid transparent;font-family:'Outfit',sans-serif;transition:all .2s;}
+    .tab.active{color:#0A2540;border-bottom-color:#F7B500;font-weight:700;}
+    .inp{width:100%;background:#F7F9FC;border:1.5px solid #DDE4EF;border-radius:10px;padding:11px 14px;font-family:'Outfit',sans-serif;font-size:13.5px;color:#0A2540;outline:none;transition:border-color .18s;}
+    .inp:focus{border-color:#F7B500;box-shadow:0 0 0 3px rgba(247,181,0,.1);}
+    .inp:disabled{opacity:.5;cursor:not-allowed;}
+    textarea.inp{resize:vertical;min-height:90px;}
+    select.inp{appearance:none;cursor:pointer;}
+    .lbl{font-size:11px;font-weight:700;color:#7D8FAA;text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:6px;}
+    .modal-bg{position:fixed;inset:0;background:rgba(10,37,64,.5);z-index:200;display:flex;align-items:center;justify-content:center;padding:24px;backdrop-filter:blur(4px);}
+    .modal{background:#fff;border-radius:20px;width:100%;max-width:640px;box-shadow:0 24px 80px rgba(10,37,64,.2);overflow:hidden;}
+    .bw{background:#FFF8E1;color:#B45309;border:1px solid #F7B500;border-radius:99px;padding:3px 10px;font-size:11px;font-weight:700;}
+    .bo{background:#ECFDF5;color:#059669;border:1px solid #A7F3D0;border-radius:99px;padding:3px 10px;font-size:11px;font-weight:700;}
+    .bn{background:#FEF2F2;color:#DC2626;border:1px solid #FECACA;border-radius:99px;padding:3px 10px;font-size:11px;font-weight:700;}
+    .bc{background:#F3F0FF;color:#7C3AED;border:1px solid #DDD6FE;border-radius:99px;padding:3px 10px;font-size:11px;font-weight:700;}
+    .section-divider{height:1px;background:#F1F5F9;margin:20px 0;}
+    .check-row{display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13.5px;font-weight:600;color:#0A2540;}
+    .check-row input{width:16px;height:16px;accent-color:#F7B500;cursor:pointer;}
+    .img-preview{width:80px;height:80px;object-fit:cover;border-radius:8px;border:1px solid #E8EEF6;}
+    .upload-zone{border:2px dashed #DDE4EF;border-radius:10px;padding:20px;text-align:center;cursor:pointer;transition:all .18s;}
+    .upload-zone:hover{border-color:#F7B500;background:#FFFBEB;}
+  `;
+
   return (
     <>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap');
-        *{box-sizing:border-box;margin:0;padding:0;}
-        body{font-family:'Outfit',sans-serif;background:#F2F5F9;}
-        .card{background:#fff;border:1px solid #E8EEF6;border-radius:16px;}
-        .btn{font-family:'Outfit',sans-serif;font-weight:600;border:none;border-radius:8px;cursor:pointer;padding:9px 18px;font-size:13px;transition:all .18s;display:inline-flex;align-items:center;gap:6px;}
-        .btn-p{background:#0A2540;color:#fff;}.btn-p:hover{background:#F7B500;color:#0A2540;}
-        .btn-g{background:#F7B500;color:#0A2540;}.btn-g:hover{background:#e6a800;}
-        .btn-s{background:#F1F5F9;color:#475569;}.btn-s:hover{background:#E2E8F0;}
-        .btn-gr{background:#ECFDF5;color:#059669;}.btn-gr:hover{background:#059669;color:#fff;}
-        .btn-r{background:#FEF2F2;color:#DC2626;}.btn-r:hover{background:#DC2626;color:#fff;}
-        .btn-bl{background:#EFF6FF;color:#1D4ED8;}.btn-bl:hover{background:#1D4ED8;color:#fff;}
-        .btn:disabled{opacity:.55;cursor:not-allowed;}
-        .tab{background:none;border:none;cursor:pointer;padding:14px 4px;font-size:13px;font-weight:500;color:#7D8FAA;border-bottom:2px solid transparent;font-family:'Outfit',sans-serif;transition:all .2s;}
-        .tab.active{color:#0A2540;border-bottom-color:#F7B500;font-weight:700;}
-        .inp{width:100%;background:#F7F9FC;border:1.5px solid #DDE4EF;border-radius:10px;padding:11px 14px;font-family:'Outfit',sans-serif;font-size:13.5px;color:#0A2540;outline:none;transition:border-color .18s;}
-        .inp:focus{border-color:#F7B500;box-shadow:0 0 0 3px rgba(247,181,0,.1);}
-        textarea.inp{resize:vertical;min-height:90px;}
-        select.inp{appearance:none;cursor:pointer;}
-        .lbl{font-size:11px;font-weight:700;color:#7D8FAA;text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:6px;}
-        .modal-bg{position:fixed;inset:0;background:rgba(10,37,64,.5);z-index:200;display:flex;align-items:center;justify-content:center;padding:24px;backdrop-filter:blur(4px);}
-        .modal{background:#fff;border-radius:20px;width:100%;max-width:560px;box-shadow:0 24px 80px rgba(10,37,64,.2);overflow:hidden;}
-        .bw{background:#FFF8E1;color:#B45309;border:1px solid #F7B500;border-radius:99px;padding:3px 10px;font-size:11px;font-weight:700;}
-        .bo{background:#ECFDF5;color:#059669;border:1px solid #A7F3D0;border-radius:99px;padding:3px 10px;font-size:11px;font-weight:700;}
-        .bn{background:#FEF2F2;color:#DC2626;border:1px solid #FECACA;border-radius:99px;padding:3px 10px;font-size:11px;font-weight:700;}
-      `}</style>
+      <style>{S}</style>
 
       {/* Toast */}
       {toast.text && (
@@ -281,22 +442,69 @@ export default function DashboardExpert() {
 
       {/* Modal Proposer Formation */}
       {showFormModal && (
-        <div className="modal-bg" onClick={()=>setShowFormModal(false)}>
-          <div className="modal" style={{maxWidth:640,maxHeight:"90vh",overflowY:"auto"}} onClick={e=>e.stopPropagation()}>
-            <div style={{padding:"18px 24px",borderBottom:"1px solid #F1F5F9",display:"flex",alignItems:"center",justifyContent:"space-between",background:"#FAFBFE",position:"sticky",top:0}}>
-              <span style={{fontWeight:700,fontSize:16,color:"#0A2540"}}>📚 Proposer une formation</span>
-              <button className="btn btn-s" style={{padding:"6px 10px"}} onClick={()=>setShowFormModal(false)}>✕</button>
+        <div className="modal-bg" onClick={()=>{setShowFormModal(false);resetFormModal();}}>
+          <div className="modal" style={{maxWidth:700,maxHeight:"92vh",overflowY:"auto"}} onClick={e=>e.stopPropagation()}>
+            <div style={{padding:"18px 24px",borderBottom:"1px solid #F1F5F9",display:"flex",alignItems:"center",justifyContent:"space-between",background:"#FAFBFE",position:"sticky",top:0,zIndex:10}}>
+              <div>
+                <div style={{fontWeight:700,fontSize:16,color:"#0A2540"}}>📚 Proposer une formation</div>
+                <div style={{fontSize:12,color:"#8A9AB5",marginTop:2}}>En attente de validation par l'administrateur</div>
+              </div>
+              <button className="btn btn-s" style={{padding:"6px 10px"}} onClick={()=>{setShowFormModal(false);resetFormModal();}}>✕</button>
             </div>
             <form onSubmit={proposerFormation}>
-              <div style={{padding:24,display:"flex",flexDirection:"column",gap:14}}>
-                <div style={{background:"#EFF6FF",border:"1px solid #BFDBFE",borderRadius:10,padding:"12px 16px",fontSize:13,color:"#1D4ED8"}}>
-                  ℹ️ Votre formation sera soumise à l'admin pour validation avant d'être publiée sur la page formations.
+              <div style={{padding:24,display:"flex",flexDirection:"column",gap:0}}>
+                <div style={{background:"#EFF6FF",border:"1px solid #BFDBFE",borderRadius:10,padding:"12px 16px",fontSize:13,color:"#1D4ED8",marginBottom:20}}>
+                  ℹ️ Votre formation sera soumise à l'admin pour validation avant d'être publiée.
                 </div>
-                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
-                  <div style={{gridColumn:"1/-1"}}><label className="lbl">Titre *</label><input className="inp" required value={formPropoData.titre} onChange={e=>setFormPropoData({...formPropoData,titre:e.target.value})} placeholder="Ex: Formation React & Next.js"/></div>
-                  <div><label className="lbl">Prix (DT)</label><input className="inp" type="number" min="0" value={formPropoData.prix||0} onChange={e=>setFormPropoData({...formPropoData,prix:+e.target.value})}/></div>
-                  <div><label className="lbl">Durée</label><input className="inp" value={formPropoData.duree} onChange={e=>setFormPropoData({...formPropoData,duree:e.target.value})} placeholder="Ex: 2 jours, 16h..."/></div>
-                  <div><label className="lbl">Niveau</label>
+
+                {/* Section 1 : Informations essentielles */}
+                <div style={{fontWeight:700,fontSize:13,color:"#0A2540",marginBottom:14,display:"flex",alignItems:"center",gap:8}}>
+                  <div style={{width:24,height:24,background:"#0A2540",borderRadius:6,display:"flex",alignItems:"center",justifyContent:"center",color:"#F7B500",fontSize:12,fontWeight:800}}>1</div>
+                  Informations essentielles
+                </div>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:8}}>
+                  <div style={{gridColumn:"1/-1"}}>
+                    <label className="lbl">Titre <span style={{color:"#DC2626"}}>*</span></label>
+                    <input className="inp" required value={formPropoData.titre} onChange={e=>setFormPropoData({...formPropoData,titre:e.target.value})} placeholder="Ex: Formation React & Next.js avancé"/>
+                  </div>
+                  <div>
+                    <label className="lbl">Domaine</label>
+                    <select className="inp" value={formPropoData.domaine} onChange={e=>setFormPropoData({...formPropoData,domaine:e.target.value})}>
+                      <option value="">Sélectionner...</option>
+                      {["Marketing","Finance","IA & Digital","RH & Organisation","Stratégie","Management","Droit & Conformité","Entrepreneuriat"].map(d=><option key={d} value={d}>{d}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="lbl">Formateur / Expert</label>
+                    <input className="inp" value={formPropoData.nom_formateur} onChange={e=>setFormPropoData({...formPropoData,nom_formateur:e.target.value})} placeholder="Votre nom complet"/>
+                  </div>
+                  <div style={{gridColumn:"1/-1"}}>
+                    <label className="lbl">Description <span style={{color:"#DC2626"}}>*</span></label>
+                    <textarea className="inp" required rows={4} value={formPropoData.description} onChange={e=>setFormPropoData({...formPropoData,description:e.target.value})} placeholder="Décrivez votre formation, les objectifs, le contenu, les prérequis..."/>
+                  </div>
+                </div>
+                <div className="section-divider"/>
+
+                {/* Section 2 : Modalités & dates */}
+                <div style={{fontWeight:700,fontSize:13,color:"#0A2540",marginBottom:14,display:"flex",alignItems:"center",gap:8}}>
+                  <div style={{width:24,height:24,background:"#0A2540",borderRadius:6,display:"flex",alignItems:"center",justifyContent:"center",color:"#F7B500",fontSize:12,fontWeight:800}}>2</div>
+                  Modalités & planning
+                </div>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:8}}>
+                  <div>
+                    <label className="lbl">Date de début</label>
+                    <input type="date" className="inp" value={formPropoData.dateDebut} onChange={e=>setFormPropoData({...formPropoData,dateDebut:e.target.value})}/>
+                  </div>
+                  <div>
+                    <label className="lbl">Date de fin</label>
+                    <input type="date" className="inp" value={formPropoData.dateFin} min={formPropoData.dateDebut||undefined} onChange={e=>setFormPropoData({...formPropoData,dateFin:e.target.value})}/>
+                  </div>
+                  <div>
+                    <label className="lbl">Durée</label>
+                    <input className="inp" value={formPropoData.duree} onChange={e=>setFormPropoData({...formPropoData,duree:e.target.value})} placeholder="Ex: 2 jours, 16h..."/>
+                  </div>
+                  <div>
+                    <label className="lbl">Niveau</label>
                     <select className="inp" value={formPropoData.niveau} onChange={e=>setFormPropoData({...formPropoData,niveau:e.target.value})}>
                       <option value="">Sélectionner...</option>
                       <option value="Débutant">Débutant</option>
@@ -304,26 +512,91 @@ export default function DashboardExpert() {
                       <option value="Avancé">Avancé</option>
                     </select>
                   </div>
-                  <div><label className="lbl">Localisation</label><input className="inp" value={formPropoData.localisation} onChange={e=>setFormPropoData({...formPropoData,localisation:e.target.value})} placeholder="Ex: Tunis, Sfax..."/></div>
-                  <div><label className="lbl">Lien formation (URL)</label><input className="inp" value={formPropoData.lien_formation} onChange={e=>setFormPropoData({...formPropoData,lien_formation:e.target.value})} placeholder="https://zoom.us/..."/></div>
-                  <div><label className="lbl">Places limitées (0 = illimité)</label><input className="inp" type="number" min="0" value={formPropoData.places_limitees||""} onChange={e=>setFormPropoData({...formPropoData,places_limitees:e.target.value})}/></div>
-                  <div style={{display:"flex",flexDirection:"column",gap:10,justifyContent:"flex-end"}}>
-                    <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",fontSize:13,fontWeight:600,color:"#0A2540"}}>
-                      <input type="checkbox" checked={formPropoData.en_ligne} onChange={e=>setFormPropoData({...formPropoData,en_ligne:e.target.checked})} style={{width:16,height:16}}/>
-                      💻 Formation en ligne
-                    </label>
-                    <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",fontSize:13,fontWeight:600,color:"#0A2540"}}>
-                      <input type="checkbox" checked={formPropoData.gratuit} onChange={e=>setFormPropoData({...formPropoData,gratuit:e.target.checked})} style={{width:16,height:16}}/>
-                      🎁 Formation gratuite
-                    </label>
+                  <div>
+                    <label className="lbl">Localisation</label>
+                    <input className="inp" value={formPropoData.localisation} onChange={e=>setFormPropoData({...formPropoData,localisation:e.target.value})} placeholder="Ex: Tunis, Sfax..." disabled={formPropoData.en_ligne}/>
                   </div>
-                  <div style={{gridColumn:"1/-1"}}><label className="lbl">Description *</label><textarea className="inp" required rows={4} value={formPropoData.description} onChange={e=>setFormPropoData({...formPropoData,description:e.target.value})} placeholder="Décrivez votre formation, les objectifs, le contenu..."/></div>
-                  <div style={{gridColumn:"1/-1"}}><label className="lbl">Image (URL)</label><input className="inp" value={formPropoData.image||""} onChange={e=>setFormPropoData({...formPropoData,image:e.target.value})} placeholder="https://..."/></div>
+                  <div>
+                    <label className="lbl">Lien formation (URL)</label>
+                    <input className="inp" value={formPropoData.lien_formation} onChange={e=>setFormPropoData({...formPropoData,lien_formation:e.target.value})} placeholder="https://zoom.us/..."/>
+                  </div>
                 </div>
+                <div style={{display:"flex",gap:20,flexWrap:"wrap",marginBottom:8}}>
+                  <label className="check-row">
+                    <input type="checkbox" checked={formPropoData.en_ligne} onChange={e=>setFormPropoData({...formPropoData,en_ligne:e.target.checked,localisation:e.target.checked?"":formPropoData.localisation})}/>
+                    💻 Formation en ligne
+                  </label>
+                  <label className="check-row">
+                    <input type="checkbox" checked={formPropoData.certifiante} onChange={e=>setFormPropoData({...formPropoData,certifiante:e.target.checked})}/>
+                    🎓 Formation certifiante
+                  </label>
+                </div>
+                <div className="section-divider"/>
+
+                {/* Section 3 : Tarification & places */}
+                <div style={{fontWeight:700,fontSize:13,color:"#0A2540",marginBottom:14,display:"flex",alignItems:"center",gap:8}}>
+                  <div style={{width:24,height:24,background:"#0A2540",borderRadius:6,display:"flex",alignItems:"center",justifyContent:"center",color:"#F7B500",fontSize:12,fontWeight:800}}>3</div>
+                  Tarification & places
+                </div>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:14,marginBottom:8}}>
+                  <div>
+                    <label className="lbl">Prix (DT)</label>
+                    <input className="inp" type="number" min="0" value={formPropoData.prix||0} disabled={formPropoData.gratuit} onChange={e=>setFormPropoData({...formPropoData,prix:+e.target.value})}/>
+                  </div>
+                  <div>
+                    <label className="lbl">Places disponibles</label>
+                    <input className="inp" type="number" min="0" value={formPropoData.places_disponibles||""} disabled={!formPropoData.places_limitees} onChange={e=>setFormPropoData({...formPropoData,places_disponibles:e.target.value})} placeholder="0 = illimité"/>
+                  </div>
+                  <div>
+                    <label className="lbl">Places max (info)</label>
+                    <input className="inp" type="number" min="0" value={formPropoData.places_limitees||""} onChange={e=>setFormPropoData({...formPropoData,places_limitees:e.target.value})} placeholder="0 = illimité"/>
+                  </div>
+                </div>
+                <div style={{display:"flex",gap:20,flexWrap:"wrap",marginBottom:8}}>
+                  <label className="check-row">
+                    <input type="checkbox" checked={formPropoData.gratuit} onChange={e=>setFormPropoData({...formPropoData,gratuit:e.target.checked,prix:e.target.checked?0:formPropoData.prix})}/>
+                    🎁 Formation gratuite
+                  </label>
+                </div>
+                <div className="section-divider"/>
+
+                {/* Section 4 : Image */}
+                <div style={{fontWeight:700,fontSize:13,color:"#0A2540",marginBottom:14,display:"flex",alignItems:"center",gap:8}}>
+                  <div style={{width:24,height:24,background:"#0A2540",borderRadius:6,display:"flex",alignItems:"center",justifyContent:"center",color:"#F7B500",fontSize:12,fontWeight:800}}>4</div>
+                  Image de couverture
+                </div>
+                {formImagePreview ? (
+                  <div style={{display:"flex",alignItems:"center",gap:16,padding:"14px",background:"#F8FAFC",borderRadius:10,border:"1px solid #E8EEF6"}}>
+                    <img src={formImagePreview} alt="Aperçu" className="img-preview"/>
+                    <div>
+                      <div style={{fontSize:13,fontWeight:600,color:"#0A2540",marginBottom:8}}>Image sélectionnée</div>
+                      <button type="button" className="btn btn-r" style={{padding:"6px 12px",fontSize:12}} onClick={()=>{setFormImageFile(null);setFormImagePreview("");}}>✕ Supprimer</button>
+                    </div>
+                  </div>
+                ) : (
+                  <label className="upload-zone">
+                    <div style={{fontSize:28,marginBottom:8}}>🖼️</div>
+                    <div style={{fontSize:13,fontWeight:600,color:"#8A9AB5",marginBottom:4}}>Cliquer pour choisir une image</div>
+                    <div style={{fontSize:11,color:"#B8C4D6"}}>JPG, PNG — max 2 Mo</div>
+                    <input type="file" accept="image/*" onChange={handleImageChange} style={{display:"none"}}/>
+                  </label>
+                )}
               </div>
-              <div style={{padding:"14px 24px",borderTop:"1px solid #F1F5F9",display:"flex",justifyContent:"flex-end",gap:10}}>
-                <button type="button" className="btn btn-s" onClick={()=>setShowFormModal(false)}>Annuler</button>
-                <button type="submit" className="btn btn-g" style={{padding:"11px 22px"}}>📤 Soumettre à l'admin</button>
+              <div style={{padding:"14px 24px",borderTop:"1px solid #F1F5F9",display:"flex",justifyContent:"space-between",alignItems:"center",background:"#FAFBFE",position:"sticky",bottom:0}}>
+                <div style={{fontSize:12,color:"#8A9AB5"}}>
+                  {formPropoData.titre ? `📚 ${formPropoData.titre}` : "Aucun titre saisi"}
+                  {formPropoData.dateDebut && formPropoData.dateFin && (
+                    <span style={{marginLeft:10,color:"#6B7280"}}>
+                      📅 {new Date(formPropoData.dateDebut).toLocaleDateString("fr-FR",{day:"numeric",month:"short"})} → {new Date(formPropoData.dateFin).toLocaleDateString("fr-FR",{day:"numeric",month:"short"})}
+                    </span>
+                  )}
+                </div>
+                <div style={{display:"flex",gap:10}}>
+                  <button type="button" className="btn btn-s" onClick={()=>{setShowFormModal(false);resetFormModal();}}>Annuler</button>
+                  <button type="submit" className="btn btn-g" disabled={uploadingImage} style={{padding:"11px 22px"}}>
+                    {uploadingImage ? "⏳ Envoi en cours..." : "📤 Soumettre à l'admin"}
+                  </button>
+                </div>
               </div>
             </form>
           </div>
@@ -340,6 +613,14 @@ export default function DashboardExpert() {
           </div>
         </div>
         <div style={{display:"flex",alignItems:"center",gap:10}}>
+          {notifications.length > 0 && (
+            <div style={{ position: 'relative', cursor: 'pointer' }} onClick={() => setShowNotifModal(true)}>
+              <span style={{ fontSize: 20 }}>🔔</span>
+              <span style={{ position: 'absolute', top: -5, right: -10, background: '#EF4444', color: '#fff', borderRadius: 99, padding: '2px 6px', fontSize: 10, fontWeight: 700 }}>
+                {notifications.length}
+              </span>
+            </div>
+          )}
           {(unreadTotal>0||rdvEnAttente.length>0||demandesAssignees.length>0) && (
             <div style={{background:"#F7B500",color:"#0A2540",borderRadius:99,padding:"4px 12px",fontSize:12,fontWeight:800}}>
               🔔 {unreadTotal+rdvEnAttente.length+demandesAssignees.length} notifications
@@ -350,6 +631,34 @@ export default function DashboardExpert() {
           </button>
         </div>
       </header>
+
+      {/* Modal des notifications */}
+      {showNotifModal && (
+        <div className="modal-bg" onClick={() => setShowNotifModal(false)}>
+          <div className="modal" style={{ maxWidth: 500, maxHeight: '80vh', overflowY: 'auto' }} onClick={e => e.stopPropagation()}>
+            <div style={{ padding: '18px 24px', borderBottom: '1px solid #F1F5F9', display: 'flex', justifyContent: 'space-between' }}>
+              <span style={{ fontWeight: 700, fontSize: 16 }}>🔔 Nouvelles demandes ({notifications.length})</span>
+              <button className="btn btn-s" onClick={() => setShowNotifModal(false)}>✕</button>
+            </div>
+            <div style={{ padding: '16px' }}>
+              {notifications.length === 0 ? (
+                <div style={{ textAlign: 'center', color: '#8A9AB5', padding: '30px 0' }}>Aucune notification</div>
+              ) : (
+                notifications.map(notif => (
+                  <div key={notif.id} style={{ borderBottom: '1px solid #F1F5F9', padding: '14px 0' }}>
+                    <div style={{ fontWeight: 600, color: '#0A2540' }}>📋 {notif.service === 'formation' ? 'Formation' : notif.service}</div>
+                    <div style={{ fontSize: 13, color: '#64748B', margin: '6px 0' }}>{notif.description?.substring(0, 100)}...</div>
+                    <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                      <button className="btn btn-gr" style={{ fontSize: 12 }} onClick={() => accepterNotification(notif.id)}>✅ Accepter</button>
+                      <button className="btn btn-r" style={{ fontSize: 12 }} onClick={() => refuserNotification(notif.id)}>❌ Refuser</button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Tabs */}
       <div style={{background:"#fff",borderBottom:"1px solid #E8EEF6"}}>
@@ -371,8 +680,7 @@ export default function DashboardExpert() {
       </div>
 
       <main style={{maxWidth:1100,margin:"0 auto",padding:"28px 24px"}}>
-
-        {/* ══ DASHBOARD ══ */}
+        {/* DASHBOARD */}
         {tab==="dashboard" && (
           <div>
             {rdvEnAttente.length>0 && (
@@ -462,7 +770,7 @@ export default function DashboardExpert() {
           </div>
         )}
 
-        {/* ══ PROFIL ══ */}
+        {/* PROFIL */}
         {tab==="profil" && (
           <div style={{maxWidth:700,margin:"0 auto"}}>
             <div className="card" style={{padding:"24px",marginBottom:16}}>
@@ -487,13 +795,11 @@ export default function DashboardExpert() {
                 </div>
               </div>
             </div>
-
             {expert?.modification_demandee && (
               <div style={{background:"#FFF8E1",border:"1px solid #F7B500",borderRadius:12,padding:"14px 18px",marginBottom:16}}>
                 <div style={{fontWeight:700,color:"#B45309",fontSize:13}}>⚠️ Vos modifications sont en attente de validation par l'admin</div>
               </div>
             )}
-
             <div className="card" style={{overflow:"hidden"}}>
               <div style={{padding:"16px 24px",borderBottom:"1px solid #F1F5F9",display:"flex",alignItems:"center",justifyContent:"space-between",background:"#FAFBFE"}}>
                 <span style={{fontWeight:700,fontSize:15,color:"#0A2540"}}>Informations professionnelles</span>
@@ -523,17 +829,6 @@ export default function DashboardExpert() {
                       <div><label className="lbl">Localisation</label><input className="inp" type="text" value={form.localisation} onChange={e=>setForm({...form,localisation:e.target.value})}/></div>
                       <div><label className="lbl">Téléphone</label><input className="inp" type="tel" value={form.telephone} onChange={e=>setForm({...form,telephone:e.target.value})}/></div>
                     </div>
-                    <div>
-                      <label className="lbl" style={{marginBottom:10}}>Disponibilité</label>
-                      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-                        {[{val:true,label:"✅ Disponible"},{val:false,label:"❌ Non disponible"}].map(opt=>(
-                          <div key={String(opt.val)} onClick={()=>setForm({...form,disponible:opt.val})}
-                            style={{border:`1.5px solid ${form.disponible===opt.val?"#F7B500":"#DDE4EF"}`,borderRadius:10,padding:"12px",cursor:"pointer",background:form.disponible===opt.val?"rgba(247,181,0,.06)":"#F7F9FC"}}>
-                            <div style={{fontWeight:700,fontSize:13,color:"#0A2540"}}>{opt.label}</div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
                   </div>
                   <div style={{padding:"14px 24px",borderTop:"1px solid #F1F5F9",display:"flex",justifyContent:"flex-end",gap:10}}>
                     <button type="button" className="btn btn-s" onClick={()=>setEditingProfil(false)}>Annuler</button>
@@ -549,7 +844,6 @@ export default function DashboardExpert() {
                     {lbl:"Domaine",      val:expert?.domaine||"-"},
                     {lbl:"Expérience",   val:expert?.experience||"-"},
                     {lbl:"Localisation", val:expert?.localisation||"-"},
-                    {lbl:"Disponibilité",val:expert?.disponibilite||"-"},
                     {lbl:"Description",  val:expert?.description||"-"},
                   ].map((row,i)=>(
                     <div key={i} style={{display:"flex",gap:12,padding:"10px 0",borderBottom:"1px solid #F1F5F9"}}>
@@ -557,13 +851,22 @@ export default function DashboardExpert() {
                       <div style={{fontSize:14,color:"#0A2540"}}>{row.val}</div>
                     </div>
                   ))}
+                  <div style={{display:"flex",gap:12,padding:"10px 0",borderBottom:"1px solid #F1F5F9",alignItems:"center",justifyContent:"space-between"}}>
+                    <div style={{fontSize:11,color:"#8A9AB5",fontWeight:700,textTransform:"uppercase" as const,width:120,flexShrink:0}}>Disponibilité</div>
+                    <div style={{fontSize:14,color:"#0A2540",display:"flex",alignItems:"center",gap:10}}>
+                      <span>{expert?.disponibilite === "disponible" ? "✅ Disponible" : "❌ Non disponible"}</span>
+                      <button className="btn btn-s" style={{padding:"4px 10px",fontSize:11}} onClick={()=>updateDisponibilite(expert?.disponibilite==="disponible"?"non disponible":"disponible")}>
+                        Changer
+                      </button>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
           </div>
         )}
 
-        {/* ══ MESSAGES ══ */}
+        {/* MESSAGES */}
         {tab==="messages" && (
           <div className="card" style={{overflow:"hidden",display:"grid",gridTemplateColumns:"280px 1fr",height:580}}>
             <div style={{borderRight:"1px solid #E8EEF6",overflowY:"auto",display:"flex",flexDirection:"column"}}>
@@ -633,7 +936,7 @@ export default function DashboardExpert() {
           </div>
         )}
 
-        {/* ══ RENDEZ-VOUS ══ */}
+        {/* RENDEZ-VOUS */}
         {tab==="rendezvous" && (
           <div>
             {rdvEnAttente.length>0 && (
@@ -679,7 +982,7 @@ export default function DashboardExpert() {
           </div>
         )}
 
-        {/* ══ DISPONIBILITÉS ══ */}
+        {/* DISPONIBILITÉS */}
         {tab==="disponibilites" && (
           <div>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16}}>
@@ -708,19 +1011,22 @@ export default function DashboardExpert() {
           </div>
         )}
 
-        {/* ══ MES FORMATIONS ══ */}
+        {/* MES FORMATIONS */}
         {tab==="formations" && (
           <div>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20,flexWrap:"wrap",gap:12}}>
               <div>
                 <div style={{fontWeight:700,fontSize:17,color:"#0A2540"}}>📚 Mes formations proposées</div>
-                <div style={{fontSize:13,color:"#8A9AB5",marginTop:2}}>{mesFormations.length} formation{mesFormations.length>1?"s":""} · {mesFormations.filter(f=>f.statut==="publie").length} publiées · {mesFormations.filter(f=>f.statut==="en_attente").length} en attente</div>
+                <div style={{fontSize:13,color:"#8A9AB5",marginTop:2}}>
+                  {mesFormations.length} formation{mesFormations.length>1?"s":""} ·{" "}
+                  {mesFormations.filter(f=>f.statut==="publie").length} publiées ·{" "}
+                  {mesFormations.filter(f=>f.statut==="en_attente").length} en attente
+                </div>
               </div>
               <button className="btn btn-g" style={{padding:"11px 22px",fontSize:14}} onClick={()=>setShowFormModal(true)}>
                 ➕ Proposer une formation
               </button>
             </div>
-
             {mesFormations.length===0 ? (
               <div className="card" style={{padding:52,textAlign:"center"}}>
                 <div style={{fontSize:48,marginBottom:14}}>📚</div>
@@ -737,12 +1043,23 @@ export default function DashboardExpert() {
                       {f.gratuit||f.prix===0 ? <span style={{background:"#ECFDF5",color:"#059669",borderRadius:99,padding:"3px 10px",fontSize:12,fontWeight:600}}>🎁 Gratuit</span> : <span style={{background:"#EFF6FF",color:"#1D4ED8",borderRadius:99,padding:"3px 10px",fontSize:12,fontWeight:600}}>💰 {f.prix} DT</span>}
                       {f.duree&&<span style={{background:"#FFF8E1",color:"#B45309",borderRadius:99,padding:"3px 10px",fontSize:12,fontWeight:600}}>⏱ {f.duree}</span>}
                       {f.niveau&&<span style={{background:"#F3F0FF",color:"#7C3AED",borderRadius:99,padding:"3px 10px",fontSize:12,fontWeight:600}}>{f.niveau}</span>}
+                      {f.certifiante&&<span className="bc">🎓 Certifiante</span>}
                       {f.en_ligne&&<span style={{background:"#ECFDF5",color:"#059669",borderRadius:99,padding:"3px 10px",fontSize:12,fontWeight:600}}>💻 En ligne</span>}
                       {f.localisation&&!f.en_ligne&&<span style={{background:"#F0FDF4",color:"#16a34a",borderRadius:99,padding:"3px 10px",fontSize:12,fontWeight:600}}>📍 {f.localisation}</span>}
-                      {f.lien_formation&&<a href={f.lien_formation} target="_blank" style={{background:"#EFF6FF",color:"#1D4ED8",borderRadius:99,padding:"3px 10px",fontSize:12,fontWeight:600,textDecoration:"none"}}>🔗 Lien</a>}
-                      {f.places_limitees&&<span style={{background:"#FEF2F2",color:"#DC2626",borderRadius:99,padding:"3px 10px",fontSize:12,fontWeight:600}}>👥 {f.places_limitees} places max</span>}
+                      {f.domaine&&<span style={{background:"#F8FAFC",color:"#64748B",borderRadius:99,padding:"3px 10px",fontSize:12,fontWeight:600}}>📁 {f.domaine}</span>}
                     </div>
+                    {(f.dateDebut||f.dateFin) && (
+                      <div style={{fontSize:12.5,color:"#6B7280",marginBottom:8,display:"flex",gap:12,flexWrap:"wrap"}}>
+                        {f.dateDebut&&<span>📅 Début : <strong>{new Date(f.dateDebut).toLocaleDateString("fr-FR",{day:"numeric",month:"long",year:"numeric"})}</strong></span>}
+                        {f.dateFin&&<span>🏁 Fin : <strong>{new Date(f.dateFin).toLocaleDateString("fr-FR",{day:"numeric",month:"long",year:"numeric"})}</strong></span>}
+                      </div>
+                    )}
                     {f.description&&<p style={{fontSize:13.5,color:"#64748B",lineHeight:1.75,margin:0}}>{f.description}</p>}
+                    {f.image && (
+                      <div style={{marginTop:12}}>
+                        <img src={`${BASE}/uploads/formations/${f.image}`} alt="Image formation" style={{maxHeight:80,borderRadius:8,border:"1px solid #E8EEF6"}}/>
+                      </div>
+                    )}
                     {f.commentaire_admin&&(
                       <div style={{marginTop:10,background:f.statut==="publie"?"#ECFDF5":f.statut==="refuse"?"#FEF2F2":"#FFF8E1",border:`1px solid ${f.statut==="publie"?"#A7F3D0":f.statut==="refuse"?"#FECACA":"#F7B500"}`,borderRadius:10,padding:"10px 14px"}}>
                         <div style={{fontSize:11,fontWeight:700,color:f.statut==="publie"?"#059669":f.statut==="refuse"?"#DC2626":"#B45309",textTransform:"uppercase" as const,marginBottom:4}}>
@@ -751,7 +1068,9 @@ export default function DashboardExpert() {
                         <div style={{fontSize:13.5,color:"#334155"}}>{f.commentaire_admin}</div>
                       </div>
                     )}
-                    <div style={{fontSize:11,color:"#8A9AB5",marginTop:8}}>Soumis le {new Date(f.createdAt).toLocaleDateString("fr-FR",{day:"numeric",month:"long",year:"numeric"})}</div>
+                    <div style={{fontSize:11,color:"#8A9AB5",marginTop:8}}>
+                      Soumis le {new Date(f.createdAt).toLocaleDateString("fr-FR",{day:"numeric",month:"long",year:"numeric"})}
+                    </div>
                   </div>
                   <div style={{flexShrink:0}}>
                     <span style={{
@@ -769,54 +1088,64 @@ export default function DashboardExpert() {
           </div>
         )}
 
-        {/* ══ DEMANDES ASSIGNÉES (MES MISSIONS) ══ */}
+        {/* MES MISSIONS ASSIGNÉES (avec bouton Rafraîchir) */}
         {tab==="demandes" && (
           <div>
-            <div style={{fontWeight:700,fontSize:17,color:"#0A2540",marginBottom:6}}>📋 Mes missions assignées</div>
-            <div style={{fontSize:13,color:"#8A9AB5",marginBottom:20}}>{demandesAssignees.length} mission{demandesAssignees.length>1?"s":""} assignée{demandesAssignees.length>1?"s":""}</div>
-            {demandesAssignees.length===0 ? (
-              <div className="card" style={{padding:52,textAlign:"center"}}>
-                <div style={{fontSize:48,marginBottom:14}}>📋</div>
-                <div style={{fontWeight:700,color:"#0A2540",fontSize:16,marginBottom:6}}>Aucune mission assignée</div>
-                <div style={{fontSize:13,color:"#8A9AB5"}}>L'admin vous assignera des demandes clients adaptées à votre expertise.</div>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+              <div style={{ fontWeight: 700, fontSize: 17, color: "#0A2540" }}>📋 Mes missions assignées</div>
+              <button className="btn btn-s" onClick={() => { loadNotifications(); loadDemandesAssignees(); }}>
+                🔄 Rafraîchir
+              </button>
+            </div>
+            <div style={{ fontSize: 13, color: "#8A9AB5", marginBottom: 20 }}>
+              {demandesAssignees.length} mission{demandesAssignees.length > 1 ? "s" : ""} assignée{demandesAssignees.length > 1 ? "s" : ""}
+            </div>
+            {demandesAssignees.length === 0 ? (
+              <div className="card" style={{ padding: 52, textAlign: "center" }}>
+                <div style={{ fontSize: 48, marginBottom: 14 }}>📋</div>
+                <div style={{ fontWeight: 700, color: "#0A2540", fontSize: 16, marginBottom: 6 }}>Aucune mission assignée</div>
+                <div style={{ fontSize: 13, color: "#8A9AB5" }}>L'admin vous assignera des demandes clients adaptées à votre expertise.</div>
               </div>
-            ) : demandesAssignees.map(d=>(
-              <div key={d.id} className="card" style={{padding:"18px 22px",marginBottom:14,borderLeft:`4px solid ${d.statut==="en_cours"?"#3B82F6":d.statut==="terminee"?"#8B5CF6":"#F7B500"}`}}>
-                <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:16,flexWrap:"wrap"}}>
-                  <div style={{flex:1}}>
-                    <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
-                      <div style={{width:40,height:40,borderRadius:"50%",background:"#0A2540",color:"#F7B500",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:14,flexShrink:0}}>{d.user?.prenom?.[0]}{d.user?.nom?.[0]}</div>
-                      <div>
-                        <div style={{fontWeight:700,fontSize:15,color:"#0A2540"}}>{d.user?.prenom} {d.user?.nom}</div>
-                        <div style={{fontSize:11,color:"#8A9AB5"}}>{d.user?.email}</div>
+            ) : (
+              demandesAssignees.map(d => (
+                <div key={d.id} className="card" style={{ padding: "18px 22px", marginBottom: 14, borderLeft: `4px solid ${d.statut === "en_cours" ? "#3B82F6" : d.statut === "terminee" ? "#8B5CF6" : "#F7B500"}` }}>
+                  <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+                        <div style={{ width: 40, height: 40, borderRadius: "50%", background: "#0A2540", color: "#F7B500", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 14, flexShrink: 0 }}>
+                          {d.user?.prenom?.[0]}{d.user?.nom?.[0]}
+                        </div>
+                        <div>
+                          <div style={{ fontWeight: 700, fontSize: 15, color: "#0A2540" }}>{d.user?.prenom} {d.user?.nom}</div>
+                          <div style={{ fontSize: 11, color: "#8A9AB5" }}>{d.user?.email}</div>
+                        </div>
                       </div>
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 7, marginBottom: 8 }}>
+                        <span style={{ background: "#EFF6FF", color: "#1D4ED8", borderRadius: 99, padding: "3px 10px", fontSize: 12, fontWeight: 700 }}>🛠️ {d.service}</span>
+                        {d.budget && <span style={{ background: "#F0FDF4", color: "#16a34a", borderRadius: 99, padding: "3px 10px", fontSize: 12, fontWeight: 600 }}>💰 {d.budget}</span>}
+                        {d.delai && <span style={{ background: "#FFF8E1", color: "#B45309", borderRadius: 99, padding: "3px 10px", fontSize: 12, fontWeight: 600 }}>⏱ {d.delai}</span>}
+                        {d.telephone && <span style={{ background: "#F1F5F9", color: "#374151", borderRadius: 99, padding: "3px 10px", fontSize: 12, fontWeight: 600 }}>📞 {d.telephone}</span>}
+                      </div>
+                      {d.description && <p style={{ fontSize: 13.5, color: "#475569", lineHeight: 1.75, margin: "0 0 8px", background: "#F8FAFC", padding: "10px 12px", borderRadius: 8, border: "1px solid #E8EEF6" }}>{d.description}</p>}
+                      {d.objectif && <p style={{ fontSize: 13, color: "#7C3AED", margin: 0, fontWeight: 600 }}>🎯 Objectif : {d.objectif}</p>}
+                      {d.note_suivi && <div style={{ marginTop: 8, background: "#EFF6FF", border: "1px solid #BFDBFE", borderRadius: 8, padding: "8px 12px", fontSize: 13, color: "#1D4ED8" }}>📩 Note admin : {d.note_suivi}</div>}
+                      <div style={{ fontSize: 11, color: "#8A9AB5", marginTop: 8 }}>Assignée le {new Date(d.createdAt).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}</div>
                     </div>
-                    <div style={{display:"flex",flexWrap:"wrap",gap:7,marginBottom:8}}>
-                      <span style={{background:"#EFF6FF",color:"#1D4ED8",borderRadius:99,padding:"3px 10px",fontSize:12,fontWeight:700}}>🛠️ {d.service}</span>
-                      {d.budget&&<span style={{background:"#F0FDF4",color:"#16a34a",borderRadius:99,padding:"3px 10px",fontSize:12,fontWeight:600}}>💰 {d.budget}</span>}
-                      {d.delai&&<span style={{background:"#FFF8E1",color:"#B45309",borderRadius:99,padding:"3px 10px",fontSize:12,fontWeight:600}}>⏱ {d.delai}</span>}
-                      {d.telephone&&<span style={{background:"#F1F5F9",color:"#374151",borderRadius:99,padding:"3px 10px",fontSize:12,fontWeight:600}}>📞 {d.telephone}</span>}
+                    <div style={{ flexShrink: 0 }}>
+                      <span style={{
+                        background: d.statut === "en_cours" ? "#EFF6FF" : d.statut === "terminee" ? "#F3F0FF" : "#FFF8E1",
+                        color: d.statut === "en_cours" ? "#1D4ED8" : d.statut === "terminee" ? "#7C3AED" : "#B45309",
+                        borderRadius: 99, padding: "6px 14px", fontSize: 12.5, fontWeight: 700, display: "inline-block", whiteSpace: "nowrap" as const
+                      }}>
+                        {d.statut === "en_cours" ? "🔄 En cours" : d.statut === "terminee" ? "✔️ Terminée" : "⏳ En attente"}
+                      </span>
                     </div>
-                    {d.description&&<p style={{fontSize:13.5,color:"#475569",lineHeight:1.75,margin:"0 0 8px",background:"#F8FAFC",padding:"10px 12px",borderRadius:8,border:"1px solid #E8EEF6"}}>{d.description}</p>}
-                    {d.objectif&&<p style={{fontSize:13,color:"#7C3AED",margin:0,fontWeight:600}}>🎯 Objectif : {d.objectif}</p>}
-                    {d.note_suivi&&<div style={{marginTop:8,background:"#EFF6FF",border:"1px solid #BFDBFE",borderRadius:8,padding:"8px 12px",fontSize:13,color:"#1D4ED8"}}>📩 Note admin : {d.note_suivi}</div>}
-                    <div style={{fontSize:11,color:"#8A9AB5",marginTop:8}}>Assignée le {new Date(d.createdAt).toLocaleDateString("fr-FR",{day:"numeric",month:"long",year:"numeric"})}</div>
-                  </div>
-                  <div style={{flexShrink:0}}>
-                    <span style={{
-                      background:d.statut==="en_cours"?"#EFF6FF":d.statut==="terminee"?"#F3F0FF":"#FFF8E1",
-                      color:d.statut==="en_cours"?"#1D4ED8":d.statut==="terminee"?"#7C3AED":"#B45309",
-                      borderRadius:99,padding:"6px 14px",fontSize:12.5,fontWeight:700,display:"inline-block",whiteSpace:"nowrap" as const
-                    }}>
-                      {d.statut==="en_cours"?"🔄 En cours":d.statut==="terminee"?"✔️ Terminée":"⏳ En attente"}
-                    </span>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         )}
-
       </main>
     </>
   );

@@ -33,7 +33,6 @@ export class AuthService {
       statut: 'en_attente',
     });
     const savedUser = await this.userRepo.save(user);
-    
     const expert = this.expertRepo.create({
       user_id: savedUser.id,
       domaine: body.domaine,
@@ -48,14 +47,9 @@ export class AuthService {
       statut: 'en_attente',
     });
     await this.expertRepo.save(expert);
-    
     try {
-      await this.mailService.sendAdminNotification(
-        body.prenom + ' ' + body.nom, 'Expert', body.email
-      );
-    } catch (e) {
-      console.log('Email non envoyé:', e.message);
-    }
+      await this.mailService.sendAdminNotification(body.prenom + ' ' + body.nom, 'Expert', body.email);
+    } catch (e) { console.log('Email non envoyé:', e.message); }
     return { message: 'Inscription reussie ! En attente de validation.' };
   }
 
@@ -83,12 +77,8 @@ export class AuthService {
     });
     await this.startupRepo.save(startup);
     try {
-      await this.mailService.sendAdminNotification(
-        body.prenom + ' ' + body.nom, 'Startup', body.email
-      );
-    } catch (e) {
-      console.log('Email non envoyé:', e.message);
-    }
+      await this.mailService.sendAdminNotification(body.prenom + ' ' + body.nom, 'Startup', body.email);
+    } catch (e) { console.log('Email non envoyé:', e.message); }
     return { message: 'Inscription reussie ! En attente de validation.' };
   }
 
@@ -99,70 +89,57 @@ export class AuthService {
     if (!valid) throw new BadRequestException('Email ou mot de passe incorrect');
     if (user.statut === 'en_attente') throw new BadRequestException('Compte en attente de validation');
     if (user.statut === 'inactif') throw new BadRequestException('Compte desactive');
-    const token = this.jwtService.sign({ id: user.id, email: user.email, role: user.role });
+
+    // ⭐ Récupération de l'ID de l'expert
+    let expertId: number | null = null;
+    if (user.role === 'expert') {
+      const expert = await this.expertRepo.findOne({ where: { user_id: user.id } });
+      expertId = expert?.id ?? null;
+    }
+
+    const token = this.jwtService.sign({ 
+      id: user.id, 
+      email: user.email, 
+      role: user.role, 
+      expertId 
+    });
     return {
       access_token: token,
       user: { id: user.id, nom: user.nom, prenom: user.prenom, email: user.email, role: user.role },
     };
   }
 
-  // ============================================
-  // MOT DE PASSE OUBLIÉ
-  // ============================================
-
   async forgotPassword(email: string) {
     const user = await this.userRepo.findOne({ where: { email } });
-    
-    if (!user) {
-      return { success: true, message: "Si cet email existe, un lien a été envoyé" };
-    }
-    
+    if (!user) return { success: true, message: "Si cet email existe, un lien a été envoyé" };
     const token = crypto.randomBytes(32).toString('hex');
     const expires = new Date();
     expires.setHours(expires.getHours() + 1);
-    
     user.reset_token = token;
     user.reset_token_expires = expires;
     await this.userRepo.save(user);
-    
     const resetLink = `http://localhost:3000/reset-password?token=${token}`;
     console.log("=========================================");
     console.log("🔗 LIEN DE RÉINITIALISATION :");
     console.log(resetLink);
     console.log("=========================================");
-    
-    // Essayer d'envoyer l'email (optionnel)
     try {
-      if (this.mailService.sendResetPasswordEmail) {
-        await this.mailService.sendResetPasswordEmail(email, token);
-      }
-    } catch (e) {
-      console.log('Email non envoyé, lien disponible dans la console');
-    }
-    
+      await this.mailService.sendResetPasswordEmail(email, token);
+    } catch (e) { console.log('Email non envoyé, lien disponible dans la console'); }
     return { success: true, message: "Un lien de réinitialisation a été envoyé" };
   }
 
   async resetPassword(token: string, newPassword: string) {
-    const user = await this.userRepo.findOne({
-      where: { reset_token: token },
-    });
-    
-    if (!user) {
-      throw new BadRequestException('Lien invalide ou expiré');
-    }
-    
+    const user = await this.userRepo.findOne({ where: { reset_token: token } });
+    if (!user) throw new BadRequestException('Lien invalide ou expiré');
     if (user.reset_token_expires && new Date() > user.reset_token_expires) {
       throw new BadRequestException('Le lien a expiré');
     }
-    
     const hashedPassword = await bcrypt.hash(newPassword, 10);
-    
     user.mot_de_passe = hashedPassword;
     user.reset_token = '';
-user.reset_token_expires = undefined as any;
+    user.reset_token_expires = undefined as any;
     await this.userRepo.save(user);
-    
     return { success: true, message: "Mot de passe réinitialisé avec succès" };
   }
 }

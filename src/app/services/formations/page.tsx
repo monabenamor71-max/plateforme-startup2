@@ -7,7 +7,7 @@ import {
   FaGraduationCap, FaMapMarkerAlt, FaUsers, FaClock,
   FaCertificate, FaArrowRight, FaSearch, FaFilter,
   FaLaptop, FaBuilding, FaTimes, FaCheckCircle, FaLock,
-  FaMicrophone, FaPlay,
+  FaMicrophone, FaPlay, FaCalendarAlt,
 } from "react-icons/fa";
 
 const BASE = "http://localhost:3001";
@@ -130,6 +130,14 @@ export default function FormationsPage() {
   function placesRestantes(f: any) {
     if (!f.places_limitees) return null;
     return f.places_disponibles ?? 0;
+  }
+
+  // Helper pour formater une date YYYY-MM-DD en affichage lisible
+  function formatDate(dateStr: string) {
+    if (!dateStr) return null;
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return null;
+    return d.toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" });
   }
 
   return (
@@ -271,89 +279,54 @@ export default function FormationsPage() {
               {/* Main image frame */}
               <div className="hero-img-float" style={{ position:"relative", zIndex:2 }}>
                 <div style={{ width:300, height:300, borderRadius:32, overflow:"hidden", border:"3px solid rgba(247,181,0,.35)", boxShadow:"0 32px 80px rgba(0,0,0,.45)" }}>
-                  {/* Professional SVG illustration – learning / knowledge */}
+                  {/* SVG illustration (same as original) */}
                   <svg width="300" height="300" viewBox="0 0 300 300" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ display:"block" }}>
-                    {/* Background */}
                     <rect width="300" height="300" fill="#0D1F36"/>
-                    {/* Subtle grid */}
                     <pattern id="grid" width="30" height="30" patternUnits="userSpaceOnUse">
                       <path d="M30 0L0 0 0 30" fill="none" stroke="rgba(255,255,255,.04)" strokeWidth="1"/>
                     </pattern>
                     <rect width="300" height="300" fill="url(#grid)"/>
-
-                    {/* Glow center */}
                     <radialGradient id="glow" cx="50%" cy="50%" r="50%">
                       <stop offset="0%" stopColor="#F7B500" stopOpacity="0.18"/>
                       <stop offset="100%" stopColor="#F7B500" stopOpacity="0"/>
                     </radialGradient>
                     <rect width="300" height="300" fill="url(#glow)"/>
-
-                    {/* Book base */}
                     <rect x="72" y="145" width="156" height="100" rx="10" fill="#1a3a6e"/>
                     <rect x="72" y="145" width="156" height="6" rx="3" fill="#F7B500" opacity="0.7"/>
-
-                    {/* Book pages left */}
                     <rect x="78" y="155" width="70" height="82" rx="4" fill="#152d54"/>
-                    {/* Lines on left page */}
-                    {[0,1,2,3,4].map(i=>(
-                      <rect key={i} x="86" y={168+i*12} width={50} height="3" rx="1.5" fill="rgba(255,255,255,.18)"/>
-                    ))}
-
-                    {/* Book pages right */}
+                    {[0,1,2,3,4].map(i=>(<rect key={i} x="86" y={168+i*12} width={50} height="3" rx="1.5" fill="rgba(255,255,255,.18)"/>))}
                     <rect x="152" y="155" width="70" height="82" rx="4" fill="#1e4080"/>
-                    {/* Lines on right page */}
-                    {[0,1,2,3].map(i=>(
-                      <rect key={i} x="160" y={168+i*12} width={55} height="3" rx="1.5" fill="rgba(255,255,255,.22)"/>
-                    ))}
-                    {/* Highlight line right */}
+                    {[0,1,2,3].map(i=>(<rect key={i} x="160" y={168+i*12} width={55} height="3" rx="1.5" fill="rgba(255,255,255,.22)"/>))}
                     <rect x="160" y="216" width="42" height="3" rx="1.5" fill="#F7B500" opacity="0.6"/>
-
-                    {/* Center spine */}
                     <rect x="147" y="151" width="6" height="86" rx="3" fill="#0A2540"/>
-
-                    {/* Graduation cap */}
                     <polygon points="150,68 196,88 150,108 104,88" fill="#F7B500" opacity="0.95"/>
                     <rect x="188" y="88" width="4" height="32" rx="2" fill="#F7B500" opacity="0.8"/>
                     <circle cx="192" cy="122" r="6" fill="#F7B500" opacity="0.8"/>
-                    {/* Cap top */}
                     <rect x="142" y="60" width="16" height="28" rx="4" fill="#F7B500" opacity="0.75"/>
                     <rect x="147" y="56" width="6" height="14" rx="3" fill="#F7B500"/>
-
-                    {/* Floating elements */}
-                    {/* Star 1 */}
                     <circle cx="62" cy="110" r="5" fill="#F7B500" opacity="0.6"/>
                     <circle cx="62" cy="110" r="2.5" fill="#F7B500"/>
-                    {/* Star 2 */}
                     <circle cx="238" cy="130" r="4" fill="#A78BFA" opacity="0.7"/>
                     <circle cx="238" cy="130" r="2" fill="#A78BFA"/>
-                    {/* Star 3 */}
                     <circle cx="90" cy="180" r="3" fill="#4ADE80" opacity="0.5"/>
-
-                    {/* Certificate ribbon */}
                     <rect x="200" y="168" width="52" height="40" rx="8" fill="#1e3a5f" stroke="rgba(247,181,0,.4)" strokeWidth="1.5"/>
                     <circle cx="226" cy="181" r="8" fill="none" stroke="#F7B500" strokeWidth="1.5" opacity="0.8"/>
                     <path d="M222 181 L225 184 L230 178" stroke="#F7B500" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" opacity="0.9"/>
                     <rect x="208" y="194" width="36" height="3" rx="1.5" fill="rgba(255,255,255,.2)"/>
                     <rect x="214" y="200" width="24" height="3" rx="1.5" fill="rgba(255,255,255,.12)"/>
-
-                    {/* WiFi / signal dots */}
                     <circle cx="56" cy="168" r="3" fill="#4ADE80" opacity="0.8"/>
                     <path d="M48 162 Q56 156 64 162" stroke="#4ADE80" strokeWidth="1.5" fill="none" opacity="0.6" strokeLinecap="round"/>
                     <path d="M44 157 Q56 148 68 157" stroke="#4ADE80" strokeWidth="1" fill="none" opacity="0.3" strokeLinecap="round"/>
-
-                    {/* Bottom label */}
                     <rect x="88" y="258" width="124" height="22" rx="11" fill="rgba(247,181,0,.15)" stroke="rgba(247,181,0,.3)" strokeWidth="1"/>
                     <text x="150" y="273" textAnchor="middle" fill="#F7B500" fontSize="10" fontWeight="700" fontFamily="Arial, sans-serif" letterSpacing="2">CERTIFIÉ BEH</text>
                   </svg>
                 </div>
 
-                {/* Floating badge top-left */}
+                {/* Floating badges */}
                 <div style={{ position:"absolute", top:-18, left:-24, background:"rgba(10,37,64,.9)", border:"1px solid rgba(247,181,0,.4)", borderRadius:14, padding:"10px 14px", backdropFilter:"blur(8px)", whiteSpace:"nowrap" }}>
                   <div style={{ fontSize:10, color:"rgba(255,255,255,.5)", fontWeight:600, marginBottom:2 }}>Taux de satisfaction</div>
                   <div style={{ fontSize:18, fontWeight:900, color:"#F7B500", lineHeight:1 }}>94%</div>
                 </div>
-
-                {/* Floating badge bottom-right */}
                 <div style={{ position:"absolute", bottom:-16, right:-20, background:"rgba(139,92,246,.2)", border:"1px solid rgba(139,92,246,.4)", borderRadius:14, padding:"10px 14px", backdropFilter:"blur(8px)", whiteSpace:"nowrap" }}>
                   <div style={{ display:"flex", alignItems:"center", gap:6 }}>
                     <FaMicrophone style={{ color:"#A78BFA", fontSize:13 }} />
@@ -449,6 +422,7 @@ export default function FormationsPage() {
                         isLoggedIn={isLoggedIn}
                         getPrixLabel={getPrixLabel}
                         placesRestantes={placesRestantes}
+                        formatDate={formatDate}
                       />
                     ))}
                   </div>
@@ -465,6 +439,7 @@ export default function FormationsPage() {
                     isLoggedIn={isLoggedIn}
                     getPrixLabel={getPrixLabel}
                     placesRestantes={placesRestantes}
+                    formatDate={formatDate}
                   />
                 ))}
               </div>
@@ -526,7 +501,7 @@ export default function FormationsPage() {
         )}
       </div>
 
-      {/* ── Modal détail formation ── */}
+      {/* ── Modal détail formation (avec dates) ── */}
       {selectedFormation && (
         <div className="modal-overlay" onClick={()=>setSelectedFormation(null)}>
           <div className="modal-box" onClick={e=>e.stopPropagation()}>
@@ -570,6 +545,36 @@ export default function FormationsPage() {
                   </div>
                 ))}
               </div>
+
+              {/* Affichage des dates dans la modale */}
+              {(selectedFormation.dateDebut || selectedFormation.dateFin) && (
+                <div style={{ background:"#F0F9FF", borderRadius:12, padding:"14px 18px", marginBottom:20, border:"1px solid #BAE6FD" }}>
+                  <div style={{ display:"flex", alignItems:"center", gap:10, flexWrap:"wrap" }}>
+                    {selectedFormation.dateDebut && (
+                      <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                        <FaCalendarAlt style={{ color:"#0284C7", fontSize:14 }} />
+                        <div>
+                          <div style={{ fontSize:10, fontWeight:700, color:"#0369A1", textTransform:"uppercase" }}>Date de début</div>
+                          <div style={{ fontWeight:700, color:"#0A2540" }}>{formatDate(selectedFormation.dateDebut)}</div>
+                        </div>
+                      </div>
+                    )}
+                    {selectedFormation.dateFin && (
+                      <>
+                        <div style={{ width:1, height:30, background:"#BAE6FD" }} />
+                        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                          <FaCalendarAlt style={{ color:"#0284C7", fontSize:14 }} />
+                          <div>
+                            <div style={{ fontSize:10, fontWeight:700, color:"#0369A1", textTransform:"uppercase" }}>Date de fin</div>
+                            <div style={{ fontWeight:700, color:"#0A2540" }}>{formatDate(selectedFormation.dateFin)}</div>
+                          </div>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
+
               {selectedFormation.description && (
                 <div style={{ marginBottom:20 }}>
                   <div style={{ fontWeight:700, color:"#0A2540", fontSize:14, marginBottom:8 }}>À propos de cette formation</div>
@@ -620,8 +625,8 @@ export default function FormationsPage() {
   );
 }
 
-// ── Composant carte formation ──
-function FormationCard({ f, onSelect, onAcceder, isLoggedIn, getPrixLabel, placesRestantes }: any) {
+// ── Composant carte formation (avec dates) ──
+function FormationCard({ f, onSelect, onAcceder, isLoggedIn, getPrixLabel, placesRestantes, formatDate }: any) {
   const places = placesRestantes(f);
   const modeInfo = MODE_LABELS[f.mode] || { label: f.mode || "En ligne", icon: <FaLaptop />, color: "#22C55E" };
   const prixLabel = getPrixLabel(f.prix);
@@ -679,6 +684,17 @@ function FormationCard({ f, onSelect, onAcceder, isLoggedIn, getPrixLabel, place
             </span>
           )}
         </div>
+
+        {/* Affichage des dates sur la carte */}
+        {(f.dateDebut || f.dateFin) && (
+          <div style={{ marginBottom:12, fontSize:11, color:"#1D4ED8", background:"#EFF6FF", padding:"6px 10px", borderRadius:8, display:"inline-flex", alignItems:"center", gap:8, flexWrap:"wrap" }}>
+            <FaCalendarAlt style={{ fontSize:10 }} />
+            {f.dateDebut && <span>Début : {formatDate(f.dateDebut)}</span>}
+            {f.dateDebut && f.dateFin && <span>•</span>}
+            {f.dateFin && <span>Fin : {formatDate(f.dateFin)}</span>}
+          </div>
+        )}
+
         {places !== null && (
           <div style={{ marginBottom:12 }}>
             <span className="badge-places" style={{ background: places > 5 ? "#ECFDF5" : places > 0 ? "#FFF8E1" : "#FEF2F2", color: places > 5 ? "#059669" : places > 0 ? "#B45309" : "#DC2626", border:`1px solid ${places > 5 ? "#A7F3D0" : places > 0 ? "#F7B500" : "#FECACA"}` }}>
@@ -706,7 +722,7 @@ function FormationCard({ f, onSelect, onAcceder, isLoggedIn, getPrixLabel, place
   );
 }
 
-// ── Composant carte podcast ──
+// ── Composant carte podcast (inchangé) ──
 function PodcastCard({ p, onAcceder, isLoggedIn }: any) {
   return (
     <div className="podcast-card" onClick={() => onAcceder(p)}>

@@ -10,6 +10,42 @@ export class FormationsService {
     private formationRepo: Repository<Formation>,
   ) {}
 
+  // ✅ Création par un expert (statut = 'en_attente')
+  async createFromExpert(data: any, imageFile: any, expertId: number) {
+    const enLigne = data.en_ligne === 'true' || data.en_ligne === true;
+    const gratuit = data.gratuit === 'true' || data.gratuit === true;
+    const placesLimitees = data.places_limitees === 'true' || data.places_limitees === true;
+
+    const formation = this.formationRepo.create({
+      titre: data.titre,
+      description: data.description,
+      duree: data.duree || null,
+      localisation: data.localisation || null,
+      mode: enLigne ? 'en_ligne' : 'presentiel',
+      lien_formation: data.lien_formation || null,
+      formateur: data.nom_formateur || null,
+      places_limitees: placesLimitees,
+      places_disponibles: placesLimitees ? (parseInt(data.places_limitees_valeur) || 0) : 0,
+      niveau: data.niveau || null,
+      prix: data.prix ? parseInt(data.prix) : 0,
+      gratuit: gratuit,
+      type: data.type || 'formation',
+      image: imageFile?.filename || null,
+      statut: 'en_attente',
+      expertId: expertId,
+    });
+    return await this.formationRepo.save(formation);
+  }
+
+  // ✅ Récupérer les formations d'un expert
+  async findByExpert(expertId: number) {
+    return await this.formationRepo.find({
+      where: { expertId },
+      order: { createdAt: 'DESC' },
+    });
+  }
+
+  // Création par admin
   async create(data: any, imageFile?: any) {
     const formation = this.formationRepo.create({
       ...data,
@@ -28,10 +64,6 @@ export class FormationsService {
       order: { createdAt: 'DESC' },
     });
   }
-
-  // ⚠️ Ces deux méthodes doivent être SUPPRIMÉES
-  // async findFormations() { ... }
-  // async findPodcasts() { ... }
 
   async findOne(id: number) {
     const formation = await this.formationRepo.findOne({ where: { id } });

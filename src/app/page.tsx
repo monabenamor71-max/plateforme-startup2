@@ -330,6 +330,7 @@ export default function Home() {
       const pct = window.scrollY / (document.body.scrollHeight - window.innerHeight);
       if (pct >= 0.45) { popupShown.current = true; setShowPopup(true); }
     };
+    
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => { clearTimeout(timer); window.removeEventListener("scroll", onScroll); };
   }, []);
@@ -339,7 +340,11 @@ export default function Home() {
     fetch("http://localhost:3001/experts/liste").then(r => r.ok ? r.json() : [])
       .then(async (d: ExpertAPI[]) => {
         if (Array.isArray(d) && d.length > 0) {
-          const s = d.slice(0, 4); setExperts(s);
+         const s = d.slice(0, 4).map((expert: ExpertAPI) => ({
+  ...expert,
+  disponible: expert.disponibilite === "disponible"
+}));
+setExperts(s);
           const m: Record<number, Dispo[]> = {};
           await Promise.allSettled(s.map(async ex => {
             const r = await fetch(`http://localhost:3001/disponibilites/expert/${ex.id}`).catch(() => null);

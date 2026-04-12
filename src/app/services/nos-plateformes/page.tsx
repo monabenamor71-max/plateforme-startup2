@@ -10,10 +10,10 @@ import {
 } from "react-icons/fa";
 
 const NAV = [
-  { label: "Consulting", slug: "consulting" },
-  { label: "Audit sur site", slug: "audit-sur-site" },
+  { label: "Consulting",      slug: "consulting"      },
+  { label: "Audit sur site",  slug: "audit-sur-site"  },
   { label: "Nos Plateformes", slug: "nos-plateformes" },
-  { label: "Formations", slug: "formations" },
+  { label: "Formations",      slug: "formations"      },
 ];
 
 const CODE_LINES = [
@@ -44,7 +44,7 @@ const COLOR_MAP: Record<string, string> = {
   cm: "#5C6370", nm: "#E5C07B", op: "#ABB2BF",
 };
 
-// ─── Captures SVG ERP ─────────────────────────────────────────────────────────
+// ── SVG Screens ERP ───────────────────────────────────────────────────────────
 function ScreenERPMain() {
   return (
     <svg viewBox="0 0 480 300" style={{ width: "100%", display: "block" }}>
@@ -61,13 +61,13 @@ function ScreenERPMain() {
       <text x="434" y="23" textAnchor="middle" fill="#0A2540" fontSize="8" fontWeight="700">+ Nouveau</text>
       <rect x="0" y="40" width="110" height="260" fill="#F1F5F9" />
       <text x="14" y="62" fill="#64748B" fontSize="7" fontWeight="700">MENU</text>
-      {[["🏠","Accueil"],["📊","Rapports"],["👥","Clients"],["📦","Stocks"],["💰","Facturation"],["⚙️","Paramètres"]].map(([ic,lb],i)=>(
+      {[["🏠","Accueil"],["📊","Rapports"],["👥","Clients"],["📦","Stocks"],["💰","Facturation"],["⚙️","Paramètres"]].map(([ic,lb],i) => (
         <g key={i}>
           <rect x="6" y={72+i*32} width="98" height="24" rx="5" fill={i===0?"#0A2540":"transparent"}/>
           <text x="18" y={88+i*32} fill={i===0?"#F7B500":"#64748B"} fontSize="8">{ic} {lb}</text>
         </g>
       ))}
-      {[["Chiffre d'affaires","124 500 TND","+12%","#10B981"],["Marge brute","48 200 TND","+8%","#3B82F6"],["Commandes","342","+24%","#F7B500"],["Clients actifs","247","+5%","#8B5CF6"]].map(([n,v,g,c],i)=>(
+      {[["Chiffre d'affaires","124 500 TND","+12%","#10B981"],["Marge brute","48 200 TND","+8%","#3B82F6"],["Commandes","342","+24%","#F7B500"],["Clients actifs","247","+5%","#8B5CF6"]].map(([n,v,g,c],i) => (
         <g key={i}>
           <rect x={118+(i%2)*170} y={50+Math.floor(i/2)*80} width="158" height="68" rx="8" fill="#fff" stroke="#E2E8F0" strokeWidth="1"/>
           <text x={130+(i%2)*170} y={72+Math.floor(i/2)*80} fill="#64748B" fontSize="7">{n}</text>
@@ -78,7 +78,7 @@ function ScreenERPMain() {
       ))}
       <rect x="118" y="216" width="352" height="72" rx="8" fill="#fff" stroke="#E2E8F0" strokeWidth="1"/>
       <text x="130" y="232" fill="#64748B" fontSize="7">Évolution chiffre d'affaires — 6 derniers mois</text>
-      {[35,55,45,70,60,85].map((h,i)=>(
+      {[35,55,45,70,60,85].map((h,i) => (
         <g key={i}>
           <rect x={138+i*42} y={285-h} width="28" height={h} rx="3" fill="#F7B500" opacity="0.7"/>
           <text x={152+i*42} y="293" textAnchor="middle" fill="#94A3B8" fontSize="5.5">{["Jan","Fév","Mar","Avr","Mai","Jun"][i]}</text>
@@ -108,7 +108,7 @@ function ScreenERPList() {
         ["PRD-004","Audit sur site","—","3 500 TND","Sur devis","#3B82F6"],
         ["PRD-005","ERP Complet","5 licences","8 200 TND","Actif","#10B981"],
         ["PRD-006","Consulting Strategy","—","5 000 TND","Actif","#10B981"],
-      ].map(([ref,name,qty,price,st,c],i)=>(
+      ].map(([ref,name,qty,price,st,c],i) => (
         <g key={i}>
           <rect x="10" y={76+i*34} width="460" height="28" rx="4" fill={i%2===0?"#F8FAFC":"#fff"}/>
           <text x="20" y={94+i*34} fill="#64748B" fontSize="7">{ref}</text>
@@ -128,7 +128,7 @@ function ScreenERPStats() {
     <svg viewBox="0 0 480 300" style={{ width: "100%", display: "block" }}>
       <rect width="480" height="300" fill="#fff" />
       <rect width="480" height="40" fill="#0A2540" />
-      <text x="20" y="25" fill="#fff" fontSize="9" fontWeight="700">Statistiques &amp; Rapports</text>
+      <text x="20" y="25" fill="#fff" fontSize="9" fontWeight="700">Statistiques & Rapports</text>
       <text x="380" y="25" fill="#F7B500" fontSize="7">Juin 2026 ▾</text>
       <rect x="10" y="52" width="220" height="220" rx="10" fill="#F8FAFC" stroke="#E2E8F0" strokeWidth="0.5"/>
       <text x="120" y="75" textAnchor="middle" fill="#64748B" fontSize="8">Répartition services</text>
@@ -136,7 +136,7 @@ function ScreenERPStats() {
       <circle cx="120" cy="155" r="52" fill="none" stroke="#3B82F6" strokeWidth="24" strokeDasharray="65 200" strokeDashoffset="-100"/>
       <circle cx="120" cy="155" r="52" fill="none" stroke="#10B981" strokeWidth="24" strokeDasharray="35 200" strokeDashoffset="-165"/>
       <text x="120" y="159" textAnchor="middle" fill="#0A2540" fontSize="11" fontWeight="900">100%</text>
-      {[["#F7B500","ERP","50%"],["#3B82F6","CRM","33%"],["#10B981","Projets","17%"]].map(([c,l,p],i)=>(
+      {[["#F7B500","ERP","50%"],["#3B82F6","CRM","33%"],["#10B981","Projets","17%"]].map(([c,l,p],i) => (
         <g key={i}>
           <rect x="18" y={220+i*16} width="10" height="10" rx="3" fill={c as string}/>
           <text x="32" y={229+i*16} fill="#64748B" fontSize="7">{l} — {p}</text>
@@ -144,7 +144,7 @@ function ScreenERPStats() {
       ))}
       <rect x="244" y="52" width="226" height="220" rx="10" fill="#F8FAFC" stroke="#E2E8F0" strokeWidth="0.5"/>
       <text x="357" y="75" textAnchor="middle" fill="#64748B" fontSize="8">Top indicateurs</text>
-      {[["Taux satisfaction","94%","#F7B500"],["Croissance MoM","+12%","#10B981"],["NPS Score","72","#3B82F6"],["Support résolu","98%","#8B5CF6"],["Délai livraison","3.2j","#EF4444"],["Rétention client","88%","#F7B500"]].map(([l,v,c],i)=>(
+      {[["Taux satisfaction","94%","#F7B500"],["Croissance MoM","+12%","#10B981"],["NPS Score","72","#3B82F6"],["Support résolu","98%","#8B5CF6"],["Délai livraison","3.2j","#EF4444"],["Rétention client","88%","#F7B500"]].map(([l,v,c],i) => (
         <g key={i}>
           <rect x="252" y={85+i*28} width="210" height="22" rx="5" fill={i%2===0?"#fff":"#F1F5F9"}/>
           <text x="262" y={100+i*28} fill="#64748B" fontSize="7">{l}</text>
@@ -155,7 +155,7 @@ function ScreenERPStats() {
   );
 }
 
-// ─── Captures SVG CRM ─────────────────────────────────────────────────────────
+// ── SVG Screens CRM ───────────────────────────────────────────────────────────
 function ScreenCRMMain() {
   return (
     <svg viewBox="0 0 480 300" style={{ width: "100%", display: "block" }}>
@@ -163,19 +163,19 @@ function ScreenCRMMain() {
       <rect width="480" height="40" fill="#0A2540" />
       <rect x="10" y="12" width="50" height="16" rx="3" fill="#F7B500" opacity="0.9" />
       <text x="35" y="23" textAnchor="middle" fill="#0A2540" fontSize="7" fontWeight="900">BEH CRM</text>
-      {["Dashboard","Clients","Pipeline","Objectifs","Rapports"].map((t,i)=>(
+      {["Dashboard","Clients","Pipeline","Objectifs","Rapports"].map((t,i) => (
         <text key={i} x={85+i*65} y="24" fill={i===0?"#F7B500":"rgba(255,255,255,0.5)"} fontSize="8" fontWeight={i===0?"700":"400"}>{t}</text>
       ))}
       <rect x="400" y="10" width="68" height="20" rx="4" fill="#F7B500"/>
       <text x="434" y="23" textAnchor="middle" fill="#0A2540" fontSize="8" fontWeight="700">+ Client</text>
       <rect x="0" y="40" width="100" height="260" fill="#F1F5F9"/>
-      {[["📊","Dashboard"],["👥","Clients"],["🎯","Objectifs"],["📋","Séances"],["📈","Rapports"]].map(([ic,lb],i)=>(
+      {[["📊","Dashboard"],["👥","Clients"],["🎯","Objectifs"],["📋","Séances"],["📈","Rapports"]].map(([ic,lb],i) => (
         <g key={i}>
           <rect x="6" y={52+i*34} width="88" height="26" rx="5" fill={i===0?"#0A2540":"transparent"}/>
           <text x="18" y={69+i*34} fill={i===0?"#F7B500":"#64748B"} fontSize="8">{ic} {lb}</text>
         </g>
       ))}
-      {[["247","Clients actifs","#F7B500"],["38","Séances/mois","#3B82F6"],["94%","Satisfaction","#10B981"],["12k","CA mensuel","#8B5CF6"]].map(([v,l,c],i)=>(
+      {[["247","Clients actifs","#F7B500"],["38","Séances/mois","#3B82F6"],["94%","Satisfaction","#10B981"],["12k","CA mensuel","#8B5CF6"]].map(([v,l,c],i) => (
         <g key={i}>
           <rect x={108+i*90} y="50" width="82" height="58" rx="7" fill="#fff" stroke="#E2E8F0" strokeWidth="1"/>
           <text x={149+i*90} y="70" textAnchor="middle" fill={c as string} fontSize="16" fontWeight="900">{v}</text>
@@ -192,7 +192,7 @@ function ScreenCRMMain() {
         ["Marc Dubois","Consulting","Organisation","En cours","72%","#F7B500"],
         ["Leila Ben Ali","Formation","Management","Actif","88%","#10B981"],
         ["Jean-Paul Roy","Audit","Conformité","Clôturé","100%","#3B82F6"],
-      ].map(([n,s,o,st,sc,c],i)=>(
+      ].map(([n,s,o,st,sc,c],i) => (
         <g key={i}>
           <rect x="108" y={150+i*32} width="362" height="26" rx="3" fill={i%2===0?"#fff":"#F8FAFC"}/>
           <circle cx="124" cy={163+i*32} r="8" fill={`${c}20`}/>
@@ -216,7 +216,7 @@ function ScreenCRMObjectifs() {
       <rect width="480" height="40" fill="#F8FAFC" stroke="#E2E8F0" strokeWidth="0.5"/>
       <text x="20" y="25" fill="#0A2540" fontSize="9" fontWeight="700">Suivi des Objectifs Commerciaux</text>
       <text x="390" y="25" fill="#F7B500" fontSize="7" fontWeight="600">Q2 2026 ▾</text>
-      {[["Objectif revenus","78%","#F7B500"],["Taux fidélisation","94%","#10B981"],["Séances réalisées","65%","#3B82F6"],["NPS Score","88%","#8B5CF6"],["Nouveaux clients","52%","#EF4444"],["Conversion leads","71%","#F7B500"]].map(([l,p,c],i)=>(
+      {[["Objectif revenus","78%","#F7B500"],["Taux fidélisation","94%","#10B981"],["Séances réalisées","65%","#3B82F6"],["NPS Score","88%","#8B5CF6"],["Nouveaux clients","52%","#EF4444"],["Conversion leads","71%","#F7B500"]].map(([l,p,c],i) => (
         <g key={i}>
           <rect x="12" y={48+i*38} width="456" height="30" rx="8" fill={i%2===0?"#F8FAFC":"#fff"} stroke="#E2E8F0" strokeWidth="0.5"/>
           <text x="22" y={68+i*38} fill="#0A2540" fontSize="8" fontWeight="600">{l}</text>
@@ -239,14 +239,14 @@ function ScreenCRMKPI() {
       <text x="24" y="48" fill="rgba(255,255,255,0.4)" fontSize="8">Mis à jour il y a 2 min</text>
       <circle cx="456" cy="28" r="7" fill="rgba(34,197,94,0.2)"/>
       <circle cx="456" cy="28" r="4" fill="#22C55E"/>
-      {[["247","Clients","#F7B500"],["94%","Sat.","#10B981"],["12k","CA","#60A5FA"],["38","Séances","#C084FC"],["88","NPS","#F7B500"],["98%","Support","#10B981"]].map(([v,l,c],i)=>(
+      {[["247","Clients","#F7B500"],["94%","Sat.","#10B981"],["12k","CA","#60A5FA"],["38","Séances","#C084FC"],["88","NPS","#F7B500"],["98%","Support","#10B981"]].map(([v,l,c],i) => (
         <g key={i}>
           <rect x={12+i%3*158} y={60+Math.floor(i/3)*90} width="148" height="78" rx="10" fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.1)" strokeWidth="0.5"/>
           <text x={86+i%3*158} y={95+Math.floor(i/3)*90} textAnchor="middle" fill={c as string} fontSize="18" fontWeight="900">{v}</text>
           <text x={86+i%3*158} y={112+Math.floor(i/3)*90} textAnchor="middle" fill="rgba(255,255,255,0.4)" fontSize="7">{l}</text>
         </g>
       ))}
-      {[42,68,55,84,74,97,90,78].map((h,i)=>(
+      {[42,68,55,84,74,97,90,78].map((h,i) => (
         <g key={i}>
           <rect x={16+i*56} y={250-h*0.52} width="44" height={h*0.52} rx="5" fill="#F7B500" opacity={0.35+i*0.08}/>
           <text x={38+i*56} y="268" textAnchor="middle" fill="rgba(255,255,255,0.3)" fontSize="6">{["Lun","Mar","Mer","Jeu","Ven","Sam","Dim","Total"][i]}</text>
@@ -256,7 +256,7 @@ function ScreenCRMKPI() {
   );
 }
 
-// ─── Captures SVG Gestion Projets ─────────────────────────────────────────────
+// ── SVG Screens Projets ───────────────────────────────────────────────────────
 function ScreenGestionMain() {
   return (
     <svg viewBox="0 0 480 300" style={{ width: "100%", display: "block" }}>
@@ -264,25 +264,25 @@ function ScreenGestionMain() {
       <rect width="480" height="40" fill="#0A2540" />
       <rect x="10" y="12" width="60" height="16" rx="3" fill="#F7B500" opacity="0.9" />
       <text x="40" y="23" textAnchor="middle" fill="#0A2540" fontSize="7" fontWeight="900">PROJETS BEH</text>
-      {["Vue globale","Mes projets","Équipes","Planning","Rapports"].map((t,i)=>(
+      {["Vue globale","Mes projets","Équipes","Planning","Rapports"].map((t,i) => (
         <text key={i} x={95+i*70} y="24" fill={i===0?"#F7B500":"rgba(255,255,255,0.5)"} fontSize="8" fontWeight={i===0?"700":"400"}>{t}</text>
       ))}
       <rect x="420" y="10" width="50" height="20" rx="4" fill="#F7B500"/>
       <text x="445" y="23" textAnchor="middle" fill="#0A2540" fontSize="7" fontWeight="700">+ Projet</text>
-      {[["12","Projets actifs","#F7B500"],["8","En cours","#3B82F6"],["4","Terminés","#10B981"],["93%","Taux succès","#8B5CF6"]].map(([v,l,c],i)=>(
+      {[["12","Projets actifs","#F7B500"],["8","En cours","#3B82F6"],["4","Terminés","#10B981"],["93%","Taux succès","#8B5CF6"]].map(([v,l,c],i) => (
         <g key={i}>
           <rect x={10+i*115} y="52" width="104" height="60" rx="8" fill="#fff" stroke="#E2E8F0" strokeWidth="1"/>
           <text x={62+i*115} y="75" textAnchor="middle" fill={c as string} fontSize="18" fontWeight="900">{v}</text>
           <text x={62+i*115} y="90" textAnchor="middle" fill="#94A3B8" fontSize="7">{l}</text>
         </g>
       ))}
-      {[["À faire","#F7B500",["Audit client ABC","Rapport mensuel"]],["En cours","#3B82F6",["Refonte processus","Formation équipe","Analyse KPI"]],["Terminé","#10B981",["Audit Dupont SA","CRM déploiement"]]].map(([col,color,tasks],i)=>(
+      {[["À faire","#F7B500",["Audit client ABC","Rapport mensuel"]],["En cours","#3B82F6",["Refonte processus","Formation équipe","Analyse KPI"]],["Terminé","#10B981",["Audit Dupont SA","CRM déploiement"]]].map(([col,color,tasks],i) => (
         <g key={i}>
           <rect x={10+i*155} y="124" width="148" height="166" rx="8" fill="#F1F5F9"/>
           <text x={22+i*155} y="142" fill={color as string} fontSize="8" fontWeight="700">{col as string}</text>
           <circle cx={144+i*155} cy="137" r="9" fill={`${color}20`}/>
           <text x={144+i*155} y="141" textAnchor="middle" fill={color as string} fontSize="8" fontWeight="800">{(tasks as string[]).length}</text>
-          {(tasks as string[]).map((t,ti)=>(
+          {(tasks as string[]).map((t,ti) => (
             <g key={ti}>
               <rect x={18+i*155} y={152+ti*40} width="132" height="32" rx="6" fill="#fff" stroke="#E2E8F0" strokeWidth="0.5"/>
               <rect x={22+i*155} y={158+ti*40} width="4" height="20" rx="2" fill={color as string}/>
@@ -303,15 +303,15 @@ function ScreenGestionTimeline() {
       <rect width="480" height="40" fill="#F8FAFC" />
       <text x="20" y="25" fill="#0A2540" fontSize="9" fontWeight="700">Planning des projets — Gantt</text>
       <text x="390" y="25" fill="#F7B500" fontSize="7">Avr – Jun 2026</text>
-      <rect x="10" y="48" width="130" height="22" rx="0" fill="#F1F5F9"/>
+      <rect x="10" y="48" width="130" height="22" fill="#F1F5F9"/>
       <text x="18" y="63" fill="#94A3B8" fontSize="6.5">Projet</text>
-      {["Avr","Mai","Jun"].map((m,i)=>(
+      {["Avr","Mai","Jun"].map((m,i) => (
         <g key={i}>
           <rect x={148+i*110} y="48" width="108" height="22" fill="#F1F5F9"/>
           <text x={202+i*110} y="63" textAnchor="middle" fill="#94A3B8" fontSize="6.5">{m} 2026</text>
         </g>
       ))}
-      {[["Projet Alpha",0,200,"#F7B500"],["Projet Beta",70,130,"#3B82F6"],["Projet Gamma",150,160,"#10B981"],["Projet Delta",30,250,"#8B5CF6"],["Projet Epsilon",190,100,"#EF4444"],["Projet Zeta",100,180,"#F7B500"]].map(([n,start,width,c],i)=>(
+      {[["Projet Alpha",0,200,"#F7B500"],["Projet Beta",70,130,"#3B82F6"],["Projet Gamma",150,160,"#10B981"],["Projet Delta",30,250,"#8B5CF6"],["Projet Epsilon",190,100,"#EF4444"],["Projet Zeta",100,180,"#F7B500"]].map(([n,start,width,c],i) => (
         <g key={i}>
           <rect x="10" y={74+i*34} width="130" height="28" fill={i%2===0?"#F8FAFC":"#fff"}/>
           <text x="18" y={92+i*34} fill="#0A2540" fontSize="8" fontWeight="500">{n}</text>
@@ -329,9 +329,9 @@ function ScreenGestionStats() {
     <svg viewBox="0 0 480 300" style={{ width: "100%", display: "block" }}>
       <rect width="480" height="300" fill="#fff" />
       <rect width="480" height="40" fill="#0A2540" />
-      <text x="20" y="25" fill="#fff" fontSize="9" fontWeight="700">Analyses &amp; Performance projets</text>
+      <text x="20" y="25" fill="#fff" fontSize="9" fontWeight="700">Analyses & Performance projets</text>
       <text x="380" y="25" fill="#F7B500" fontSize="7">Q2 2026</text>
-      {[["12","Projets actifs","#F7B500","↑"],["93%","Taux succès","#10B981","↑"],["4.2j","Délai moy.","#3B82F6","↓"],["87%","Budget respect.","#8B5CF6","↑"]].map(([v,l,c,a],i)=>(
+      {[["12","Projets actifs","#F7B500","↑"],["93%","Taux succès","#10B981","↑"],["4.2j","Délai moy.","#3B82F6","↓"],["87%","Budget respect.","#8B5CF6","↑"]].map(([v,l,c,a],i) => (
         <g key={i}>
           <rect x={10+i*117} y="52" width="107" height="70" rx="10" fill="rgba(255,255,255,0.05)" stroke="rgba(255,255,255,0.1)" strokeWidth="0.5"/>
           <text x={63+i*117} y="78" textAnchor="middle" fill={c as string} fontSize="17" fontWeight="900">{v}</text>
@@ -341,7 +341,7 @@ function ScreenGestionStats() {
       ))}
       <rect x="10" y="134" width="220" height="156" rx="10" fill="#F8FAFC" stroke="#E2E8F0" strokeWidth="0.5"/>
       <text x="120" y="155" textAnchor="middle" fill="#64748B" fontSize="8">Statut des projets</text>
-      {[["#10B981","Terminés","33%"],["#3B82F6","En cours","50%"],["#F7B500","À faire","17%"]].map(([c,l,p],i)=>(
+      {[["#10B981","Terminés","33%"],["#3B82F6","En cours","50%"],["#F7B500","À faire","17%"]].map(([c,l,p],i) => (
         <g key={i}>
           <rect x="20" y={168+i*42} width="200" height="34" rx="8" fill="#fff" stroke="#E2E8F0" strokeWidth="0.5"/>
           <rect x="28" y={174+i*42} width="5" height="22" rx="3" fill={c as string}/>
@@ -353,7 +353,7 @@ function ScreenGestionStats() {
       ))}
       <rect x="244" y="134" width="226" height="156" rx="10" fill="#F8FAFC" stroke="#E2E8F0" strokeWidth="0.5"/>
       <text x="357" y="155" textAnchor="middle" fill="#64748B" fontSize="8">Livraisons hebdomadaires</text>
-      {[2,4,3,6,5,7,4].map((v,i)=>(
+      {[2,4,3,6,5,7,4].map((v,i) => (
         <g key={i}>
           <rect x={254+i*28} y={268-v*14} width="20" height={v*14} rx="4" fill="#10B981" opacity={0.5+i*0.07}/>
           <text x={264+i*28} y="278" textAnchor="middle" fill="#94A3B8" fontSize="5.5">{["S1","S2","S3","S4","S5","S6","S7"][i]}</text>
@@ -363,164 +363,227 @@ function ScreenGestionStats() {
   );
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// ── Helpers ───────────────────────────────────────────────────────────────────
 function useInView(threshold = 0.1) {
   const ref = useRef<HTMLDivElement>(null);
   const [v, setV] = useState(false);
   useEffect(() => {
     const el = ref.current; if (!el) return;
-    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) { setV(true); obs.disconnect(); } }, { threshold });
+    const obs = new IntersectionObserver(([e]) => {
+      if (e.isIntersecting) { setV(true); obs.disconnect(); }
+    }, { threshold });
     obs.observe(el); return () => obs.disconnect();
   }, []);
   return [ref, v] as const;
 }
+
 function FadeUp({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
   const [ref, v] = useInView(0.08);
   return (
-    <div ref={ref} style={{ opacity: v?1:0, transform: v?"translateY(0)":"translateY(24px)", transition: `all .65s cubic-bezier(.22,1,.36,1) ${delay}s` }}>
+    <div ref={ref} style={{
+      opacity: v ? 1 : 0,
+      transform: v ? "translateY(0)" : "translateY(24px)",
+      transition: `all .65s cubic-bezier(.22,1,.36,1) ${delay}s`,
+    }}>
       {children}
     </div>
   );
 }
 
-// ─── Carrousel roulant continu ─────────────────────────────────────────────────
-function ScreenCarousel({
+// ── AutoScrollList : liste qui défile verticalement en boucle sans fin ────────
+function AutoScrollList({
   screens,
   accentColor = "#F7B500",
+  speed = 32,                // px/s — plus grand = plus rapide
 }: {
   screens: { label: string; icon: string; comp: React.ReactNode; description?: string }[];
   accentColor?: string;
+  speed?: number;
 }) {
-  const [current, setCurrent] = useState(0);
-  const [animState, setAnimState] = useState<"idle" | "exit" | "enter">("idle");
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const trackRef = useRef<HTMLDivElement>(null);
+  const rafRef   = useRef<number>(0);
+  const posRef   = useRef(0);
 
-  const advance = (next: number) => {
-    if (animState !== "idle") return;
-    setAnimState("exit");
-    timerRef.current = setTimeout(() => {
-      setCurrent(next);
-      setAnimState("enter");
-      timerRef.current = setTimeout(() => setAnimState("idle"), 400);
-    }, 350);
-  };
+  // On duplique la liste pour le défilement sans couture
+  const doubled = [...screens, ...screens];
 
-  // Auto-advance
+  // Hauteur d'un item (frame navigateur + gap) calculée dynamiquement
+  const ITEM_H  = 320; // hauteur approx en px d'une capture (à ajuster si nécessaire)
+  const GAP      = 20;
+  const STEP_H   = ITEM_H + GAP;
+  const totalH   = screens.length * STEP_H;
+
   useEffect(() => {
-    const id = setInterval(() => {
-      setCurrent(prev => {
-        const next = (prev + 1) % screens.length;
-        advance(next);
-        return prev; // setCurrent handled in advance
-      });
-    }, 3800);
-    return () => { clearInterval(id); if (timerRef.current) clearTimeout(timerRef.current); };
-  }, [screens.length]);
-
-  // Manual
-  const goTo = (idx: number) => {
-    if (idx === current || animState !== "idle") return;
-    advance(idx);
-  };
-
-  const active = screens[current];
-
-  // transform values par état
-  const exitStyle   = { opacity: 0, transform: "translateY(-18px) scale(0.97)" };
-  const enterStyle  = { opacity: 0, transform: "translateY(18px) scale(0.97)" };
-  const idleStyle   = { opacity: 1, transform: "translateY(0) scale(1)" };
-
-  const frameStyle = animState === "exit" ? exitStyle : animState === "enter" ? enterStyle : idleStyle;
+    let last = performance.now();
+    function tick(now: number) {
+      const dt = (now - last) / 1000;
+      last = now;
+      posRef.current += speed * dt;
+      if (posRef.current >= totalH) posRef.current -= totalH;
+      if (trackRef.current) {
+        trackRef.current.style.transform = `translateY(-${posRef.current}px)`;
+      }
+      rafRef.current = requestAnimationFrame(tick);
+    }
+    rafRef.current = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(rafRef.current);
+  }, [speed, totalH]);
 
   return (
-    <div>
-      {/* ── Indicateurs pill ── */}
-      <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:16, flexWrap:"wrap" }}>
-        {screens.map((s, idx) => {
-          const isActive = idx === current;
-          return (
-            <button key={idx} onClick={() => goTo(idx)}
-              style={{
-                display:"flex", alignItems:"center", gap:6,
-                padding:"7px 14px", borderRadius:99, border:"none",
-                fontFamily:"inherit", cursor:"pointer", fontSize:12, fontWeight:isActive?700:500,
-                background: isActive ? accentColor : "#F1F5F9",
-                color: isActive ? (accentColor === "#F7B500" ? "#0A2540" : "#fff") : "#64748B",
-                boxShadow: isActive ? `0 4px 14px ${accentColor}40` : "none",
-                transform: isActive ? "translateY(-1px)" : "translateY(0)",
-                transition:"all .25s cubic-bezier(.22,1,.36,1)",
-              }}>
-              <span style={{ fontSize:14 }}>{s.icon}</span>
-              {s.label}
-            </button>
-          );
-        })}
-        {/* Barre de progression */}
-        <div style={{ marginLeft:"auto", height:3, flex:"0 0 64px", background:"#F1F5F9", borderRadius:99, overflow:"hidden" }}>
-          <div style={{
-            height:"100%", background:accentColor, borderRadius:99,
-            width: animState==="idle" ? "0%" : "100%",
-            transition: animState==="idle" ? "none" : "width 3.8s linear",
-          }}/>
-        </div>
-      </div>
+    <div style={{
+      position: "relative",
+      overflow: "hidden",
+      height: ITEM_H * 1.35,   // fenêtre visible ≈ 1.35 capture
+      borderRadius: 18,
+    }}>
+      {/* Masques haut/bas pour l'effet fondu */}
+      <div style={{ position:"absolute", top:0, left:0, right:0, height:60, background:"linear-gradient(to bottom,#fff,transparent)", zIndex:10, pointerEvents:"none" }}/>
+      <div style={{ position:"absolute", bottom:0, left:0, right:0, height:60, background:"linear-gradient(to top,#fff,transparent)", zIndex:10, pointerEvents:"none" }}/>
 
-      {/* ── Fenêtre navigateur ── */}
-      <div style={{
-        background:"#F8FAFC", borderRadius:18, overflow:"hidden",
-        boxShadow:"0 20px 48px rgba(10,37,64,.14), 0 4px 16px rgba(10,37,64,.07)",
-        border:"1px solid #E2E8F0",
-        transition:"box-shadow .3s",
-      }}
-        onMouseEnter={e=>(e.currentTarget as HTMLDivElement).style.boxShadow="0 28px 56px rgba(10,37,64,.2)"}
-        onMouseLeave={e=>(e.currentTarget as HTMLDivElement).style.boxShadow="0 20px 48px rgba(10,37,64,.14), 0 4px 16px rgba(10,37,64,.07)"}
-      >
-        {/* Barre browser */}
-        <div style={{ background:"#F1F5F9", padding:"10px 14px", display:"flex", alignItems:"center", gap:8, borderBottom:"1px solid #E2E8F0" }}>
-          {["#FF5F57","#FFBC2E","#28C840"].map(c=><div key={c} style={{ width:10, height:10, borderRadius:"50%", background:c }}/>)}
-          <div style={{ flex:1, background:"#fff", borderRadius:7, padding:"4px 12px", fontSize:10, color:"#94A3B8", fontFamily:"'Fira Code',monospace", border:"1px solid #E2E8F0" }}>
-            beh-platform.tn/{active.label.toLowerCase().replace(/\s+/g,"-")}
+      {/* Track défilant */}
+      <div ref={trackRef} style={{ willChange:"transform" }}>
+        {doubled.map((s, idx) => (
+          <div key={idx} style={{ marginBottom: GAP }}>
+            {/* Barre navigateur */}
+            <div style={{
+              background: "#F1F5F9",
+              borderRadius: "14px 14px 0 0",
+              padding: "10px 14px",
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              borderBottom: "1px solid #E2E8F0",
+              border: "1px solid #E2E8F0",
+              borderBottomColor: "transparent",
+            }}>
+              {["#FF5F57","#FFBC2E","#28C840"].map(c => (
+                <div key={c} style={{ width:9, height:9, borderRadius:"50%", background:c }}/>
+              ))}
+              <div style={{ flex:1, background:"#fff", borderRadius:6, padding:"3px 10px", fontSize:10, color:"#94A3B8", fontFamily:"'Fira Code',monospace", border:"1px solid #E2E8F0" }}>
+                beh-platform.tn/{s.label.toLowerCase().replace(/\s+/g,"-")}
+              </div>
+              <div style={{ width:7, height:7, borderRadius:"50%", background:accentColor }}/>
+            </div>
+            {/* Capture */}
+            <div style={{
+              border: "1px solid #E2E8F0",
+              borderTop: "none",
+              borderRadius: "0 0 14px 14px",
+              overflow: "hidden",
+              boxShadow: "0 8px 28px rgba(10,37,64,.09)",
+            }}>
+              {s.comp}
+            </div>
+            {/* Label optionnel */}
+            {s.description && (
+              <div style={{ marginTop:8, display:"flex", alignItems:"center", gap:6, fontSize:11, color:"#6B7280" }}>
+                <span style={{ width:5, height:5, borderRadius:"50%", background:accentColor, display:"inline-block", flexShrink:0 }}/>
+                {s.description}
+              </div>
+            )}
           </div>
-          <div style={{ width:8, height:8, borderRadius:"50%", background:accentColor, boxShadow:`0 0 6px ${accentColor}` }}/>
-        </div>
-
-        {/* Capture avec animation */}
-        <div style={{
-          background:"#fff", padding:"0",
-          ...frameStyle,
-          transition:"opacity .35s cubic-bezier(.22,1,.36,1), transform .35s cubic-bezier(.22,1,.36,1)",
-        }}>
-          {active.comp}
-        </div>
-
-        {/* Footer description */}
-        {active.description && (
-          <div style={{ padding:"10px 16px", borderTop:"1px solid #E2E8F0", background:"#F8FAFC", fontSize:12, color:"#6B7280", display:"flex", alignItems:"center", gap:7 }}>
-            <span style={{ width:6, height:6, borderRadius:"50%", background:accentColor, flexShrink:0, display:"inline-block", boxShadow:`0 0 5px ${accentColor}` }}/>
-            {active.description}
-          </div>
-        )}
-      </div>
-
-      {/* ── Dots ── */}
-      <div style={{ display:"flex", justifyContent:"center", gap:7, marginTop:14 }}>
-        {screens.map((_,idx)=>(
-          <button key={idx} onClick={()=>goTo(idx)} style={{
-            width: idx===current ? 24 : 7, height:7, borderRadius:99,
-            background: idx===current ? accentColor : "#D1D5DB",
-            border:"none", cursor:"pointer", padding:0,
-            transition:"all .3s cubic-bezier(.22,1,.36,1)",
-          }}/>
         ))}
       </div>
     </div>
   );
 }
 
-// ─── PAGE ─────────────────────────────────────────────────────────────────────
+// ── PlatformBlock ─────────────────────────────────────────────────────────────
+function PlatformBlock({
+  num, badge, badgeBg, badgeText, title,
+  problems, results,
+  screens, accentColor,
+  reverse = false,
+}: {
+  num: string; badge: string; badgeBg: string; badgeText: string; title: string;
+  problems: string[]; results: string[];
+  screens: { label: string; icon: string; comp: React.ReactNode; description?: string }[];
+  accentColor: string;
+  reverse?: boolean;
+}) {
+  const textCol = (
+    <div style={{ display:"flex", flexDirection:"column", gap:24, justifyContent:"center" }}>
+      <div style={{ display:"flex", alignItems:"center", gap:14 }}>
+        <span style={{ fontWeight:900, fontSize:52, color:"#E2E8F0", lineHeight:1 }}>{num}</span>
+        <div>
+          <span style={{ background:badgeBg, color:badgeText, fontSize:11, fontWeight:700, padding:"4px 12px", borderRadius:99, letterSpacing:"1px", textTransform:"uppercase" as const }}>
+            {badge}
+          </span>
+          <h3 style={{ fontWeight:900, fontSize:"clamp(22px,2.5vw,30px)", color:"#0A2540", margin:"8px 0 0", lineHeight:1.15 }}>
+            {title}
+          </h3>
+        </div>
+      </div>
+
+      {/* Problèmes */}
+      <div style={{ background:"#FFF5F5", border:"1px solid #FEE2E2", borderRadius:14, padding:"18px 20px" }}>
+        <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:12 }}>
+          <FaExclamationTriangle size={14} color="#EF4444"/>
+          <span style={{ fontWeight:700, fontSize:13, color:"#DC2626" }}>Problèmes résolus</span>
+        </div>
+        <div style={{ display:"flex", flexDirection:"column", gap:7 }}>
+          {problems.map((p,i) => (
+            <div key={i} style={{ display:"flex", alignItems:"flex-start", gap:8, fontSize:13, color:"#374151" }}>
+              <span style={{ color:"#EF4444", fontWeight:700, flexShrink:0, marginTop:1 }}>✕</span>{p}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Résultats */}
+      <div style={{ background:"#F0FDF4", border:"1px solid #BBF7D0", borderRadius:14, padding:"18px 20px" }}>
+        <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:12 }}>
+          <FaCheckCircle size={14} color="#10B981"/>
+          <span style={{ fontWeight:700, fontSize:13, color:"#059669" }}>Résultats obtenus</span>
+        </div>
+        <div style={{ display:"flex", flexDirection:"column", gap:7 }}>
+          {results.map((r,i) => (
+            <div key={i} style={{ display:"flex", alignItems:"flex-start", gap:8, fontSize:13, color:"#374151" }}>
+              <span style={{ color:"#10B981", fontWeight:700, flexShrink:0, marginTop:1 }}>✓</span>{r}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Boutons */}
+      <div style={{ display:"flex", gap:14, marginTop:4 }}>
+        <Link href="/inscription?demo=1" style={{ flex:1 }}>
+          <button
+            style={{ width:"100%", background:"#F7B500", color:"#0A2540", border:"none", borderRadius:12, padding:"14px 0", fontWeight:800, fontSize:14, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:8, transition:"all .2s" }}
+            onMouseEnter={e => { const b = e.currentTarget as HTMLButtonElement; b.style.transform="translateY(-3px)"; b.style.boxShadow="0 8px 20px rgba(247,181,0,.3)"; }}
+            onMouseLeave={e => { const b = e.currentTarget as HTMLButtonElement; b.style.transform="translateY(0)"; b.style.boxShadow="none"; }}>
+            <FaDesktop size={14}/> Réserver une démo
+          </button>
+        </Link>
+        <Link href="/inscription?essai=1" style={{ flex:1 }}>
+          <button
+            style={{ width:"100%", background:"#0A2540", color:"#fff", border:"1px solid rgba(247,181,0,0.3)", borderRadius:12, padding:"14px 0", fontWeight:800, fontSize:14, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:8, transition:"all .2s" }}
+            onMouseEnter={e => { const b = e.currentTarget as HTMLButtonElement; b.style.transform="translateY(-3px)"; b.style.background="#F7B500"; b.style.color="#0A2540"; }}
+            onMouseLeave={e => { const b = e.currentTarget as HTMLButtonElement; b.style.transform="translateY(0)"; b.style.background="#0A2540"; b.style.color="#fff"; }}>
+            <FaGift size={14}/> Essai gratuit 7 jours
+          </button>
+        </Link>
+      </div>
+    </div>
+  );
+
+  const scrollCol = (
+    <AutoScrollList screens={screens} accentColor={accentColor} speed={28}/>
+  );
+
+  return (
+    <FadeUp delay={0.05}>
+      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:64, alignItems:"center", padding:"72px 0", borderBottom:"1px solid #F1F5F9" }}>
+        {reverse ? <>{scrollCol}{textCol}</> : <>{textCol}{scrollCol}</>}
+      </div>
+    </FadeUp>
+  );
+}
+
+// ── PAGE ──────────────────────────────────────────────────────────────────────
 export default function NosPlateformesPage() {
-  const [navOpen, setNavOpen] = useState(false);
-  const [codeOffset, setCodeOffset] = useState(0);
+  const [navOpen,     setNavOpen]     = useState(false);
+  const [codeOffset,  setCodeOffset]  = useState(0);
 
   useEffect(() => {
     const interval = setInterval(() => setCodeOffset(prev => (prev + 1) % CODE_LINES.length), 350);
@@ -550,7 +613,7 @@ export default function NosPlateformesPage() {
         .drop-item:hover{background:#FFFBEB;color:#F7B500;}
       `}</style>
 
-      {/* HEADER */}
+      {/* ── HEADER ── */}
       <header style={{ background:"#fff", position:"sticky", top:0, zIndex:90, borderBottom:"1px solid #E5E7EB" }}>
         <div style={{ maxWidth:1200, margin:"0 auto", padding:"0 24px", height:70, display:"flex", alignItems:"center", justifyContent:"space-between" }}>
           <Link href="/" style={{ display:"flex", alignItems:"center", gap:10, textDecoration:"none" }}>
@@ -570,7 +633,7 @@ export default function NosPlateformesPage() {
               <span style={{ color:"#F7B500", fontWeight:700, fontSize:14, cursor:"pointer" }}>Services ▾</span>
               {navOpen && (
                 <ul style={{ position:"absolute", top:"calc(100% + 8px)", left:0, background:"#fff", border:"1px solid #E5E7EB", borderRadius:12, listStyle:"none", padding:"6px 0", zIndex:200, minWidth:200, boxShadow:"0 12px 36px rgba(0,0,0,0.1)", animation:"fadeSlideDown .2s ease" }}>
-                  {NAV.map(s=><li key={s.slug}><Link href={`/services/${s.slug}`} className="drop-item">{s.label}</Link></li>)}
+                  {NAV.map(s => <li key={s.slug}><Link href={`/services/${s.slug}`} className="drop-item">{s.label}</Link></li>)}
                 </ul>
               )}
             </div>
@@ -585,7 +648,7 @@ export default function NosPlateformesPage() {
         </div>
       </header>
 
-      {/* HERO */}
+      {/* ── HERO ── */}
       <section style={{ background:"linear-gradient(135deg,#0B1628 0%,#0d1f3c 55%,#0B1628 100%)", padding:"80px 24px 100px", position:"relative", overflow:"hidden" }}>
         <div className="diamond" style={{ width:520, height:520, right:-140, top:"50%", background:"rgba(247,181,0,0.04)", border:"1px solid rgba(247,181,0,0.08)", borderRadius:24, animationDelay:"0s" }}/>
         <div className="diamond" style={{ width:300, height:300, right:150, top:"25%", background:"rgba(247,181,0,0.025)", border:"1px solid rgba(247,181,0,0.05)", borderRadius:16, animationDelay:"-3s" }}/>
@@ -601,6 +664,9 @@ export default function NosPlateformesPage() {
                 <div style={{ width:56, height:56, borderRadius:16, background:"rgba(247,181,0,0.12)", border:"1px solid rgba(247,181,0,0.25)", display:"flex", alignItems:"center", justifyContent:"center" }}>
                   <FaDesktop color="#F7B500" size={22}/>
                 </div>
+                <span style={{ display:"inline-flex", alignItems:"center", gap:7, background:"rgba(247,181,0,0.1)", border:"1px solid rgba(247,181,0,0.3)", borderRadius:99, padding:"5px 14px", fontSize:11, fontWeight:700, color:"#F7B500", letterSpacing:1 }}>
+                  <span className="live-dot"/> LIVE
+                </span>
               </div>
               <h1 style={{ animation:"heroIn .8s .2s both", fontWeight:900, fontSize:"clamp(36px,5vw,60px)", lineHeight:1.05, color:"#F1F5F9", margin:"0 0 18px" }}>
                 Plateformes<br/><span style={{ color:"#F7B500" }}>personnalisées</span>
@@ -610,9 +676,10 @@ export default function NosPlateformesPage() {
               </p>
               <div style={{ animation:"heroIn .8s .5s both", display:"flex", gap:12, flexWrap:"wrap" }}>
                 <Link href="/inscription"><button className="btn-primary">Réserver une démo <FaArrowRight size={12}/></button></Link>
+                <Link href="/contact"><button style={{ display:"inline-flex", alignItems:"center", gap:8, background:"rgba(255,255,255,0.07)", border:"1px solid rgba(255,255,255,0.15)", color:"#E2E8F0", padding:"13px 26px", borderRadius:12, fontWeight:700, fontSize:14, cursor:"pointer", fontFamily:"inherit" }}>Pack à partir de 50 HT/mois</button></Link>
               </div>
               <div style={{ animation:"heroIn .8s .65s both", display:"flex", gap:14, marginTop:28 }}>
-                {[["94%","Satisfaction","#F7B500"],["24/7","Support","#F7B500"]].map(([v,l,c])=>(
+                {[["7j","Essai gratuit","#F7B500"],["94%","Satisfaction","#F7B500"],["24/7","Support","#F7B500"],["3","Plateformes","#F7B500"]].map(([v,l,c]) => (
                   <div key={String(l)} style={{ background:"rgba(255,255,255,0.05)", border:"1px solid rgba(255,255,255,0.08)", borderRadius:12, padding:"14px 10px", textAlign:"center", flex:1 }}>
                     <div style={{ fontSize:18, fontWeight:900, color:c as string, lineHeight:1 }}>{v}</div>
                     <div style={{ fontSize:9, color:"rgba(226,232,240,0.35)", fontWeight:600, marginTop:4 }}>{l}</div>
@@ -620,23 +687,25 @@ export default function NosPlateformesPage() {
                 ))}
               </div>
             </div>
+            {/* Code animé hero */}
             <div style={{ animation:"heroIn .9s .3s both" }}>
               <div style={{ background:"#0D1A2D", border:"1px solid rgba(255,255,255,0.1)", borderRadius:16, overflow:"hidden" }}>
                 <div style={{ background:"#0A1929", padding:"11px 16px", display:"flex", alignItems:"center", gap:8, borderBottom:"1px solid rgba(255,255,255,0.07)" }}>
-                  {["#FF5F57","#FFBC2E","#28C840"].map(c=><div key={c} style={{ width:10, height:10, borderRadius:"50%", background:c }}/>)}
+                  {["#FF5F57","#FFBC2E","#28C840"].map(c => <div key={c} style={{ width:10, height:10, borderRadius:"50%", background:c }}/>)}
                   <span style={{ fontFamily:"'Fira Code',monospace", fontSize:11, color:"rgba(255,255,255,0.3)", marginLeft:8 }}>dashboard.js — BEH Platform</span>
                 </div>
                 <div className="code-font" style={{ padding:16, height:240, overflow:"hidden", position:"relative" }}>
-                  {CODE_LINES.slice(codeOffset, codeOffset+9).concat(CODE_LINES.slice(0, Math.max(0,9-(CODE_LINES.length-codeOffset)))).map((line,i)=>(
+                  {CODE_LINES.slice(codeOffset, codeOffset+9).concat(CODE_LINES.slice(0, Math.max(0,9-(CODE_LINES.length-codeOffset)))).map((line,i) => (
                     <div key={i} style={{ marginBottom:2, opacity:i===0?0.3:i===8?0.3:1, transition:"opacity .3s" }}>
                       <span style={{ color:"rgba(255,255,255,0.2)", marginRight:14, display:"inline-block", minWidth:20, textAlign:"right", userSelect:"none" }}>{line.ln}</span>
-                      {line.parts.map((p,pi)=><span key={pi} style={{ color:COLOR_MAP[p.t]||"#ABB2BF" }}>{p.v}</span>)}
+                      {line.parts.map((p,pi) => <span key={pi} style={{ color:COLOR_MAP[p.t]||"#ABB2BF" }}>{p.v}</span>)}
                     </div>
                   ))}
                   <div style={{ position:"absolute", bottom:0, left:0, right:0, height:40, background:"linear-gradient(transparent,#0D1A2D)", pointerEvents:"none" }}/>
                 </div>
                 <div style={{ background:"#0A1929", padding:"9px 16px", borderTop:"1px solid rgba(255,255,255,0.07)", display:"flex", alignItems:"center", gap:8 }}>
                   <span className="live-dot"/>
+                  <span style={{ fontFamily:"'Fira Code',monospace", fontSize:11, color:"#F7B500" }}>✓ Connecté · 3 modules actifs · 0 erreurs</span>
                 </div>
               </div>
             </div>
@@ -644,7 +713,7 @@ export default function NosPlateformesPage() {
         </div>
       </section>
 
-      {/* PLATEFORMES */}
+      {/* ── SECTION PLATEFORMES ── */}
       <section style={{ background:"#fff", padding:"0 24px" }}>
         <div style={{ maxWidth:1200, margin:"0 auto" }}>
           <FadeUp>
@@ -658,240 +727,87 @@ export default function NosPlateformesPage() {
             </div>
           </FadeUp>
 
-          {/* ── ERP (ancien PlatformBlock) ── */}
-          <FadeUp delay={0}>
-            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:64, alignItems:"start", padding:"72px 0", borderBottom:"1px solid #F1F5F9" }}>
-              {/* Texte à gauche */}
-              <div style={{ display:"flex", flexDirection:"column", gap:24, justifyContent:"center" }}>
-                <div style={{ display:"flex", alignItems:"center", gap:14 }}>
-                  <span style={{ fontWeight:900, fontSize:52, color:"#E2E8F0", lineHeight:1 }}>01</span>
-                  <div>
-                    <span style={{ background:"#F7B500", color:"#0A2540", fontSize:11, fontWeight:700, padding:"4px 12px", borderRadius:99, letterSpacing:"1px", textTransform:"uppercase" as const }}>ERP Expert</span>
-                    <h3 style={{ fontWeight:900, fontSize:"clamp(24px,2.5vw,32px)", color:"#0A2540", margin:"8px 0 0", lineHeight:1.1 }}>Gestion ERP & Ressources</h3>
-                  </div>
-                </div>
-                <div style={{ background:"#FFF5F5", border:"1px solid #FEE2E2", borderRadius:14, padding:"18px 20px" }}>
-                  <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:12 }}>
-                    <FaExclamationTriangle size={14} color="#EF4444"/>
-                    <span style={{ fontWeight:700, fontSize:13, color:"#DC2626" }}>Problèmes résolus</span>
-                  </div>
-                  <div style={{ display:"flex", flexDirection:"column", gap:7 }}>
-                    {[
-                      "Données éparpillées entre plusieurs outils non connectés",
-                      "Absence de vue globale sur l'activité financière",
-                      "Processus comptables et RH entièrement manuels",
-                      "Impossibilité de suivre le stock en temps réel",
-                    ].map((p,i)=>(
-                      <div key={i} style={{ display:"flex", alignItems:"flex-start", gap:8, fontSize:13, color:"#374151" }}>
-                        <span style={{ color:"#EF4444", fontWeight:700, flexShrink:0, marginTop:1 }}>✕</span>{p}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                <div style={{ background:"#F0FDF4", border:"1px solid #BBF7D0", borderRadius:14, padding:"18px 20px" }}>
-                  <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:12 }}>
-                    <FaCheckCircle size={14} color="#10B981"/>
-                    <span style={{ fontWeight:700, fontSize:13, color:"#059669" }}>Résultats obtenus</span>
-                  </div>
-                  <div style={{ display:"flex", flexDirection:"column", gap:7 }}>
-                    {[
-                      "Centralisation complète : ventes, stock, RH, compta en un seul outil",
-                      "Réduction de 60% du temps de traitement administratif",
-                      "Tableaux de bord financiers automatiques en temps réel",
-                      "Productivité globale augmentée de 45% dès le 1er mois",
-                    ].map((r,i)=>(
-                      <div key={i} style={{ display:"flex", alignItems:"flex-start", gap:8, fontSize:13, color:"#374151" }}>
-                        <span style={{ color:"#10B981", fontWeight:700, flexShrink:0, marginTop:1 }}>✓</span>{r}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                <div style={{ display:"flex", gap:14, marginTop:4 }}>
-                  <Link href="/inscription?demo=1" style={{ flex:1 }}>
-                    <button style={{ width:"100%", background:"#F7B500", color:"#0A2540", border:"none", borderRadius:12, padding:"14px 0", fontWeight:800, fontSize:14, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:8, transition:"all .2s" }}
-                      onMouseEnter={e=>{ (e.currentTarget as HTMLButtonElement).style.transform="translateY(-3px)"; (e.currentTarget as HTMLButtonElement).style.boxShadow="0 8px 20px rgba(247,181,0,.3)"; }}
-                      onMouseLeave={e=>{ (e.currentTarget as HTMLButtonElement).style.transform="translateY(0)"; (e.currentTarget as HTMLButtonElement).style.boxShadow="none"; }}>
-                      <FaDesktop size={14}/> Réserver une démo
-                    </button>
-                  </Link>
-                  <Link href="/inscription?essai=1" style={{ flex:1 }}>
-                    <button style={{ width:"100%", background:"#0A2540", color:"#fff", border:"1px solid rgba(247,181,0,0.3)", borderRadius:12, padding:"14px 0", fontWeight:800, fontSize:14, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:8, transition:"all .2s" }}
-                      onMouseEnter={e=>{ const b=e.currentTarget as HTMLButtonElement; b.style.transform="translateY(-3px)"; b.style.background="#F7B500"; b.style.color="#0A2540"; }}
-                      onMouseLeave={e=>{ const b=e.currentTarget as HTMLButtonElement; b.style.transform="translateY(0)"; b.style.background="#0A2540"; b.style.color="#fff"; }}>
-                      <FaGift size={14}/> Essai gratuit 7 jours
-                    </button>
-                  </Link>
-                </div>
-              </div>
-              {/* Carrousel à droite */}
-              <ScreenCarousel
-                screens={[
-                  { label:"Dashboard",    icon:"📊", comp:<ScreenERPMain/>,  description:"Vue d'ensemble KPI et activités temps réel" },
-                  { label:"Produits",     icon:"📦", comp:<ScreenERPList/>,  description:"Catalogue produits, stocks et fournisseurs" },
-                  { label:"Statistiques", icon:"📈", comp:<ScreenERPStats/>, description:"Rapports financiers et indicateurs mensuels" },
-                ]}
-                accentColor="#F7B500"
-              />
-            </div>
-          </FadeUp>
+          {/* ── ERP ── */}
+          <PlatformBlock
+            num="01"
+            badge="ERP Expert"    badgeBg="#F7B500" badgeText="#0A2540"
+            title="Gestion ERP & Ressources"
+            problems={[
+              "Données éparpillées entre plusieurs outils non connectés",
+              "Absence de vue globale sur l'activité financière",
+              "Processus comptables et RH entièrement manuels",
+              "Impossibilité de suivre le stock en temps réel",
+            ]}
+            results={[
+              "Centralisation complète : ventes, stock, RH, compta en un seul outil",
+              "Réduction de 60% du temps de traitement administratif",
+              "Tableaux de bord financiers automatiques en temps réel",
+              "Productivité globale augmentée de 45% dès le 1er mois",
+            ]}
+            screens={[
+              { label:"Dashboard",    icon:"📊", comp:<ScreenERPMain/>,  description:"Vue d'ensemble KPI et activités temps réel" },
+              { label:"Produits",     icon:"📦", comp:<ScreenERPList/>,  description:"Catalogue produits, stocks et fournisseurs" },
+              { label:"Statistiques", icon:"📈", comp:<ScreenERPStats/>, description:"Rapports financiers et indicateurs mensuels" },
+            ]}
+            accentColor="#F7B500"
+            reverse={false}
+          />
 
-          {/* ── CRM (reverse layout) ── */}
-          <FadeUp delay={0.05}>
-            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:64, alignItems:"start", padding:"72px 0", borderBottom:"1px solid #F1F5F9" }}>
-              {/* Carrousel à gauche */}
-              <ScreenCarousel
-                screens={[
-                  { label:"Dashboard", icon:"🏠", comp:<ScreenCRMMain/>,    description:"Vue globale des clients et activités" },
-                  { label:"Objectifs", icon:"🎯", comp:<ScreenCRMObjectifs/>,description:"Progression des objectifs commerciaux" },
-                  { label:"KPI Live",  icon:"⚡", comp:<ScreenCRMKPI/>,     description:"Indicateurs de performance en temps réel" },
-                ]}
-                accentColor="#3B82F6"
-              />
-              {/* Texte à droite */}
-              <div style={{ display:"flex", flexDirection:"column", gap:24, justifyContent:"center" }}>
-                <div style={{ display:"flex", alignItems:"center", gap:14 }}>
-                  <span style={{ fontWeight:900, fontSize:52, color:"#E2E8F0", lineHeight:1 }}>02</span>
-                  <div>
-                    <span style={{ background:"#0A2540", color:"#fff", fontSize:11, fontWeight:700, padding:"4px 12px", borderRadius:99, letterSpacing:"1px", textTransform:"uppercase" as const }}>CRM Expert</span>
-                    <h3 style={{ fontWeight:900, fontSize:"clamp(24px,2.5vw,32px)", color:"#0A2540", margin:"8px 0 0", lineHeight:1.1 }}>CRM & Relation Client</h3>
-                  </div>
-                </div>
-                <div style={{ background:"#FFF5F5", border:"1px solid #FEE2E2", borderRadius:14, padding:"18px 20px" }}>
-                  <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:12 }}>
-                    <FaExclamationTriangle size={14} color="#EF4444"/>
-                    <span style={{ fontWeight:700, fontSize:13, color:"#DC2626" }}>Problèmes résolus</span>
-                  </div>
-                  <div style={{ display:"flex", flexDirection:"column", gap:7 }}>
-                    {[
-                      "Suivi client non structuré et données perdues",
-                      "Absence d'archivage automatique des séances et échanges",
-                      "Objectifs commerciaux jamais suivis ni mesurés",
-                      "Perte d'opportunités faute de relance et de traçabilité",
-                    ].map((p,i)=>(
-                      <div key={i} style={{ display:"flex", alignItems:"flex-start", gap:8, fontSize:13, color:"#374151" }}>
-                        <span style={{ color:"#EF4444", fontWeight:700, flexShrink:0, marginTop:1 }}>✕</span>{p}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                <div style={{ background:"#F0FDF4", border:"1px solid #BBF7D0", borderRadius:14, padding:"18px 20px" }}>
-                  <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:12 }}>
-                    <FaCheckCircle size={14} color="#10B981"/>
-                    <span style={{ fontWeight:700, fontSize:13, color:"#059669" }}>Résultats obtenus</span>
-                  </div>
-                  <div style={{ display:"flex", flexDirection:"column", gap:7 }}>
-                    {[
-                      "+40% de fidélisation grâce au suivi personnalisé automatisé",
-                      "Archivage complet des clients, séances et historiques 24/7",
-                      "Tableau de bord objectifs mis à jour en temps réel",
-                      "+25% de ventes additionnelles grâce aux alertes de relance",
-                    ].map((r,i)=>(
-                      <div key={i} style={{ display:"flex", alignItems:"flex-start", gap:8, fontSize:13, color:"#374151" }}>
-                        <span style={{ color:"#10B981", fontWeight:700, flexShrink:0, marginTop:1 }}>✓</span>{r}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                <div style={{ display:"flex", gap:14, marginTop:4 }}>
-                  <Link href="/inscription?demo=1" style={{ flex:1 }}>
-                    <button style={{ width:"100%", background:"#F7B500", color:"#0A2540", border:"none", borderRadius:12, padding:"14px 0", fontWeight:800, fontSize:14, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:8, transition:"all .2s" }}
-                      onMouseEnter={e=>{ (e.currentTarget as HTMLButtonElement).style.transform="translateY(-3px)"; (e.currentTarget as HTMLButtonElement).style.boxShadow="0 8px 20px rgba(247,181,0,.3)"; }}
-                      onMouseLeave={e=>{ (e.currentTarget as HTMLButtonElement).style.transform="translateY(0)"; (e.currentTarget as HTMLButtonElement).style.boxShadow="none"; }}>
-                      <FaDesktop size={14}/> Réserver une démo
-                    </button>
-                  </Link>
-                  <Link href="/inscription?essai=1" style={{ flex:1 }}>
-                    <button style={{ width:"100%", background:"#0A2540", color:"#fff", border:"1px solid rgba(247,181,0,0.3)", borderRadius:12, padding:"14px 0", fontWeight:800, fontSize:14, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:8, transition:"all .2s" }}
-                      onMouseEnter={e=>{ const b=e.currentTarget as HTMLButtonElement; b.style.transform="translateY(-3px)"; b.style.background="#F7B500"; b.style.color="#0A2540"; }}
-                      onMouseLeave={e=>{ const b=e.currentTarget as HTMLButtonElement; b.style.transform="translateY(0)"; b.style.background="#0A2540"; b.style.color="#fff"; }}>
-                      <FaGift size={14}/> Essai gratuit 7 jours
-                    </button>
-                  </Link>
-                </div>
-              </div>
-            </div>
-          </FadeUp>
+          {/* ── CRM ── */}
+          <PlatformBlock
+            num="02"
+            badge="CRM Expert"    badgeBg="#0A2540" badgeText="#fff"
+            title="CRM & Relation Client"
+            problems={[
+              "Suivi client non structuré et données perdues",
+              "Absence d'archivage automatique des séances et échanges",
+              "Objectifs commerciaux jamais suivis ni mesurés",
+              "Perte d'opportunités faute de relance et de traçabilité",
+            ]}
+            results={[
+              "+40% de fidélisation grâce au suivi personnalisé automatisé",
+              "Archivage complet des clients, séances et historiques 24/7",
+              "Tableau de bord objectifs mis à jour en temps réel",
+              "+25% de ventes additionnelles grâce aux alertes de relance",
+            ]}
+            screens={[
+              { label:"Dashboard", icon:"🏠", comp:<ScreenCRMMain/>,     description:"Vue globale des clients et activités" },
+              { label:"Objectifs", icon:"🎯", comp:<ScreenCRMObjectifs/>,description:"Progression des objectifs commerciaux" },
+              { label:"KPI Live",  icon:"⚡", comp:<ScreenCRMKPI/>,      description:"Indicateurs de performance en temps réel" },
+            ]}
+            accentColor="#3B82F6"
+            reverse={true}
+          />
 
           {/* ── Gestion Projets ── */}
-          <FadeUp delay={0.05}>
-            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:64, alignItems:"start", padding:"72px 0", borderBottom:"1px solid #F1F5F9" }}>
-              {/* Texte à gauche */}
-              <div style={{ display:"flex", flexDirection:"column", gap:24, justifyContent:"center" }}>
-                <div style={{ display:"flex", alignItems:"center", gap:14 }}>
-                  <span style={{ fontWeight:900, fontSize:52, color:"#E2E8F0", lineHeight:1 }}>03</span>
-                  <div>
-                    <span style={{ background:"#F7B500", color:"#0A2540", fontSize:11, fontWeight:700, padding:"4px 12px", borderRadius:99, letterSpacing:"1px", textTransform:"uppercase" as const }}>Projets Expert</span>
-                    <h3 style={{ fontWeight:900, fontSize:"clamp(24px,2.5vw,32px)", color:"#0A2540", margin:"8px 0 0", lineHeight:1.1 }}>Gestion de Projets & Équipes</h3>
-                  </div>
-                </div>
-                <div style={{ background:"#FFF5F5", border:"1px solid #FEE2E2", borderRadius:14, padding:"18px 20px" }}>
-                  <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:12 }}>
-                    <FaExclamationTriangle size={14} color="#EF4444"/>
-                    <span style={{ fontWeight:700, fontSize:13, color:"#DC2626" }}>Problèmes résolus</span>
-                  </div>
-                  <div style={{ display:"flex", flexDirection:"column", gap:7 }}>
-                    {[
-                      "Suivi de projet inefficace, tâches perdues dans les emails",
-                      "Communication d'équipe dispersée sur plusieurs canaux",
-                      "Délais non respectés et livrables jamais documentés",
-                      "Aucune visibilité sur l'avancement réel des missions",
-                    ].map((p,i)=>(
-                      <div key={i} style={{ display:"flex", alignItems:"flex-start", gap:8, fontSize:13, color:"#374151" }}>
-                        <span style={{ color:"#EF4444", fontWeight:700, flexShrink:0, marginTop:1 }}>✕</span>{p}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                <div style={{ background:"#F0FDF4", border:"1px solid #BBF7D0", borderRadius:14, padding:"18px 20px" }}>
-                  <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:12 }}>
-                    <FaCheckCircle size={14} color="#10B981"/>
-                    <span style={{ fontWeight:700, fontSize:13, color:"#059669" }}>Résultats obtenus</span>
-                  </div>
-                  <div style={{ display:"flex", flexDirection:"column", gap:7 }}>
-                    {[
-                      "Livraison des projets avec 30% de délai en moins",
-                      "Communication et documents centralisés dans un seul espace",
-                      "Taux de satisfaction des équipes augmenté de +50%",
-                      "Reporting automatique hebdomadaire pour les dirigeants",
-                    ].map((r,i)=>(
-                      <div key={i} style={{ display:"flex", alignItems:"flex-start", gap:8, fontSize:13, color:"#374151" }}>
-                        <span style={{ color:"#10B981", fontWeight:700, flexShrink:0, marginTop:1 }}>✓</span>{r}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                <div style={{ display:"flex", gap:14, marginTop:4 }}>
-                  <Link href="/inscription?demo=1" style={{ flex:1 }}>
-                    <button style={{ width:"100%", background:"#F7B500", color:"#0A2540", border:"none", borderRadius:12, padding:"14px 0", fontWeight:800, fontSize:14, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:8, transition:"all .2s" }}
-                      onMouseEnter={e=>{ (e.currentTarget as HTMLButtonElement).style.transform="translateY(-3px)"; (e.currentTarget as HTMLButtonElement).style.boxShadow="0 8px 20px rgba(247,181,0,.3)"; }}
-                      onMouseLeave={e=>{ (e.currentTarget as HTMLButtonElement).style.transform="translateY(0)"; (e.currentTarget as HTMLButtonElement).style.boxShadow="none"; }}>
-                      <FaDesktop size={14}/> Réserver une démo
-                    </button>
-                  </Link>
-                  <Link href="/inscription?essai=1" style={{ flex:1 }}>
-                    <button style={{ width:"100%", background:"#0A2540", color:"#fff", border:"1px solid rgba(247,181,0,0.3)", borderRadius:12, padding:"14px 0", fontWeight:800, fontSize:14, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:8, transition:"all .2s" }}
-                      onMouseEnter={e=>{ const b=e.currentTarget as HTMLButtonElement; b.style.transform="translateY(-3px)"; b.style.background="#F7B500"; b.style.color="#0A2540"; }}
-                      onMouseLeave={e=>{ const b=e.currentTarget as HTMLButtonElement; b.style.transform="translateY(0)"; b.style.background="#0A2540"; b.style.color="#fff"; }}>
-                      <FaGift size={14}/> Essai gratuit 7 jours
-                    </button>
-                  </Link>
-                </div>
-              </div>
-              {/* Carrousel à droite */}
-              <ScreenCarousel
-                screens={[
-                  { label:"Kanban",   icon:"🗂️", comp:<ScreenGestionMain/>,     description:"Organisation visuelle des tâches par statut" },
-                  { label:"Planning", icon:"📅", comp:<ScreenGestionTimeline/>, description:"Chronologie Gantt des projets et jalons" },
-                  { label:"Analyses", icon:"📊", comp:<ScreenGestionStats/>,    description:"Mesures de performance et livraisons" },
-                ]}
-                accentColor="#10B981"
-              />
-            </div>
-          </FadeUp>
+          <PlatformBlock
+            num="03"
+            badge="Projets Expert" badgeBg="#F7B500" badgeText="#0A2540"
+            title="Gestion de Projets & Équipes"
+            problems={[
+              "Suivi de projet inefficace, tâches perdues dans les emails",
+              "Communication d'équipe dispersée sur plusieurs canaux",
+              "Délais non respectés et livrables jamais documentés",
+              "Aucune visibilité sur l'avancement réel des missions",
+            ]}
+            results={[
+              "Livraison des projets avec 30% de délai en moins",
+              "Communication et documents centralisés dans un seul espace",
+              "Taux de satisfaction des équipes augmenté de +50%",
+              "Reporting automatique hebdomadaire pour les dirigeants",
+            ]}
+            screens={[
+              { label:"Kanban",   icon:"🗂️", comp:<ScreenGestionMain/>,     description:"Organisation visuelle des tâches par statut" },
+              { label:"Planning", icon:"📅", comp:<ScreenGestionTimeline/>, description:"Chronologie Gantt des projets et jalons" },
+              { label:"Analyses", icon:"📊", comp:<ScreenGestionStats/>,    description:"Mesures de performance et livraisons" },
+            ]}
+            accentColor="#10B981"
+            reverse={false}
+          />
         </div>
       </section>
 
-      {/* AUTRES SERVICES */}
+      {/* ── AUTRES SERVICES ── */}
       <section style={{ background:"#fff", padding:"0 24px 80px" }}>
         <div style={{ maxWidth:1200, margin:"0 auto" }}>
           <FadeUp>
@@ -906,10 +822,10 @@ export default function NosPlateformesPage() {
             </div>
             <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:18 }}>
               {[
-                { slug:"audit-sur-site", icon:<FaSearchPlus/>, color:"#3B82F6", title:"Audit sur site", badge:"Terrain", desc:"Diagnostic complet de vos processus sur site." },
-                { slug:"consulting",     icon:<FaChartLine/>,  color:"#8B5CF6", title:"Consulting",     badge:"Stratégie", desc:"Structurez et optimisez votre entreprise." },
-                { slug:"formations",     icon:<FaGraduationCap/>, color:"#F7B500", title:"Formations", badge:"Certif.", desc:"Montez en compétence avec nos experts." },
-              ].map((s,i)=>(
+                { slug:"audit-sur-site", icon:<FaSearchPlus/>,    color:"#3B82F6", title:"Audit sur site", badge:"Terrain",  desc:"Diagnostic complet de vos processus sur site." },
+                { slug:"consulting",     icon:<FaChartLine/>,      color:"#8B5CF6", title:"Consulting",     badge:"Stratégie",desc:"Structurez et optimisez votre entreprise." },
+                { slug:"formations",     icon:<FaGraduationCap/>,  color:"#F7B500", title:"Formations",     badge:"Certif.",  desc:"Montez en compétence avec nos experts." },
+              ].map((s,i) => (
                 <Link key={i} href={`/services/${s.slug}`} className="oc">
                   <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14 }}>
                     <div style={{ width:44, height:44, borderRadius:12, background:`${s.color}15`, color:s.color, display:"flex", alignItems:"center", justifyContent:"center", fontSize:18 }}>{s.icon}</div>
