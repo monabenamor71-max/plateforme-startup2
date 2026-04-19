@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Request, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Delete, Body, Param, Request, UseGuards } from '@nestjs/common';
 import { MessagesService } from './messages.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
@@ -40,5 +40,14 @@ export class MessagesController {
   @UseGuards(JwtAuthGuard)
   markAsRead(@Request() req: any, @Param('senderId') senderId: number) {
     return this.messagesService.markAsRead(req.user.id, Number(senderId));
+  }
+
+  // ✅ AJOUT : Supprimer un message (seulement si l'utilisateur est l'expéditeur)
+  @Delete(':id')
+  @UseGuards(JwtAuthGuard)
+  async deleteMessage(@Param('id') id: string, @Request() req: any) {
+    const userId = req.user.id;
+    const isAdmin = req.user.role === 'admin';
+    return this.messagesService.deleteMessage(+id, userId, isAdmin);
   }
 }

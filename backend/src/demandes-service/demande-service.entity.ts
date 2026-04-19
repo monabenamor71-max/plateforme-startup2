@@ -38,6 +38,10 @@ export class DemandeService {
   @Column({ nullable: true })
   telephone: string;
 
+  // ⭐ NOUVEAU CHAMP : type d'application (mobile, web, desktop)
+  @Column({ name: 'type_application', nullable: true })
+  type_application: string;
+
   @Column({ default: 'en_attente' })
   statut: string;
 
@@ -54,7 +58,6 @@ export class DemandeService {
   @Column({ name: 'note_suivi', nullable: true })
   note_suivi: string;
 
-  // ⭐ NOUVEAUX CHAMPS
   @Column({ type: 'json', nullable: true })
   experts_notifies: number[];
 

@@ -5,11 +5,12 @@ import { StartupsService } from './startups.service';
 import { StartupsController } from './startups.controller';
 import { Startup } from '../user/startup.entity';
 import { User } from '../user/user.entity';
+import { Expert } from '../user/expert.entity'; // à adapter selon votre chemin
 import * as path from 'path';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Startup, User]),
+    TypeOrmModule.forFeature([Startup, User, Expert]), // Ajout de Expert
     MulterModule.register({
       dest: path.join(process.cwd(), 'uploads', 'photos'),
     }),

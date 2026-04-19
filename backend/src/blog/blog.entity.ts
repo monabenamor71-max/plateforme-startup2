@@ -1,7 +1,14 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+// src/blog/blog.entity.ts
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 
-@Entity('articles')
-export class Article {
+@Entity('blog')
+export class Blog {
   @PrimaryGeneratedColumn()
   id: number;
 
@@ -17,14 +24,14 @@ export class Article {
   @Column({ nullable: true })
   image: string;
 
+  @Column({ nullable: true })
+  pdf: string;
+
   @Column({ default: 'article' })
   type: string;
 
   @Column({ nullable: true })
-  categorie: string;
-
-  @Column({ type: 'simple-array', nullable: true })
-  tags: string[];
+  categorie: string;        // ← modifié
 
   @Column({ nullable: true })
   duree_lecture: string;
@@ -32,7 +39,7 @@ export class Article {
   @Column({ default: 'brouillon' })
   statut: string;
 
-  @Column({ type: 'int', default: 0 })
+  @Column({ default: 0 })
   vues: number;
 
   @CreateDateColumn()

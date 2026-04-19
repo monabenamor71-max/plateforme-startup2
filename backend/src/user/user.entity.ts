@@ -1,15 +1,15 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn } from "typeorm";
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 
-@Entity("user")
+@Entity('user')  // Utilise la table 'users' (celle qui contient vos comptes récents)
 export class User {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column()
+  @Column({ unique: true })
   email: string;
 
-  @Column({ name: "mot_de_passe" })
-  mot_de_passe: string;
+  @Column()
+  password: string;
 
   @Column()
   nom: string;
@@ -17,25 +17,21 @@ export class User {
   @Column()
   prenom: string;
 
-  @Column()
-  role: string;
-
   @Column({ nullable: true })
   telephone: string;
 
-  @Column({ nullable: true, default: "actif" })
+  @Column({ type: 'enum', enum: ['admin', 'expert', 'startup'], default: 'startup' })
+  role: string;
+
+  @Column({ default: 'actif' })
   statut: string;
 
-  @CreateDateColumn({ name: "created_at" })
+  @Column({ nullable: true })
+  photo: string;
+
+  @CreateDateColumn()
   createdAt: Date;
 
-  // Supprimer ou commenter cette ligne si la colonne n'existe pas
-  // @UpdateDateColumn({ name: "updated_at" })
-  // updatedAt: Date;
-
-  @Column({ nullable: true })
-  reset_token: string;
-
-  @Column({ nullable: true, type: "timestamp" })
-  reset_token_expires: Date;
+  @UpdateDateColumn()
+  updatedAt: Date;
 }

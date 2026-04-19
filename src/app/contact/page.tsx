@@ -1,889 +1,579 @@
 "use client";
+
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import {
-  FaEnvelope, FaPhone, FaMapMarkerAlt,
-  FaFacebookF, FaLinkedinIn, FaInstagram,
-  FaArrowRight, FaCheckCircle, FaTimesCircle,
-  FaPaperPlane, FaClock, FaWhatsapp,
+  FaEnvelope, FaPhone, FaMapMarkerAlt, FaClock,
+  FaChevronDown, FaGlobe, FaCheck, FaPaperPlane,
+  FaCheckCircle, FaUser, FaBuilding, FaComment,
+  FaArrowRight, // ← AJOUTÉ (manquant)
 } from "react-icons/fa";
 
-/* ══════════════════════════════════════
-   HOOK SCROLL
-══════════════════════════════════════ */
-function useInView(threshold = 0.12) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [inView, setInView] = useState(false);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const obs = new IntersectionObserver(
-      ([e]) => {
-        if (e.isIntersecting) {
-          setInView(true);
-          obs.disconnect();
-        }
-      },
-      { threshold }
-    );
-    obs.observe(el);
-    return () => obs.disconnect();
-  }, []);
-  return [ref, inView] as const;
-}
+// ==================== TRADUCTIONS ====================
 
-function FadeUp({ children, delay = 0, className = "" }: { children: React.ReactNode; delay?: number; className?: string }) {
-  const [ref, inView] = useInView();
+type Lang = "fr" | "en";
+
+const T: Record<Lang, Record<string, string>> = {
+  fr: {
+    // Header
+    nav_home: "Accueil",
+    nav_about: "À propos",
+    nav_services: "Services",
+    nav_experts: "Experts",
+    nav_blog: "Blog",
+    nav_contact: "Contact",
+    btn_login: "Connexion",
+    btn_signup: "S'inscrire",
+    // Hero
+    hero_title: "Contactez-nous",
+    hero_desc: "Une question ? Un projet ? Notre équipe est à votre écoute pour vous accompagner.",
+    // Contact form
+    form_title: "Envoyez-nous un message",
+    form_name: "Nom complet",
+    form_name_placeholder: "Jean Dupont",
+    form_email: "Adresse e-mail",
+    form_email_placeholder: "jean.dupont@exemple.com",
+    form_company: "Entreprise / Startup",
+    form_company_placeholder: "Nom de votre structure",
+    form_message: "Message",
+    form_message_placeholder: "Décrivez votre projet ou votre demande...",
+    form_subject: "Sujet",
+    subject_options: [
+      "Demande d'information",
+      "Devenir expert",
+      "Accompagnement startup",
+      "Partenariat",
+      "Autre",
+    ],
+    form_btn_send: "Envoyer le message",
+    form_sending: "Envoi en cours...",
+    form_success: "Message envoyé avec succès ! Nous vous répondrons dans les plus brefs délais.",
+    form_error: "Une erreur est survenue. Veuillez réessayer.",
+    // Contact info
+    info_title: "Informations de contact",
+    info_email: "contact@beh.com",
+    info_phone: "+216 00 000 000",
+    info_address: "Tunis, Tunisie",
+    info_hours: "Lun - Ven : 9h00 - 18h00",
+    // CTA
+    cta_title: "Vous êtes expert ou startup ?",
+    cta_desc: "Rejoignez notre écosystème et bénéficiez d'un accompagnement sur mesure.",
+    cta_btn_expert: "Devenir expert",
+    cta_btn_startup: "Inscrire ma startup",
+    // Footer
+    footer_desc: "Plateforme de mise en relation entre startups ambitieuses et experts certifiés.",
+    footer_nav: "Navigation",
+    footer_services: "Services",
+    footer_about: "À propos",
+    footer_legal: "Mentions légales",
+    footer_privacy: "Confidentialité",
+    footer_cgu: "CGU",
+    footer_copy: "© 2026 Business Expert Hub · Tous droits réservés",
+  },
+  en: {
+    // Header
+    nav_home: "Home",
+    nav_about: "About",
+    nav_services: "Services",
+    nav_experts: "Experts",
+    nav_blog: "Blog",
+    nav_contact: "Contact",
+    btn_login: "Login",
+    btn_signup: "Sign up",
+    // Hero
+    hero_title: "Contact us",
+    hero_desc: "A question? A project? Our team is here to listen and support you.",
+    // Contact form
+    form_title: "Send us a message",
+    form_name: "Full name",
+    form_name_placeholder: "John Doe",
+    form_email: "Email address",
+    form_email_placeholder: "john.doe@example.com",
+    form_company: "Company / Startup",
+    form_company_placeholder: "Your organization name",
+    form_message: "Message",
+    form_message_placeholder: "Describe your project or request...",
+    form_subject: "Subject",
+    subject_options: [
+      "Information request",
+      "Become an expert",
+      "Startup support",
+      "Partnership",
+      "Other",
+    ],
+    form_btn_send: "Send message",
+    form_sending: "Sending...",
+    form_success: "Message sent successfully! We will get back to you shortly.",
+    form_error: "An error occurred. Please try again.",
+    // Contact info
+    info_title: "Contact information",
+    info_email: "contact@beh.com",
+    info_phone: "+216 00 000 000",
+    info_address: "Tunis, Tunisia",
+    info_hours: "Mon - Fri: 9:00 AM - 6:00 PM",
+    // CTA
+    cta_title: "Are you an expert or a startup?",
+    cta_desc: "Join our ecosystem and benefit from personalized support.",
+    cta_btn_expert: "Become an expert",
+    cta_btn_startup: "Register my startup",
+    // Footer
+    footer_desc: "Matching platform connecting ambitious startups with certified experts.",
+    footer_nav: "Navigation",
+    footer_services: "Services",
+    footer_about: "About",
+    footer_legal: "Legal notice",
+    footer_privacy: "Privacy policy",
+    footer_cgu: "Terms of use",
+    footer_copy: "© 2026 Business Expert Hub · All rights reserved",
+  },
+};
+
+// ==================== SÉLECTEUR DE LANGUE ====================
+
+function LangSwitcher({ lang, setLang }: { lang: Lang; setLang: (l: Lang) => void }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  const LANGS: { code: Lang; label: string; short: string }[] = [
+    { code: "fr", label: "Français", short: "FR" },
+    { code: "en", label: "English", short: "EN" },
+  ];
+
+  function select(code: Lang) {
+    setLang(code);
+    setOpen(false);
+    if (typeof window !== "undefined") localStorage.setItem("beh_lang", code);
+  }
+
+  const current = LANGS.find(l => l.code === lang)!;
+
   return (
-    <div
-      ref={ref}
-      className={className}
-      style={{
-        opacity: inView ? 1 : 0,
-        transform: inView ? "translateY(0)" : "translateY(40px)",
-        transition: `opacity .75s cubic-bezier(.22,1,.36,1) ${delay}s, transform .75s cubic-bezier(.22,1,.36,1) ${delay}s`,
-      }}
-    >
-      {children}
+    <div ref={ref} style={{ position: "relative", flexShrink: 0 }}>
+      <button
+        onClick={() => setOpen(!open)}
+        style={{
+          display: "flex", alignItems: "center", gap: 6,
+          background: "transparent",
+          border: "none",
+          padding: "6px 8px",
+          cursor: "pointer",
+          fontFamily: "'DM Sans', sans-serif",
+          fontSize: 13.5, fontWeight: 600,
+          color: "#374151",
+          borderRadius: 8,
+          transition: "color .18s, background .18s",
+          outline: "none",
+        }}
+        onMouseEnter={e => { e.currentTarget.style.color = "#0A2540"; e.currentTarget.style.background = "#F3F4F6"; }}
+        onMouseLeave={e => { if (!open) { e.currentTarget.style.color = "#374151"; e.currentTarget.style.background = "transparent"; } }}
+      >
+        <FaGlobe size={15} style={{ color: "#6B7280", flexShrink: 0 }} />
+        <span style={{ letterSpacing: ".3px" }}>{current.short}</span>
+      </button>
+
+      {open && (
+        <div style={{
+          position: "absolute", top: "calc(100% + 6px)", right: 0,
+          background: "#fff", borderRadius: 12,
+          boxShadow: "0 8px 32px rgba(10,37,64,.13)",
+          border: "1px solid #E5E7EB",
+          overflow: "hidden", minWidth: 140, zIndex: 400,
+          animation: "langDrop .15s cubic-bezier(.22,1,.36,1)",
+        }}>
+          {LANGS.map(l => (
+            <button
+              key={l.code}
+              onClick={() => select(l.code)}
+              style={{
+                width: "100%", display: "flex", alignItems: "center", gap: 10,
+                padding: "10px 14px",
+                background: l.code === lang ? "#F9FAFB" : "transparent",
+                border: "none", cursor: "pointer",
+                fontFamily: "'DM Sans', sans-serif",
+                fontSize: 13.5,
+                fontWeight: l.code === lang ? 700 : 500,
+                color: l.code === lang ? "#0A2540" : "#6B7280",
+                transition: "background .12s, color .12s",
+                textAlign: "left",
+              }}
+              onMouseEnter={e => { if (l.code !== lang) { e.currentTarget.style.background = "#F3F4F6"; e.currentTarget.style.color = "#374151"; } }}
+              onMouseLeave={e => { if (l.code !== lang) { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#6B7280"; } }}
+            >
+              <FaGlobe size={13} style={{ color: l.code === lang ? "#F7B500" : "#9CA3AF", flexShrink: 0 }} />
+              <span style={{ flex: 1 }}>{l.label}</span>
+              {l.code === lang && (
+                <span style={{ width: 16, height: 16, borderRadius: "50%", background: "#0A2540", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <FaCheck size={7} style={{ color: "#F7B500" }} />
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
 
-/* ══════════════════════════════════════
-   DONNÉES
-══════════════════════════════════════ */
-// Liste déroulante modifiée selon la demande
-const SUBJECTS = [
-  "Diagnostic gratuit",
-  "Audit sur site",
-  "Démo plateforme",
-  "Conseil",
-  "Réclamation",
-  "Formations",
-  "Contact avec expert",
-];
+// ==================== CONSTANTES ====================
 
-const SOCIALS = [
-  { icon: <FaFacebookF />, label: "Facebook", href: "#", color: "#1877F2", bg: "rgba(24,119,242,0.1)" },
-  { icon: <FaLinkedinIn />, label: "LinkedIn", href: "#", color: "#0A66C2", bg: "rgba(10,102,194,0.1)" },
-  { icon: <FaInstagram />, label: "Instagram", href: "#", color: "#E1306C", bg: "rgba(225,48,108,0.1)" },
-  { icon: <FaWhatsapp />, label: "WhatsApp", href: "#", color: "#25D366", bg: "rgba(37,211,102,0.1)" },
-];
-
-const INFOS = [
-  {
-    icon: <FaEnvelope />,
-    label: "Email",
-    value: "contact@business-expert-hub.com",
-    sub: "Réponse sous 24h",
-    color: "#F7B500",
-    href: "mailto:contact@business-expert-hub.com",
-  },
-  {
-    icon: <FaPhone />,
-    label: "Téléphone",
-    value: "+216 71 000 000",
-    sub: "Lun–Ven, 9h–18h",
-    color: "#3B82F6",
-    href: "tel:+21671000000",
-  },
-  {
-    icon: <FaMapMarkerAlt />,
-    label: "Adresse",
-    value: "Lac 2, Tunis, Tunisie",
-    sub: "Siège social",
-    color: "#22C55E",
-    href: "https://maps.google.com",
-  },
-  {
-    icon: <FaClock />,
-    label: "Horaires",
-    value: "Lun–Ven : 9h – 18h",
-    sub: "Sam : 9h – 13h",
-    color: "#8B5CF6",
-    href: null,
-  },
-];
-
-const navServices = [
+const SERVICES = [
   { label: "Consulting", slug: "consulting" },
   { label: "Audit sur site", slug: "audit-sur-site" },
   { label: "Accompagnement", slug: "accompagnement" },
   { label: "Formations", slug: "formations" },
 ];
 
-/* ══════════════════════════════════════
-   PAGE
-══════════════════════════════════════ */
 export default function ContactPage() {
-  const [servicesOpen, setServicesOpen] = useState(false);
-  const [form, setForm] = useState({
-    nom: "",
-    prenom: "",
+  const [lang, setLang] = useState<Lang>("fr");
+  const [navOpen, setNavOpen] = useState(false);
+  const [formData, setFormData] = useState({
+    name: "",
     email: "",
-    sujet: "",
+    company: "",
+    subject: "Demande d'information",
     message: "",
   });
-  const [errors, setErrors] = useState<Partial<typeof form>>({});
-  const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const [apiError, setApiError] = useState("");
+  const [status, setStatus] = useState<"idle" | "sending" | "success" | "error">("idle");
 
-  function update(field: keyof typeof form, val: string) {
-    setForm((p) => ({ ...p, [field]: val }));
-    setErrors((p) => ({ ...p, [field]: undefined }));
-    setApiError("");
-  }
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const saved = localStorage.getItem("beh_lang") as Lang | null;
+    if (saved === "fr" || saved === "en") setLang(saved);
+  }, []);
 
-  function validate(): boolean {
-    const e: Partial<typeof form> = {};
-    if (!form.nom.trim()) e.nom = "Le nom est obligatoire.";
-    if (!form.prenom.trim()) e.prenom = "Le prénom est obligatoire.";
-    if (!form.email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) e.email = "Email invalide.";
-    if (!form.sujet) e.sujet = "Veuillez choisir un sujet.";
-    if (form.message.trim().length < 20) e.message = "Le message doit contenir au moins 20 caractères.";
-    setErrors(e);
-    return Object.keys(e).length === 0;
-  }
+  const tr = T[lang];
 
-  async function handleSubmit(e: React.FormEvent) {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validate()) return;
-    setLoading(true);
-    setApiError("");
-
+    setStatus("sending");
     try {
-      const response = await fetch("http://localhost:3001/contact/message", {
+      const response = await fetch("http://localhost:3001/contact/send", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(form),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
       });
-
-      const data = await response.json();
-
       if (response.ok) {
-        setSuccess(true);
-        setForm({ nom: "", prenom: "", email: "", sujet: "", message: "" });
+        setStatus("success");
+        setFormData({ name: "", email: "", company: "", subject: "Demande d'information", message: "" });
+        setTimeout(() => setStatus("idle"), 5000);
       } else {
-        setApiError(data.message || "Erreur lors de l'envoi du message");
+        setStatus("error");
+        setTimeout(() => setStatus("idle"), 4000);
       }
-    } catch (error) {
-      console.error("Erreur:", error);
-      setApiError("Erreur de connexion au serveur. Vérifiez que le backend est démarré.");
-    } finally {
-      setLoading(false);
+    } catch {
+      setStatus("error");
+      setTimeout(() => setStatus("idle"), 4000);
     }
-  }
+  };
 
   return (
-    <div className="font-[Plus_Jakarta_Sans,sans-serif] text-gray-700 min-h-screen bg-[#fafbff]">
+    <div style={{ fontFamily: "'DM Sans', sans-serif", background: "#F8FAFC", minHeight: "100vh" }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap');
-        *, *::before, *::after { box-sizing: border-box; }
-        body { margin: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800;0,9..40,900&display=swap');
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        ::selection { background: #F7B500; color: #0A2540; }
 
-        @keyframes floatY {
-          0%,100% { transform: translateY(-50%) rotate(45deg); }
-          50%      { transform: translateY(calc(-50% - 14px)) rotate(45deg); }
-        }
-        @keyframes fadeSlideDown {
-          from { opacity:0; transform:translateY(-10px); }
-          to   { opacity:1; transform:translateY(0); }
-        }
         @keyframes spin { to { transform: rotate(360deg); } }
-        @keyframes pulseGlow {
-          0%,100% { box-shadow: 0 0 0 0 rgba(247,181,0,0.4); }
-          50%      { box-shadow: 0 0 0 10px rgba(247,181,0,0); }
-        }
-        @keyframes successIn {
-          from { opacity:0; transform: scale(0.88) translateY(24px); }
-          to   { opacity:1; transform: scale(1)    translateY(0); }
-        }
+        @keyframes langDrop { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:translateY(0); } }
 
-        .diamond-float { animation: floatY 7s ease-in-out infinite; }
+        .nav-l { color: #374151; text-decoration: none; font-size: 14px; font-weight: 500; transition: color .18s; }
+        .nav-l:hover { color: #F7B500; }
+        .nav-l.act { color: #0A2540; font-weight: 700; }
+        .drp-i { display: block; padding: 9px 16px; color: #374151; text-decoration: none; font-size: 13.5px; font-weight: 500; transition: background .12s, color .12s; }
+        .drp-i:hover { background: #FFFBEB; color: #F7B500; }
 
-        .contact-input {
+        .form-input, .form-textarea, .form-select {
           width: 100%;
-          background: rgba(10,37,64,0.04);
-          border: 1.5px solid rgba(10,37,64,0.11);
+          padding: 12px 14px;
+          border: 1.5px solid #E5E7EB;
           border-radius: 12px;
-          padding: 13px 16px 13px 46px;
-          font-size: 14.5px;
-          color: #0A2540;
+          font-family: 'DM Sans', sans-serif;
+          font-size: 14px;
+          color: #374151;
           outline: none;
-          transition: border-color .22s, box-shadow .22s, background .22s;
-          font-family: 'Plus Jakarta Sans', sans-serif;
+          transition: border-color .18s, box-shadow .18s;
+          background: #fff;
         }
-        .contact-input::placeholder { color: #9CA3AF; }
-        .contact-input:focus {
-          border-color: #F7B500;
-          box-shadow: 0 0 0 4px rgba(247,181,0,0.12);
-          background: white;
+        .form-input:focus, .form-textarea:focus, .form-select:focus {
+          border-color: #0A2540;
+          box-shadow: 0 0 0 3px rgba(10,37,64,.07);
         }
-        .contact-input.err {
-          border-color: #EF4444;
-          box-shadow: 0 0 0 3px rgba(239,68,68,0.10);
-        }
-        .contact-input-no-icon { padding-left: 16px; }
-
-        .select-input {
-          width: 100%; appearance: none;
-          background: rgba(10,37,64,0.04)
-            url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath fill='%236B7280' d='M1 1l5 5 5-5'/%3E%3C/svg%3E")
-            no-repeat right 16px center;
-          border: 1.5px solid rgba(10,37,64,0.11);
-          border-radius: 12px;
-          padding: 13px 40px 13px 46px;
-          font-size: 14.5px; color: #0A2540; outline: none; cursor: pointer;
-          transition: border-color .22s, box-shadow .22s;
-          font-family: 'Plus Jakarta Sans', sans-serif;
-        }
-        .select-input:focus {
-          border-color: #F7B500;
-          box-shadow: 0 0 0 4px rgba(247,181,0,0.12);
-          background-color: white;
-        }
-        .select-input.err { border-color: #EF4444; box-shadow: 0 0 0 3px rgba(239,68,68,0.10); }
-
-        .textarea-input {
-          width: 100%; resize: vertical; min-height: 140px;
-          background: rgba(10,37,64,0.04);
-          border: 1.5px solid rgba(10,37,64,0.11);
-          border-radius: 12px;
-          padding: 14px 16px;
-          font-size: 14.5px; color: #0A2540; outline: none; line-height: 1.7;
-          transition: border-color .22s, box-shadow .22s, background .22s;
-          font-family: 'Plus Jakarta Sans', sans-serif;
-        }
-        .textarea-input::placeholder { color: #9CA3AF; }
-        .textarea-input:focus {
-          border-color: #F7B500;
-          box-shadow: 0 0 0 4px rgba(247,181,0,0.12);
-          background: white;
-        }
-        .textarea-input.err { border-color: #EF4444; box-shadow: 0 0 0 3px rgba(239,68,68,0.10); }
-
-        .btn-submit {
-          width: 100%; background: #F7B500; color: #0A2540;
-          border: none; border-radius: 12px;
-          padding: 15px; font-size: 16px; font-weight: 800;
-          cursor: pointer;
-          display: flex; align-items: center; justify-content: center; gap: 10px;
-          transition: transform .22s ease, box-shadow .22s ease, background .22s ease;
-          font-family: 'Plus Jakarta Sans', sans-serif;
-        }
-        .btn-submit:hover:not(:disabled) {
-          background: #e6a800;
-          transform: translateY(-2px);
-          box-shadow: 0 12px 32px rgba(247,181,0,0.42);
-        }
-        .btn-submit:disabled { opacity: .72; cursor: not-allowed; }
-
-        .spinner {
-          width: 20px; height: 20px;
-          border: 2.5px solid rgba(10,37,64,0.22);
-          border-top-color: #0A2540;
-          border-radius: 50%;
-          animation: spin .75s linear infinite;
-        }
+        .form-textarea { resize: vertical; min-height: 120px; }
 
         .info-card {
-          background: white;
-          border-radius: 18px;
-          border: 1.5px solid rgba(10,37,64,0.07);
-          padding: 24px 20px;
-          box-shadow: 0 4px 20px rgba(10,37,64,0.07);
-          transition: transform .3s ease, box-shadow .3s ease, border-color .3s ease;
-          text-decoration: none;
-          display: flex;
-          align-items: flex-start;
-          gap: 16px;
+          background: #fff;
+          border-radius: 20px;
+          padding: 20px;
+          border: 1px solid #E5E7EB;
+          transition: transform .28s, box-shadow .28s;
         }
         .info-card:hover {
-          transform: translateY(-6px);
-          box-shadow: 0 16px 42px rgba(10,37,64,0.12);
-          border-color: rgba(247,181,0,0.3);
+          transform: translateY(-5px);
+          box-shadow: 0 12px 28px rgba(10,37,64,.08);
+          border-color: rgba(247,181,0,.3);
         }
 
-        .social-btn {
-          width: 50px; height: 50px; border-radius: 14px;
-          display: flex; align-items: center; justify-content: center;
-          font-size: 18px; cursor: pointer; text-decoration: none;
-          transition: transform .25s ease, box-shadow .25s ease;
-          border: 1.5px solid rgba(10,37,64,0.08);
+        .btn-primary {
+          background: #0A2540;
+          color: #F7B500;
+          border: none;
+          border-radius: 12px;
+          padding: 14px 24px;
+          font-weight: 800;
+          font-size: 15px;
+          cursor: pointer;
+          transition: all .22s;
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
         }
-        .social-btn:hover { transform: translateY(-4px) scale(1.08); box-shadow: 0 10px 24px rgba(0,0,0,0.12); }
-
-        .btn-conn {
-          border: 2px solid #0A2540; color: #0A2540; background: transparent;
-          padding: 9px 22px; border-radius: 9px; font-weight: 700; font-size: 14px;
-          cursor: pointer; transition: all .22s; font-family: inherit;
+        .btn-primary:hover {
+          background: #F7B500;
+          color: #0A2540;
+          transform: translateY(-2px);
         }
-        .btn-conn:hover { background: #F7B500; border-color: #F7B500; transform: translateY(-2px); }
-
-        .btn-insc {
-          background: #F7B500; color: #0A2540; border: 2px solid #F7B500;
-          padding: 9px 22px; border-radius: 9px; font-weight: 800; font-size: 14px;
-          cursor: pointer; transition: all .22s; font-family: inherit;
+        .btn-outline {
+          background: transparent;
+          border: 2px solid #0A2540;
+          color: #0A2540;
+          border-radius: 12px;
+          padding: 12px 24px;
+          font-weight: 700;
+          font-size: 14px;
+          cursor: pointer;
+          transition: all .22s;
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
         }
-        .btn-insc:hover { background: #e6a800; transform: translateY(-2px); box-shadow: 0 8px 22px rgba(247,181,0,0.38); }
-
-        .drop-item {
-          display: block; padding: 10px 16px;
-          color: #0A2540; text-decoration: none;
-          font-size: 14px; font-weight: 600;
-          transition: background .15s; white-space: nowrap;
+        .btn-outline:hover {
+          background: #F7B500;
+          border-color: #F7B500;
+          transform: translateY(-2px);
         }
-        .drop-item:hover { background: #FFFBEB; }
-
-        .success-card { animation: successIn .45s cubic-bezier(.22,1,.36,1) both; }
-        .pulse-btn    { animation: pulseGlow 2.2s ease-in-out infinite; }
       `}</style>
 
       {/* HEADER */}
-      <header
-        className="bg-white sticky top-0 z-[100]"
-        style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.07)" }}
-      >
-        <div className="max-w-[1280px] mx-auto px-6 h-[76px] flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-3 no-underline">
-            <svg width="44" height="44" viewBox="0 0 46 46" fill="none">
-              <rect width="46" height="46" rx="12" fill="#0A2540" />
-              <rect x="23" y="7" width="13" height="13" rx="2" transform="rotate(45 23 7)" fill="#F7B500" opacity="0.15" />
-              <text x="50%" y="55%" dominantBaseline="middle" textAnchor="middle" fill="#F7B500" fontSize="15" fontWeight="900" fontFamily="Arial" letterSpacing="0.5">
-                BEH
-              </text>
-            </svg>
-            <div>
-              <div className="font-black text-[18px] text-[#0A2540] leading-none tracking-[-0.4px]">
-                Business <span className="text-[#F7B500]">Expert</span> Hub
-              </div>
-            </div>
+      <header style={{ background: "#fff", position: "sticky", top: 0, zIndex: 100, borderBottom: "1px solid #F1F5F9", boxShadow: "0 1px 0 #EEF2F7,0 4px 16px rgba(10,37,64,.05)" }}>
+        <div style={{ maxWidth: 1280, margin: "0 auto", padding: "0 28px", height: 74, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 20 }}>
+          <Link href="/" style={{ display: "flex", alignItems: "center", gap: 11, textDecoration: "none", flexShrink: 0 }}>
+            <div style={{ width: 40, height: 40, background: "#0A2540", borderRadius: 11, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "Arial,sans-serif", fontWeight: 900, fontSize: 13, color: "#F7B500" }}>BEH</div>
+            <span style={{ fontFamily: "'DM Sans',sans-serif", fontWeight: 800, fontSize: 17, color: "#0A2540" }}>Business <span style={{ color: "#F7B500" }}>Expert</span> Hub</span>
           </Link>
-
-          <nav className="flex gap-7 items-center">
-            <Link href="/" className="text-[#0A2540] no-underline text-[15px] font-medium transition-colors hover:text-[#F7B500]">
-              Accueil
-            </Link>
-            <Link href="/a-propos" className="text-[#0A2540] no-underline text-[15px] font-medium transition-colors hover:text-[#F7B500]">
-              À propos
-            </Link>
-            <div
-              className="relative"
-              onMouseEnter={() => setServicesOpen(true)}
-              onMouseLeave={() => setServicesOpen(false)}
-            >
-              <Link href="/services" className="text-[#0A2540] no-underline text-[15px] font-semibold transition-colors hover:text-[#F7B500]">
-                Services ▾
-              </Link>
-              {servicesOpen && (
-                <ul
-                  className="absolute top-[calc(100%+8px)] left-0 bg-white rounded-xl list-none p-[6px_0] m-0 z-[200] min-w-[200px]"
-                  style={{
-                    boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
-                    border: "1px solid rgba(10,37,64,0.06)",
-                    animation: "fadeSlideDown .2s ease",
-                  }}
-                >
-                  {navServices.map((s) => (
-                    <li key={s.slug}>
-                      <Link href={`/services/${s.slug}`} className="drop-item">
-                        {s.label}
-                      </Link>
-                    </li>
-                  ))}
+          <nav style={{ display: "flex", gap: 24, alignItems: "center" }}>
+            <Link href="/" className="nav-l">{tr.nav_home}</Link>
+            <Link href="/a-propos" className="nav-l">{tr.nav_about}</Link>
+            <div style={{ position: "relative" }} onMouseEnter={() => setNavOpen(true)} onMouseLeave={() => setNavOpen(false)}>
+              <span className="nav-l" style={{ cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>{tr.nav_services} <FaChevronDown size={9} /></span>
+              {navOpen && (
+                <ul style={{ position: "absolute", top: "calc(100% + 10px)", left: 0, background: "#fff", borderRadius: 14, listStyle: "none", padding: "6px", margin: 0, zIndex: 200, minWidth: 200, boxShadow: "0 12px 44px rgba(10,37,64,.12)", border: "1px solid #F1F5F9" }}>
+                  {SERVICES.map(s => <li key={s.slug}><Link href={`/services/${s.slug}`} className="drp-i">{s.label}</Link></li>)}
                 </ul>
               )}
             </div>
-            <Link href="/experts" className="text-[#0A2540] no-underline text-[15px] font-medium transition-colors hover:text-[#F7B500]">
-              Experts
-            </Link>
-            <Link href="/blog" className="text-[#0A2540] no-underline text-[15px] font-medium transition-colors hover:text-[#F7B500]">
-              Blog
-            </Link>
-            <Link href="/contact" className="text-[#F7B500] no-underline text-[15px] font-bold">
-              Contact
-            </Link>
+            <Link href="/experts" className="nav-l">{tr.nav_experts}</Link>
+            <Link href="/blog" className="nav-l">{tr.nav_blog}</Link>
+            <Link href="/contact" className="nav-l act">{tr.nav_contact}</Link>
           </nav>
-
-          <div className="flex gap-3">
-            <Link href="/connexion">
-              <button className="btn-conn">Connexion</button>
-            </Link>
-            <Link href="/inscription">
-              <button className="btn-insc">S'inscrire</button>
-            </Link>
+          <div style={{ display: "flex", gap: 10, alignItems: "center", flexShrink: 0 }}>
+            <LangSwitcher lang={lang} setLang={setLang} />
+            <div style={{ width: 1, height: 24, background: "#E5E7EB", margin: "0 4px" }} />
+            <Link href="/connexion" style={{ padding: "9px 20px", border: "1.5px solid rgba(10,37,64,.18)", borderRadius: 9, color: "#0A2540", fontWeight: 600, fontSize: 13.5, textDecoration: "none", transition: "all .18s", fontFamily: "'DM Sans',sans-serif" }}>{tr.btn_login}</Link>
+            <Link href="/inscription" style={{ padding: "9px 20px", background: "#F7B500", borderRadius: 9, color: "#0A2540", fontWeight: 800, fontSize: 13.5, textDecoration: "none", transition: "all .18s", fontFamily: "'DM Sans',sans-serif" }}>{tr.btn_signup}</Link>
           </div>
         </div>
       </header>
 
       {/* HERO */}
-      <section
-        className="relative overflow-hidden text-white"
-        style={{
-          background: "linear-gradient(135deg,#0A2540 0%,#0d3060 55%,#081B33 100%)",
-          padding: "80px 24px 96px",
-        }}
-      >
-        {[
-          { w: 340, right: -50, delay: "0s" },
-          { w: 200, right: 90, delay: "1.6s" },
-          { w: 110, right: 140, delay: "0.8s" },
-        ].map((d, i) => (
-          <div
-            key={i}
-            className="diamond-float absolute pointer-events-none"
-            style={{
-              width: d.w,
-              height: d.w,
-              right: d.right,
-              top: "50%",
-              transform: "translateY(-50%) rotate(45deg)",
-              background: "rgba(255,255,255,0.04)",
-              border: "1px solid rgba(255,255,255,0.08)",
-              animationDelay: d.delay,
-            }}
-          />
-        ))}
-        <div
-          className="absolute pointer-events-none"
-          style={{
-            bottom: -60,
-            left: -60,
-            width: 240,
-            height: 240,
-            transform: "rotate(45deg)",
-            background: "rgba(255,255,255,0.03)",
-            border: "1px solid rgba(255,255,255,0.06)",
-          }}
-        />
-        <div
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full pointer-events-none"
-          style={{
-            background: "radial-gradient(circle, rgba(247,181,0,0.07) 0%, transparent 65%)",
-          }}
-        />
-
-        <div className="max-w-[1280px] mx-auto relative z-10">
-          <div className="flex items-center gap-2 mb-6 text-[13px] text-white/50">
-            <Link href="/" className="text-white/50 no-underline transition-colors hover:text-[#F7B500]">
-              Accueil
-            </Link>
-            <span>›</span>
-            <span className="text-[#F7B500] font-semibold">Contact</span>
+      <section style={{ position: "relative", background: "#0A2540", overflow: "hidden", minHeight: 220 }}>
+        <div style={{ position: "absolute", inset: 0, backgroundImage: "url('https://images.unsplash.com/photo-1423666639041-f56000c27a9a?w=1400&q=80')", backgroundSize: "cover", backgroundPosition: "center", opacity: .18 }} />
+        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(135deg,rgba(10,37,64,.95) 0%,rgba(10,37,64,.8) 100%)" }} />
+        <div style={{ maxWidth: 1280, margin: "0 auto", padding: "64px 28px 56px", position: "relative", zIndex: 2 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 20, opacity: .7 }}>
+            <Link href="/" style={{ color: "rgba(255,255,255,.45)", textDecoration: "none", fontSize: 12.5 }}>{tr.nav_home}</Link>
+            <span style={{ color: "rgba(255,255,255,.25)" }}>›</span>
+            <span style={{ color: "#F7B500", fontSize: 12.5, fontWeight: 600 }}>{tr.nav_contact}</span>
           </div>
-
-          <div className="inline-block bg-[#F7B500] text-[#0A2540] font-black text-[12px] tracking-[3px] uppercase px-[18px] py-1.5 rounded-full mb-[22px]">
-            Contactez-nous
-          </div>
-
-          <h1 className="font-black m-0 mb-5 leading-[1.1]" style={{ fontSize: "clamp(38px,5vw,64px)" }}>
-            Parlons de votre <span className="text-[#F7B500]">projet</span>
+          <h1 style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "clamp(32px,4.5vw,48px)", fontWeight: 800, color: "#F7B500", lineHeight: 1.2, marginBottom: 12 }}>
+            {tr.hero_title}
           </h1>
-          <p className="text-[17px] text-white/75 max-w-[560px] leading-[1.8] m-0">
-            Notre équipe est disponible pour répondre à toutes vos questions et vous accompagner vers les meilleurs
-            experts.
+          <p style={{ fontSize: 16, color: "rgba(255,255,255,.65)", maxWidth: 520, lineHeight: 1.75 }}>
+            {tr.hero_desc}
           </p>
         </div>
       </section>
 
-      {/* INFOS DE CONTACT */}
-      <section className="max-w-[1280px] mx-auto px-6 -mt-10 relative z-10">
-        <div className="grid grid-cols-4 gap-5">
-          {INFOS.map((info, i) => (
-            <FadeUp key={i} delay={i * 0.1}>
-              {info.href ? (
-                <a href={info.href} target="_blank" rel="noopener noreferrer" className="info-card">
-                  <InfoCardContent info={info} />
-                </a>
-              ) : (
-                <div className="info-card cursor-default">
-                  <InfoCardContent info={info} />
+      {/* MAIN CONTENT */}
+      <main style={{ maxWidth: 1200, margin: "0 auto", padding: "60px 28px 80px", display: "grid", gridTemplateColumns: "1fr 380px", gap: 48 }}>
+        
+        {/* FORMULAIRE */}
+        <div>
+          <div style={{ background: "#fff", borderRadius: 24, border: "1px solid #E5E7EB", padding: "32px 36px", boxShadow: "0 4px 20px rgba(10,37,64,.04)" }}>
+            <h2 style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 24, fontWeight: 800, color: "#0A2540", marginBottom: 8 }}>{tr.form_title}</h2>
+            <p style={{ color: "#6B7280", fontSize: 14, marginBottom: 28 }}>Remplissez le formulaire ci-dessous, nous vous répondrons sous 48h.</p>
+
+            {status === "success" && (
+              <div style={{ background: "#ECFDF5", border: "1px solid #A7F3D0", borderRadius: 12, padding: "14px 18px", marginBottom: 24, display: "flex", alignItems: "center", gap: 10, color: "#059669" }}>
+                <FaCheckCircle size={18} /> {tr.form_success}
+              </div>
+            )}
+            {status === "error" && (
+              <div style={{ background: "#FEF2F2", border: "1px solid #FECACA", borderRadius: 12, padding: "14px 18px", marginBottom: 24, display: "flex", alignItems: "center", gap: 10, color: "#DC2626" }}>
+                ⚠️ {tr.form_error}
+              </div>
+            )}
+
+            <form onSubmit={handleSubmit}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 18, marginBottom: 18 }}>
+                <div>
+                  <label style={{ fontSize: 13, fontWeight: 700, color: "#374151", marginBottom: 6, display: "block" }}>{tr.form_name} *</label>
+                  <input type="text" name="name" value={formData.name} onChange={handleChange} required className="form-input" placeholder={tr.form_name_placeholder} />
                 </div>
-              )}
-            </FadeUp>
-          ))}
-        </div>
-      </section>
-
-      {/* CONTENU PRINCIPAL : Formulaire + Sidebar */}
-      <section className="max-w-[1280px] mx-auto px-6 py-20">
-        <div className="grid gap-10" style={{ gridTemplateColumns: "1fr 400px" }}>
-          {/* FORMULAIRE */}
-          <FadeUp>
-            <div
-              className="bg-white rounded-3xl"
-              style={{
-                padding: "52px 48px",
-                boxShadow: "0 8px 48px rgba(10,37,64,0.09)",
-                border: "1.5px solid rgba(10,37,64,0.07)",
-              }}
-            >
-              {success ? (
-                <div className="success-card text-center py-10">
-                  <div
-                    className="w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-7 text-[40px] text-white pulse-btn"
-                    style={{
-                      background: "linear-gradient(135deg,#22C55E,#16a34a)",
-                      boxShadow: "0 12px 36px rgba(34,197,94,0.38)",
-                    }}
-                  >
-                    ✓
-                  </div>
-                  <h2 className="text-[28px] font-black text-[#0A2540] mb-3">Message envoyé !</h2>
-                  <p className="text-gray-500 text-[16px] leading-relaxed max-w-[380px] mx-auto mb-10">
-                    Merci <strong className="text-[#0A2540]">
-                      {form.prenom} {form.nom}
-                    </strong>{" "}
-                    ! Notre équipe vous répondra sous 24h à l&apos;adresse{" "}
-                    <strong className="text-[#F7B500]">{form.email}</strong>.
-                  </p>
-                  <button
-                    onClick={() => {
-                      setSuccess(false);
-                      setForm({ nom: "", prenom: "", email: "", sujet: "", message: "" });
-                    }}
-                    className="inline-flex items-center gap-2 bg-[#0A2540] text-white border-none rounded-xl px-8 py-3.5 font-bold text-[15px] cursor-pointer transition-all duration-200 hover:bg-[#F7B500] hover:text-[#0A2540] hover:-translate-y-0.5"
-                    style={{ fontFamily: "inherit" }}
-                  >
-                    Envoyer un autre message
-                  </button>
+                <div>
+                  <label style={{ fontSize: 13, fontWeight: 700, color: "#374151", marginBottom: 6, display: "block" }}>{tr.form_email} *</label>
+                  <input type="email" name="email" value={formData.email} onChange={handleChange} required className="form-input" placeholder={tr.form_email_placeholder} />
                 </div>
-              ) : (
-                <>
-                  <div className="mb-9">
-                    <h2 className="text-[26px] font-black text-[#0A2540] mb-2">Envoyez-nous un message</h2>
-                    <p className="text-gray-500 text-[15px]">
-                      Tous les champs marqués <span className="text-red-500">*</span> sont obligatoires.
-                    </p>
-                  </div>
-
-                  {apiError && (
-                    <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
-                      {apiError}
-                    </div>
-                  )}
-
-                  <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-                    <div className="grid grid-cols-2 gap-4">
-                      <FormField label="Nom *" icon="👤" error={errors.nom}>
-                        <input
-                          type="text"
-                          placeholder="Votre nom"
-                          value={form.nom}
-                          onChange={(e) => update("nom", e.target.value)}
-                          className={`contact-input${errors.nom ? " err" : ""}`}
-                        />
-                      </FormField>
-                      <FormField label="Prénom *" icon="👤" error={errors.prenom}>
-                        <input
-                          type="text"
-                          placeholder="Votre prénom"
-                          value={form.prenom}
-                          onChange={(e) => update("prenom", e.target.value)}
-                          className={`contact-input${errors.prenom ? " err" : ""}`}
-                        />
-                      </FormField>
-                    </div>
-
-                    <FormField label="Adresse email *" error={errors.email}>
-                      <div className="relative">
-                        <FaEnvelope className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-[14px] pointer-events-none" />
-                        <input
-                          type="email"
-                          placeholder="votre@email.com"
-                          value={form.email}
-                          onChange={(e) => update("email", e.target.value)}
-                          className={`contact-input${errors.email ? " err" : ""}`}
-                        />
-                      </div>
-                    </FormField>
-
-                    <FormField label="Sujet *" error={errors.sujet}>
-                      <div className="relative">
-                        <FaPaperPlane className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-[13px] pointer-events-none z-10" />
-                        <select
-                          value={form.sujet}
-                          onChange={(e) => update("sujet", e.target.value)}
-                          className={`select-input${errors.sujet ? " err" : ""}`}
-                        >
-                          <option value="">Choisir un sujet…</option>
-                          {SUBJECTS.map((s) => (
-                            <option key={s} value={s}>
-                              {s}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    </FormField>
-
-                    <FormField label="Message *" error={errors.message}>
-                      <textarea
-                        placeholder="Décrivez votre demande en détail (min. 20 caractères)…"
-                        value={form.message}
-                        onChange={(e) => update("message", e.target.value)}
-                        className={`textarea-input${errors.message ? " err" : ""}`}
-                      />
-                      <div className="flex justify-end mt-1">
-                        <span
-                          className={`text-[12px] font-medium ${
-                            form.message.length >= 20 ? "text-green-500" : "text-gray-400"
-                          }`}
-                        >
-                          {form.message.length} / 20 min
-                        </span>
-                      </div>
-                    </FormField>
-
-                    <button type="submit" className="btn-submit" disabled={loading}>
-                      {loading ? (
-                        <>
-                          <div className="spinner" /> Envoi en cours…
-                        </>
-                      ) : (
-                        <>
-                          Envoyer le message <FaArrowRight size={14} />
-                        </>
-                      )}
-                    </button>
-                  </form>
-                </>
-              )}
-            </div>
-          </FadeUp>
-
-          {/* SIDEBAR */}
-          <div className="flex flex-col gap-6">
-            <FadeUp delay={0.15}>
-              <div
-                className="bg-white rounded-2xl p-7"
-                style={{
-                  boxShadow: "0 4px 24px rgba(10,37,64,0.08)",
-                  border: "1.5px solid rgba(10,37,64,0.07)",
-                }}
-              >
-                <h3 className="text-[18px] font-black text-[#0A2540] mb-1.5">Nos réseaux sociaux</h3>
-                <p className="text-gray-500 text-[13px] mb-5">Suivez-nous pour ne rien manquer</p>
-                <div className="grid grid-cols-2 gap-3">
-                  {SOCIALS.map((s, i) => (
-                    <a
-                      key={i}
-                      href={s.href}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="social-btn flex items-center gap-3 w-full rounded-2xl px-4 py-3 no-underline"
-                      style={{
-                        background: s.bg,
-                        border: `1.5px solid ${s.color}22`,
-                        color: s.color,
-                        fontSize: 14,
-                      }}
-                    >
-                      <span className="text-[18px]">{s.icon}</span>
-                      <span className="font-bold text-[13px]" style={{ color: "#0A2540" }}>
-                        {s.label}
-                      </span>
-                    </a>
+              </div>
+              <div style={{ marginBottom: 18 }}>
+                <label style={{ fontSize: 13, fontWeight: 700, color: "#374151", marginBottom: 6, display: "block" }}>{tr.form_company}</label>
+                <input type="text" name="company" value={formData.company} onChange={handleChange} className="form-input" placeholder={tr.form_company_placeholder} />
+              </div>
+              <div style={{ marginBottom: 18 }}>
+                <label style={{ fontSize: 13, fontWeight: 700, color: "#374151", marginBottom: 6, display: "block" }}>{tr.form_subject}</label>
+                <select name="subject" value={formData.subject} onChange={handleChange} className="form-select">
+                  {tr.subject_options.map(opt => (
+                    <option key={opt} value={opt}>{opt}</option>
                   ))}
-                </div>
+                </select>
               </div>
-            </FadeUp>
-
-            <FadeUp delay={0.25}>
-              <div
-                className="bg-white rounded-2xl overflow-hidden"
-                style={{
-                  boxShadow: "0 4px 24px rgba(10,37,64,0.08)",
-                  border: "1.5px solid rgba(10,37,64,0.07)",
-                }}
-              >
-                <div className="relative" style={{ height: 200 }}>
-                  <iframe
-                    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3193.5!2d10.2264!3d36.8517!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMzbCsDUxJzA2LjEiTiAxMMKwMTMnMzUuMCJF!5e0!3m2!1sfr!2stn!4v1234567890"
-                    width="100%"
-                    height="200"
-                    style={{ border: 0 }}
-                    allowFullScreen
-                    loading="lazy"
-                    referrerPolicy="no-referrer-when-downgrade"
-                    title="Localisation Business Expert Hub"
-                  />
-                  <div
-                    className="absolute top-3 left-3 flex items-center gap-2 bg-white rounded-xl px-3 py-2"
-                    style={{ boxShadow: "0 4px 14px rgba(0,0,0,0.15)" }}
-                  >
-                    <FaMapMarkerAlt className="text-[#F7B500] text-[14px]" />
-                    <span className="text-[12px] font-bold text-[#0A2540]">Lac 2, Tunis</span>
-                  </div>
-                </div>
-                <div className="p-5">
-                  <div className="flex items-start gap-3">
-                    <div
-                      className="w-9 h-9 rounded-xl flex items-center justify-center text-[14px] flex-shrink-0 mt-0.5"
-                      style={{ background: "rgba(34,197,94,0.12)", color: "#22C55E" }}
-                    >
-                      <FaMapMarkerAlt />
-                    </div>
-                    <div>
-                      <div className="font-black text-[#0A2540] text-[14px]">Siège social</div>
-                      <div className="text-gray-500 text-[13px] mt-0.5 leading-relaxed">
-                        Lac 2, Tunis, Tunisie
-                        <br />
-                        Immeuble Business Center
-                      </div>
-                    </div>
-                  </div>
-                  <a
-                    href="https://maps.google.com"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="mt-4 w-full flex items-center justify-center gap-2 bg-[#0A2540] text-white no-underline rounded-xl py-2.5 text-[13px] font-bold transition-all duration-200 hover:bg-[#F7B500] hover:text-[#0A2540] hover:-translate-y-0.5"
-                  >
-                    <FaMapMarkerAlt size={12} /> Ouvrir dans Maps
-                  </a>
-                </div>
+              <div style={{ marginBottom: 24 }}>
+                <label style={{ fontSize: 13, fontWeight: 700, color: "#374151", marginBottom: 6, display: "block" }}>{tr.form_message} *</label>
+                <textarea name="message" value={formData.message} onChange={handleChange} required className="form-textarea" placeholder={tr.form_message_placeholder} />
               </div>
-            </FadeUp>
-
-            <FadeUp delay={0.35}>
-              <div
-                className="bg-[#0A2540] rounded-2xl p-7 relative overflow-hidden"
-                style={{ boxShadow: "0 8px 30px rgba(10,37,64,0.25)" }}
-              >
-                <div
-                  className="absolute top-0 right-0 w-32 h-32 rounded-full pointer-events-none"
-                  style={{
-                    background: "radial-gradient(circle, rgba(247,181,0,0.12) 0%, transparent 70%)",
-                    transform: "translate(30%,-30%)",
-                  }}
-                />
-                <div className="relative z-10">
-                  <div className="flex items-center gap-2 mb-4">
-                    <div className="w-2.5 h-2.5 rounded-full bg-green-400 relative">
-                      <div className="absolute inset-0 rounded-full bg-green-400 animate-ping opacity-60" />
-                    </div>
-                    <span className="text-green-400 text-[12px] font-bold uppercase tracking-[2px]">En ligne</span>
-                  </div>
-                  <h3 className="text-white font-black text-[17px] mb-2">Besoin d'une réponse rapide ?</h3>
-                  <p className="text-white/55 text-[13px] leading-relaxed mb-5">
-                    Notre équipe répond généralement sous <strong className="text-[#F7B500]">2 heures</strong> pendant
-                    les horaires ouvrés.
-                  </p>
-                  <a
-                    href="tel:+21671000000"
-                    className="flex items-center justify-center gap-2 bg-[#F7B500] text-[#0A2540] no-underline rounded-xl py-3 font-black text-[14px] transition-all duration-200 hover:bg-[#e6a800] hover:-translate-y-0.5"
-                    style={{ boxShadow: "0 6px 20px rgba(247,181,0,0.30)" }}
-                  >
-                    <FaPhone size={13} /> Appelez maintenant
-                  </a>
-                </div>
-              </div>
-            </FadeUp>
+              <button type="submit" disabled={status === "sending"} className="btn-primary" style={{ width: "100%", justifyContent: "center", opacity: status === "sending" ? 0.7 : 1 }}>
+                {status === "sending" ? tr.form_sending : <><FaPaperPlane /> {tr.form_btn_send}</>}
+              </button>
+            </form>
           </div>
         </div>
-      </section>
 
-      {/* FAQ */}
-      <section className="py-20 px-6" style={{ background: "linear-gradient(160deg,#f0f6ff 0%,#ffffff 100%)" }}>
-        <div className="max-w-[1280px] mx-auto">
-          <FadeUp className="text-center mb-14">
-            <span className="inline-block bg-[#F7B500] text-[#0A2540] font-black text-[12px] tracking-[3px] uppercase px-[18px] py-1.5 rounded-full mb-5">
-              FAQ
-            </span>
-            <h2 className="font-black text-[#0A2540] m-0 mb-3 leading-[1.15]" style={{ fontSize: "clamp(26px,3.5vw,40px)" }}>
-              Questions <span className="text-[#F7B500]">fréquentes</span>
-            </h2>
-            <p className="text-gray-500 text-[16px] max-w-[420px] mx-auto">Quelques réponses avant de nous contacter</p>
-          </FadeUp>
+        {/* SIDEBAR INFOS */}
+        <aside style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+          <div className="info-card">
+            <div style={{ width: 48, height: 48, borderRadius: 12, background: "rgba(247,181,0,.12)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 16, fontSize: 22, color: "#F7B500" }}>
+              <FaEnvelope />
+            </div>
+            <h3 style={{ fontSize: 16, fontWeight: 800, color: "#0A2540", marginBottom: 8 }}>Email</h3>
+            <a href="mailto:contact@beh.com" style={{ color: "#6B7280", textDecoration: "none", fontSize: 14, transition: "color .2s" }} onMouseEnter={e => (e.currentTarget.style.color = "#F7B500")} onMouseLeave={e => (e.currentTarget.style.color = "#6B7280")}>
+              {tr.info_email}
+            </a>
+          </div>
 
-          <div className="grid grid-cols-3 gap-6">
-            {[
-              {
-                q: "Quel est le délai de réponse ?",
-                a: "Nous répondons à toutes les demandes dans un délai de 24h ouvrées, souvent bien avant.",
-              },
-              {
-                q: "Puis-je réserver un expert directement ?",
-                a: "Oui, après inscription vous pouvez consulter les profils et envoyer une demande de mission.",
-              },
-              {
-                q: "Les consultations sont-elles gratuites ?",
-                a: "Un premier échange de 30 min est offert pour évaluer vos besoins avant toute facturation.",
-              },
-            ].map((item, i) => (
-              <FadeUp key={i} delay={i * 0.12}>
-                <div
-                  className="bg-white rounded-2xl p-7 transition-all duration-300 hover:-translate-y-1"
-                  style={{
-                    boxShadow: "0 4px 20px rgba(10,37,64,0.07)",
-                    border: "1.5px solid rgba(10,37,64,0.07)",
-                  }}
-                >
-                  <FaCheckCircle className="text-[#F7B500] text-[18px] mb-4" />
-                  <h4 className="text-[15px] font-black text-[#0A2540] mb-2.5 leading-snug">{item.q}</h4>
-                  <p className="text-gray-500 text-[14px] leading-relaxed m-0">{item.a}</p>
-                </div>
-              </FadeUp>
-            ))}
+          <div className="info-card">
+            <div style={{ width: 48, height: 48, borderRadius: 12, background: "rgba(247,181,0,.12)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 16, fontSize: 22, color: "#F7B500" }}>
+              <FaPhone />
+            </div>
+            <h3 style={{ fontSize: 16, fontWeight: 800, color: "#0A2540", marginBottom: 8 }}>Téléphone</h3>
+            <a href="tel:+21600000000" style={{ color: "#6B7280", textDecoration: "none", fontSize: 14, transition: "color .2s" }} onMouseEnter={e => (e.currentTarget.style.color = "#F7B500")} onMouseLeave={e => (e.currentTarget.style.color = "#6B7280")}>
+              {tr.info_phone}
+            </a>
+          </div>
+
+          <div className="info-card">
+            <div style={{ width: 48, height: 48, borderRadius: 12, background: "rgba(247,181,0,.12)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 16, fontSize: 22, color: "#F7B500" }}>
+              <FaMapMarkerAlt />
+            </div>
+            <h3 style={{ fontSize: 16, fontWeight: 800, color: "#0A2540", marginBottom: 8 }}>Adresse</h3>
+            <p style={{ color: "#6B7280", fontSize: 14, margin: 0 }}>{tr.info_address}</p>
+          </div>
+
+          <div className="info-card">
+            <div style={{ width: 48, height: 48, borderRadius: 12, background: "rgba(247,181,0,.12)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 16, fontSize: 22, color: "#F7B500" }}>
+              <FaClock />
+            </div>
+            <h3 style={{ fontSize: 16, fontWeight: 800, color: "#0A2540", marginBottom: 8 }}>Horaires</h3>
+            <p style={{ color: "#6B7280", fontSize: 14, margin: 0 }}>{tr.info_hours}</p>
+          </div>
+        </aside>
+      </main>
+
+      {/* CTA SECTION */}
+      <section style={{ background: "#0A2540", padding: "64px 24px", position: "relative", overflow: "hidden" }}>
+        <div style={{ position: "absolute", inset: 0, backgroundImage: "radial-gradient(rgba(255,255,255,.02) 1px,transparent 1px)", backgroundSize: "40px 40px" }} />
+        <div style={{ maxWidth: 800, margin: "0 auto", textAlign: "center", position: "relative", zIndex: 2 }}>
+          <h2 style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "clamp(26px,4vw,38px)", fontWeight: 800, color: "#fff", marginBottom: 14 }}>
+            {tr.cta_title}
+          </h2>
+          <p style={{ fontSize: 16, color: "rgba(255,255,255,.6)", lineHeight: 1.75, marginBottom: 32 }}>
+            {tr.cta_desc}
+          </p>
+          <div style={{ display: "flex", gap: 16, justifyContent: "center", flexWrap: "wrap" }}>
+            <Link href="/inscription?type=expert">
+              <button className="btn-primary" style={{ background: "#F7B500", color: "#0A2540" }}>
+                {tr.cta_btn_expert} <FaArrowRight size={12} />
+              </button>
+            </Link>
+            <Link href="/inscription?type=startup">
+              <button className="btn-outline" style={{ borderColor: "#F7B500", color: "#F7B500" }}>
+                {tr.cta_btn_startup} <FaArrowRight size={12} />
+              </button>
+            </Link>
           </div>
         </div>
       </section>
 
       {/* FOOTER */}
-      <footer className="bg-[#081B33] text-white py-8 px-6 text-center">
-        <p className="m-0 mb-2 text-[14px] font-semibold">© 2026 Business Expert Hub</p>
-        <p className="text-white/40 text-[13px] m-0">Plateforme de mise en relation startups & experts</p>
+      <footer style={{ background: "#05101E", padding: "48px 28px 24px" }}>
+        <div style={{ maxWidth: 1200, margin: "0 auto" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr 1fr 1fr", gap: 40, marginBottom: 40 }}>
+            <div>
+              <Link href="/" style={{ display: "flex", alignItems: "center", gap: 10, textDecoration: "none", marginBottom: 16 }}>
+                <div style={{ width: 36, height: 36, background: "#0A2540", borderRadius: 9, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "Arial,sans-serif", fontWeight: 900, fontSize: 12, color: "#F7B500" }}>BEH</div>
+                <span style={{ fontFamily: "'DM Sans',sans-serif", fontWeight: 800, fontSize: 15, color: "#fff" }}>Business <span style={{ color: "#F7B500" }}>Expert</span> Hub</span>
+              </Link>
+              <p style={{ color: "rgba(255,255,255,.3)", fontSize: 13, lineHeight: 1.78 }}>{tr.footer_desc}</p>
+            </div>
+            {[
+              { title: tr.footer_nav, links: [[tr.nav_home, "/"],[tr.nav_about, "/a-propos"],[tr.nav_services, "/services"],[tr.nav_experts, "/experts"],[tr.nav_blog, "/blog"],[tr.nav_contact, "/contact"]] },
+              { title: tr.footer_services, links: SERVICES.map(s => [s.label, `/services/${s.slug}`]) },
+              { title: tr.footer_about, links: [["Qui sommes-nous ?", "/a-propos"],["Notre mission", "/a-propos#mission"],["Carrières", "#"],["Presse", "#"]] },
+            ].map(col => (
+              <div key={col.title}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,.28)", letterSpacing: "2px", textTransform: "uppercase", marginBottom: 18 }}>{col.title}</div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 11 }}>
+                  {col.links.map(([label, href]) => (
+                    <Link key={label} href={href} style={{ color: "rgba(255,255,255,.38)", fontSize: 13.5, textDecoration: "none", transition: "color .2s" }}
+                      onMouseEnter={e => (e.target as HTMLElement).style.color = "#F7B500"}
+                      onMouseLeave={e => (e.target as HTMLElement).style.color = "rgba(255,255,255,.38)"}>
+                      {label}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+          <div style={{ borderTop: "1px solid rgba(255,255,255,.06)", paddingTop: 24, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
+            <p style={{ color: "rgba(255,255,255,.2)", fontSize: 13 }}>{tr.footer_copy}</p>
+            <div style={{ display: "flex", gap: 22 }}>
+              {[tr.footer_legal, tr.footer_privacy, tr.footer_cgu].map(item => (
+                <Link key={item} href="#" style={{ color: "rgba(255,255,255,.2)", fontSize: 12.5, textDecoration: "none" }}>{item}</Link>
+              ))}
+            </div>
+          </div>
+        </div>
       </footer>
-    </div>
-  );
-}
-
-/* ══════════════════════════════════════
-   SOUS-COMPOSANTS
-══════════════════════════════════════ */
-function InfoCardContent({ info }: { info: (typeof INFOS)[number] }) {
-  return (
-    <>
-      <div
-        className="w-11 h-11 rounded-2xl flex items-center justify-center text-[18px] flex-shrink-0"
-        style={{ background: `${info.color}18`, color: info.color }}
-      >
-        {info.icon}
-      </div>
-      <div className="min-w-0">
-        <div className="text-[11px] font-bold text-gray-400 uppercase tracking-[1.5px] mb-1">{info.label}</div>
-        <div className="font-black text-[#0A2540] text-[14px] leading-snug">{info.value}</div>
-        <div className="text-gray-400 text-[12px] mt-0.5">{info.sub}</div>
-      </div>
-    </>
-  );
-}
-
-function FormField({
-  label,
-  icon,
-  error,
-  children,
-}: {
-  label: string;
-  icon?: string;
-  error?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="flex flex-col gap-1.5">
-      <label className="text-[13px] font-bold text-gray-700 tracking-[0.3px]">
-        {icon && <span className="mr-1.5">{icon}</span>}
-        {label}
-      </label>
-      {children}
-      {error && (
-        <span className="text-[12px] text-red-500 flex items-center gap-1.5 font-semibold">
-          <FaTimesCircle size={11} /> {error}
-        </span>
-      )}
     </div>
   );
 }

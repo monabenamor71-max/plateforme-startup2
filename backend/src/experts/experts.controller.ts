@@ -1,4 +1,4 @@
-import { Controller, Get, Put, Patch, Post, Body, Param, Request, UseGuards, UseInterceptors, UploadedFile } from '@nestjs/common';
+import { Controller, Get, Put, Patch, Post, Body, Param, Request, UseGuards, UseInterceptors, UploadedFile, Query } from '@nestjs/common';
 import { ExpertsService } from './experts.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -25,17 +25,20 @@ export class ExpertsController {
     return this.expertsService.getListe();
   }
 
+  @Get('by-domaines')
+  async getExpertsByDomaines(@Query('domaines') domaines: string) {
+    if (!domaines) return [];
+    const domainesArray = domaines.split(',');
+    return this.expertsService.findByDomaines(domainesArray);
+  }
+
   @Put('profil')
   @UseGuards(JwtAuthGuard)
   updateProfil(@Request() req: any, @Body() body: any) {
     return this.expertsService.updateProfil(req.user.id, body);
   }
 
-  @Patch('disponibilite')
-  @UseGuards(JwtAuthGuard)
-  updateDisponibilite(@Request() req: any, @Body('disponibilite') disponibilite: string) {
-    return this.expertsService.updateDisponibilite(req.user.id, disponibilite);
-  }
+  // ✅ Route PATCH 'disponibilite' supprimée
 
   @Post('photo')
   @UseGuards(JwtAuthGuard)
@@ -48,16 +51,18 @@ export class ExpertsController {
     }),
   }))
   uploadPhoto(@Request() req: any, @UploadedFile() file: any) {
-    if (!file) return { message: 'Aucun fichier recu' };
+    if (!file) return { message: 'Aucun fichier reçu' };
     return this.expertsService.updatePhoto(req.user.id, file.filename);
   }
 
   @Patch(':id/valider-modification')
+  @UseGuards(JwtAuthGuard)
   validerModification(@Param('id') id: number) {
     return this.expertsService.validerModification(id);
   }
 
   @Patch(':id/refuser-modification')
+  @UseGuards(JwtAuthGuard)
   refuserModification(@Param('id') id: number) {
     return this.expertsService.refuserModification(id);
   }

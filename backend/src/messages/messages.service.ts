@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Message } from './message.entity';
@@ -55,5 +55,19 @@ export class MessagesService {
       where: { receiver_id: userId, lu: false },
     });
     return { count: msgs.length };
+  }
+
+  // ✅ AJOUT : Supprimer un message (vérification des droits)
+  async deleteMessage(id: number, userId: number, isAdmin: boolean) {
+    const message = await this.messageRepo.findOne({ where: { id } });
+    if (!message) {
+      throw new NotFoundException('Message non trouvé');
+    }
+    // Seul l'expéditeur ou un admin peut supprimer
+    if (!isAdmin && message.sender_id !== userId) {
+      throw new ForbiddenException('Vous ne pouvez supprimer que vos propres messages');
+    }
+    await this.messageRepo.delete(id);
+    return { success: true };
   }
 }

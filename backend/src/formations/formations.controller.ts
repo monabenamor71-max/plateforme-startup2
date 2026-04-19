@@ -1,19 +1,18 @@
+// src/formations/formations.controller.ts
 import { Controller, Get, Post, Put, Patch, Delete, Body, Param, UseInterceptors, UploadedFile, UseGuards, Request } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
 import { FormationsService } from './formations.service';
-
-// Si vous avez un guard JWT, décommentez la ligne suivante
-// import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 @Controller('formations')
 export class FormationsController {
   constructor(private formationsService: FormationsService) {}
 
-  // ✅ Route pour qu'un expert propose une formation
-  @Post('services-plateforme/expert/proposer')
-  // @UseGuards(JwtAuthGuard)   // Décommentez si vous avez un guard
+  // Routes experts
+  @Post('expert/proposer')
+  @UseGuards(JwtAuthGuard)
   @UseInterceptors(FileInterceptor('image', {
     storage: diskStorage({
       destination: './uploads/formations',
@@ -23,20 +22,20 @@ export class FormationsController {
       },
     }),
   }))
-async proposerParExpert(@Body() body: any, @UploadedFile() file: any, @Request() req: any) {
-  // Récupération de l'ID de l'expert (temporairement fixe)
-  // const expertId = req.user?.expertId;
-  const expertId = 1; // ID d'un expert valide dans votre base
-  if (!expertId) throw new Error('Expert non authentifié');
-  return this.formationsService.createFromExpert(body, file, expertId);
-}
-@Get('expert/mes-formations')
-async getMesFormations(@Request() req: any) {
-  const expertId = 1; // fixe pour test
-  return this.formationsService.findByExpert(expertId);
-}
+  async proposerParExpert(@Body() body: any, @UploadedFile() file: any, @Request() req: any) {
+    const expertId = req.user.id;
+    if (!expertId) throw new Error('Expert non authentifié');
+    return this.formationsService.createFromExpert(body, file, expertId);
+  }
 
-  // --- Routes ADMIN ---
+  @Get('expert/mes-formations')
+  @UseGuards(JwtAuthGuard)
+  async getMesFormations(@Request() req: any) {
+    const expertId = req.user.id;
+    return this.formationsService.findByExpert(expertId);
+  }
+
+  // Routes admin
   @Post('admin/create')
   @UseInterceptors(FileInterceptor('image', {
     storage: diskStorage({
@@ -56,16 +55,6 @@ async getMesFormations(@Request() req: any) {
     return this.formationsService.findAll();
   }
 
-  @Get('public')
-  async findPublished() {
-    return this.formationsService.findPublished();
-  }
-
-  @Get('public/:id')
-  async findOne(@Param('id') id: number) {
-    return this.formationsService.findOne(id);
-  }
-
   @Put('admin/:id')
   @UseInterceptors(FileInterceptor('image', {
     storage: diskStorage({
@@ -81,13 +70,23 @@ async getMesFormations(@Request() req: any) {
   }
 
   @Patch('admin/:id/statut')
-  async updateStatut(@Param('id') id: number, @Body('statut') statut: string) {
-    return this.formationsService.updateStatut(id, statut);
+  async updateStatut(@Param('id') id: number, @Body() body: { statut: string; commentaire?: string }) {
+    return this.formationsService.updateStatut(id, body.statut, body.commentaire);
   }
 
   @Delete('admin/:id')
   async delete(@Param('id') id: number) {
     return this.formationsService.delete(id);
   }
-  
+
+  // Routes publiques
+  @Get('public')
+  async findPublished() {
+    return this.formationsService.findPublished();
+  }
+
+  @Get('public/:id')
+  async findOne(@Param('id') id: number) {
+    return this.formationsService.findOne(id);
+  }
 }

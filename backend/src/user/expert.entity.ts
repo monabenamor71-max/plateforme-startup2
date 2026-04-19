@@ -1,5 +1,6 @@
+// src/user/expert.entity.ts
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
-import { User } from './user.entity';
+import { User } from './user.entity';   // ← correction : './user.entity'
 
 @Entity('experts')
 export class Expert {
@@ -9,7 +10,7 @@ export class Expert {
   @Column({ nullable: true })
   user_id: number;
 
-  @ManyToOne(() => User, { eager: true })
+  @ManyToOne(() => User, { onDelete: 'CASCADE', eager: true })
   @JoinColumn({ name: 'user_id' })
   user: User;
 
@@ -31,14 +32,11 @@ export class Expert {
   @Column({ nullable: true })
   experience: string;
 
+  @Column({ type: 'int', nullable: true })
+  annee_debut_experience: number | null;
+
   @Column({ nullable: true })
   localisation: string;
-
-  @Column({ nullable: true })
-  disponibilite: string;
-
-  @Column({ nullable: true })
-  telephone: string;
 
   @Column({ default: 'en_attente' })
   statut: string;

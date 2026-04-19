@@ -1,10 +1,41 @@
-import { Controller, Get, Patch, Delete, Param, Body } from '@nestjs/common';
+// src/admin/admin.controller.ts
+import {
+  Controller, Get, Patch, Delete, Param, Body, UseGuards, Post, Put, UseInterceptors, UploadedFiles,
+} from '@nestjs/common';
 import { AdminService } from './admin.service';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { RolesGuard } from '../auth/roles.guard';
+import { Roles } from '../auth/roles.decorator';
+import { FileFieldsInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import { extname } from 'path';
+
+// Configuration du stockage pour les images et PDF
+const articleStorage = diskStorage({
+  destination: (_req, file, cb) => {
+    if (file.fieldname === 'image') {
+      cb(null, './uploads/articles-img');
+    } else {
+      cb(null, './uploads/articles-pdf');
+    }
+  },
+  filename: (_req, file, cb) => {
+    const unique = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+    if (file.fieldname === 'image') {
+      cb(null, `article-${unique}${extname(file.originalname)}`);
+    } else {
+      cb(null, `article-${unique}.pdf`);
+    }
+  },
+});
 
 @Controller('admin')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles('admin')
 export class AdminController {
   constructor(private adminService: AdminService) {}
 
+  // ==================== USERS ====================
   @Get('users')
   getAllUsers() {
     return this.adminService.getAllUsers();
@@ -20,6 +51,7 @@ export class AdminController {
     return this.adminService.toggleUserStatut(id, body.statut);
   }
 
+  // ==================== EXPERTS ====================
   @Get('experts')
   getAllExperts() {
     return this.adminService.getAllExperts();
@@ -40,6 +72,22 @@ export class AdminController {
     return this.adminService.refuserExpert(id);
   }
 
+  @Get('experts/modifications')
+  getExpertsModifications() {
+    return this.adminService.getExpertsModifications();
+  }
+
+  @Patch('experts/:id/valider-modification')
+  validerModificationExpert(@Param('id') id: number) {
+    return this.adminService.validerModificationExpert(id);
+  }
+
+  @Patch('experts/:id/refuser-modification')
+  refuserModificationExpert(@Param('id') id: number) {
+    return this.adminService.refuserModificationExpert(id);
+  }
+
+  // ==================== STARTUPS ====================
   @Get('startups')
   getAllStartups() {
     return this.adminService.getAllStartups();
@@ -58,5 +106,66 @@ export class AdminController {
   @Patch('startups/:id/refuser')
   refuserStartup(@Param('id') id: number) {
     return this.adminService.refuserStartup(id);
+  }
+
+  // ==================== STATS ====================
+  @Get('stats')
+  async getStats() {
+    return this.adminService.getStats();
+  }
+
+  // ==================== BLOG (ARTICLES) ====================
+  @Get('articles/all')
+  async getAllArticles() {
+    return this.adminService.getAllArticlesAdmin();
+  }
+
+  @Get('articles/:id')
+  async getArticleById(@Param('id') id: number) {
+    return this.adminService.findArticleById(id);
+  }
+
+  @Post('articles/create')
+  @UseInterceptors(FileFieldsInterceptor([
+    { name: 'image', maxCount: 1 },
+    { name: 'pdf', maxCount: 1 },
+  ], { storage: articleStorage }))
+  async createArticle(
+    @Body() body: any,
+    @UploadedFiles() files: { image?: Express.Multer.File[]; pdf?: Express.Multer.File[] },
+  ) {
+    const imageFile = files?.image?.[0];
+    const pdfFile = files?.pdf?.[0];
+    return this.adminService.createArticle(body, imageFile, pdfFile);
+  }
+
+  @Put('articles/:id')
+  @UseInterceptors(FileFieldsInterceptor([
+    { name: 'image', maxCount: 1 },
+    { name: 'pdf', maxCount: 1 },
+  ], { storage: articleStorage }))
+  async updateArticle(
+    @Param('id') id: number,
+    @Body() body: any,
+    @UploadedFiles() files: { image?: Express.Multer.File[]; pdf?: Express.Multer.File[] },
+  ) {
+    const imageFile = files?.image?.[0];
+    const pdfFile = files?.pdf?.[0];
+    return this.adminService.updateArticle(id, body, imageFile, pdfFile);
+  }
+
+  @Patch('articles/:id/publier')
+  async publierArticle(@Param('id') id: number) {
+    return this.adminService.updateArticleStatut(id, 'publie');
+  }
+
+  @Patch('articles/:id/archiver')
+  async archiverArticle(@Param('id') id: number) {
+    return this.adminService.updateArticleStatut(id, 'archive');
+  }
+
+  @Delete('articles/:id')
+  async deleteArticle(@Param('id') id: number) {
+    return this.adminService.deleteArticle(id);
   }
 }

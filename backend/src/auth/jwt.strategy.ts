@@ -1,3 +1,4 @@
+// jwt.strategy.ts
 import { Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
@@ -12,11 +13,11 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: any) {
+    // payload doit contenir 'id' (l'ID de l'utilisateur/expert)
     return {
-      id: payload.id,
+      id: payload.id,          // ← c'est ce qui sera dans req.user.id
       email: payload.email,
       role: payload.role,
-      expertId: payload.expertId,
     };
   }
 }

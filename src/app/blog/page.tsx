@@ -1,47 +1,304 @@
 "use client";
+
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
-  FaArrowRight, FaSearch, FaClock, FaEye,
-  FaLock, FaFilePdf, FaChevronDown, FaFilter,
-  FaFire, FaTag, FaTimes, FaCalendarAlt,
+  FaArrowRight, FaClock, FaEye,
+  FaLock, FaChevronDown,
+  FaTimes, FaCalendarAlt, FaSearch,
+  FaTag, FaGlobe, FaCheck,
 } from "react-icons/fa";
 
 const BASE = "http://localhost:3001";
 
-const CATEGORIES = [
-  "Toutes","Finance & Marchés","IA & Digital","RH & Organisation",
-  "Stratégie","Startup","Management","Marketing","Droit & Conformité","Économie",
+// ==================== TRADUCTIONS ====================
+
+type Lang = "fr" | "en";
+
+const T: Record<Lang, Record<string, string>> = {
+  fr: {
+    // Header
+    nav_home: "Accueil",
+    nav_about: "À propos",
+    nav_services: "Services",
+    nav_experts: "Experts",
+    nav_blog: "Blog",
+    nav_contact: "Contact",
+    btn_login: "Connexion",
+    btn_signup: "S'inscrire",
+    // Hero
+    hero_title: "Notre Blog",
+    hero_desc: "Conseils, actualités et bonnes pratiques pour réussir vos projets digitaux.",
+    // Main
+    articles_recent: "Articles récents",
+    articles_count: "article",
+    articles_count_plural: "articles",
+    loading: "Chargement des articles...",
+    no_articles: "Aucun article trouvé",
+    no_articles_desc: "Essayez d'autres filtres ou termes de recherche",
+    reset_filters: "Tout afficher",
+    // Sidebar
+    search_category: "Rechercher une catégorie",
+    categories: "Catégories",
+    all_categories: "Toutes les catégories",
+    stay_informed: "Restez informé",
+    newsletter_desc: "Abonnez-vous pour recevoir les derniers articles directement dans votre boîte mail.",
+    newsletter_placeholder: "Votre email...",
+    newsletter_btn: "S'abonner",
+    // Footer
+    footer_desc: "Plateforme de mise en relation entre startups ambitieuses et experts certifiés.",
+    footer_nav: "Navigation",
+    footer_services: "Services",
+    footer_about: "À propos",
+    footer_about_us: "Qui sommes-nous ?",
+    footer_mission: "Notre mission",
+    footer_careers: "Carrières",
+    footer_press: "Presse",
+    footer_legal: "Mentions légales",
+    footer_privacy: "Confidentialité",
+    footer_cgu: "CGU",
+    footer_copy: "© 2026 Business Expert Hub · Tous droits réservés",
+    // Modal
+    modal_title: "Contenu réservé aux membres",
+    modal_desc_prefix: "«",
+    modal_desc_suffix: "»",
+    modal_text: "Créez un compte gratuit ou connectez-vous pour accéder à cet article.",
+    modal_create: "Créer un compte gratuit",
+    modal_login: "Se connecter",
+    // Article row
+    read: "Lire",
+  },
+  en: {
+    // Header
+    nav_home: "Home",
+    nav_about: "About",
+    nav_services: "Services",
+    nav_experts: "Experts",
+    nav_blog: "Blog",
+    nav_contact: "Contact",
+    btn_login: "Login",
+    btn_signup: "Sign up",
+    // Hero
+    hero_title: "Our Blog",
+    hero_desc: "Tips, news and best practices to succeed in your digital projects.",
+    // Main
+    articles_recent: "Recent articles",
+    articles_count: "article",
+    articles_count_plural: "articles",
+    loading: "Loading articles...",
+    no_articles: "No articles found",
+    no_articles_desc: "Try different filters or search terms",
+    reset_filters: "Show all",
+    // Sidebar
+    search_category: "Search a category",
+    categories: "Categories",
+    all_categories: "All categories",
+    stay_informed: "Stay informed",
+    newsletter_desc: "Subscribe to receive the latest articles directly in your inbox.",
+    newsletter_placeholder: "Your email...",
+    newsletter_btn: "Subscribe",
+    // Footer
+    footer_desc: "Matching platform connecting ambitious startups with certified experts.",
+    footer_nav: "Navigation",
+    footer_services: "Services",
+    footer_about: "About",
+    footer_about_us: "Who are we?",
+    footer_mission: "Our mission",
+    footer_careers: "Careers",
+    footer_press: "Press",
+    footer_legal: "Legal notice",
+    footer_privacy: "Privacy",
+    footer_cgu: "Terms of use",
+    footer_copy: "© 2026 Business Expert Hub · All rights reserved",
+    // Modal
+    modal_title: "Members-only content",
+    modal_desc_prefix: "«",
+    modal_desc_suffix: "»",
+    modal_text: "Create a free account or log in to access this article.",
+    modal_create: "Create a free account",
+    modal_login: "Log in",
+    // Article row
+    read: "Read",
+  },
+};
+
+function LangSwitcher({ lang, setLang }: { lang: Lang; setLang: (l: Lang) => void }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  const LANGS: { code: Lang; label: string; short: string }[] = [
+    { code: "fr", label: "Français", short: "FR" },
+    { code: "en", label: "English", short: "EN" },
+  ];
+
+  function select(code: Lang) {
+    setLang(code);
+    setOpen(false);
+    if (typeof window !== "undefined") localStorage.setItem("beh_lang", code);
+  }
+
+  const current = LANGS.find(l => l.code === lang)!;
+
+  return (
+    <div ref={ref} style={{ position: "relative", flexShrink: 0 }}>
+      <button
+        onClick={() => setOpen(!open)}
+        style={{
+          display: "flex", alignItems: "center", gap: 6,
+          background: "transparent",
+          border: "none",
+          padding: "6px 8px",
+          cursor: "pointer",
+          fontFamily: "'DM Sans', sans-serif",
+          fontSize: 13.5, fontWeight: 600,
+          color: "#374151",
+          borderRadius: 8,
+          transition: "color .18s, background .18s",
+          outline: "none",
+        }}
+        onMouseEnter={e => { e.currentTarget.style.color = "#0A2540"; e.currentTarget.style.background = "#F3F4F6"; }}
+        onMouseLeave={e => { if (!open) { e.currentTarget.style.color = "#374151"; e.currentTarget.style.background = "transparent"; } }}
+      >
+        <FaGlobe size={15} style={{ color: "#6B7280", flexShrink: 0 }} />
+        <span style={{ letterSpacing: ".3px" }}>{current.short}</span>
+      </button>
+
+      {open && (
+        <div style={{
+          position: "absolute", top: "calc(100% + 6px)", right: 0,
+          background: "#fff", borderRadius: 12,
+          boxShadow: "0 8px 32px rgba(10,37,64,.13)",
+          border: "1px solid #E5E7EB",
+          overflow: "hidden", minWidth: 140, zIndex: 400,
+          animation: "langDrop .15s cubic-bezier(.22,1,.36,1)",
+        }}>
+          {LANGS.map(l => (
+            <button
+              key={l.code}
+              onClick={() => select(l.code)}
+              style={{
+                width: "100%", display: "flex", alignItems: "center", gap: 10,
+                padding: "10px 14px",
+                background: l.code === lang ? "#F9FAFB" : "transparent",
+                border: "none", cursor: "pointer",
+                fontFamily: "'DM Sans', sans-serif",
+                fontSize: 13.5,
+                fontWeight: l.code === lang ? 700 : 500,
+                color: l.code === lang ? "#0A2540" : "#6B7280",
+                transition: "background .12s, color .12s",
+                textAlign: "left",
+              }}
+              onMouseEnter={e => { if (l.code !== lang) { e.currentTarget.style.background = "#F3F4F6"; e.currentTarget.style.color = "#374151"; } }}
+              onMouseLeave={e => { if (l.code !== lang) { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#6B7280"; } }}
+            >
+              <FaGlobe size={13} style={{ color: l.code === lang ? "#F7B500" : "#9CA3AF", flexShrink: 0 }} />
+              <span style={{ flex: 1 }}>{l.label}</span>
+              {l.code === lang && (
+                <span style={{ width: 16, height: 16, borderRadius: "50%", background: "#0A2540", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <FaCheck size={7} style={{ color: "#F7B500" }} />
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ==================== CONSTANTES ====================
+
+const DEFAULT_CATEGORIES = [
+  "Développement",
+  "Intelligence artificielle",
+  "Business",
+  "Conseils",
+  "Sécurité",
+  "Design",
+  "Marketing",
+  "Finance",
+  "Ressources Humaines",
+  "Stratégie",
 ];
 
-const TYPES = [
-  { val:"", label:"Tout" },
-  { val:"article", label:"Articles" },
-  { val:"conseil", label:"Conseils" },
-  { val:"nouveaute", label:"Nouveautés" },
+const SERVICES = [
+  { label: "Consulting",     slug: "consulting"     },
+  { label: "Audit sur site", slug: "audit-sur-site" },
+  { label: "Accompagnement", slug: "accompagnement" },
+  { label: "Formations",     slug: "formations"     },
 ];
 
 export default function BlogPage() {
   const router = useRouter();
-  const [articles, setArticles] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
-  const [categorie, setCategorie] = useState("Toutes");
-  const [typeFilter, setTypeFilter] = useState("");
-  const [showLockModal, setShowLockModal] = useState(false);
-  const [lockArticle, setLockArticle] = useState<any>(null);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [navOpen, setNavOpen] = useState(false);
+  const [lang, setLang] = useState<Lang>("fr");
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const saved = localStorage.getItem("beh_lang") as Lang | null;
+    if (saved === "fr" || saved === "en") setLang(saved);
+  }, []);
+  const tr = T[lang];
 
+  const [articles, setArticles]       = useState<any[]>([]);
+  const [allArticles, setAllArticles] = useState<any[]>([]);
+  const [loading, setLoading]         = useState(true);
+  const [selectedCat, setSelectedCat] = useState("Toutes");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showLockModal, setShowLockModal] = useState(false);
+  const [lockArticle, setLockArticle]    = useState<any>(null);
+  const [isLoggedIn, setIsLoggedIn]      = useState(false);
+  const [navOpen, setNavOpen]            = useState(false);
+  const [categoriesWithCount, setCategoriesWithCount] = useState<{name: string; count: number}[]>([]);
+
+  // Charger tous les articles
   useEffect(() => {
     const u = localStorage.getItem("user");
     setIsLoggedIn(!!u);
-    fetch(`${BASE}/articles/publics`)
+
+    fetch(`${BASE}/articles/public`)
       .then(r => r.ok ? r.json() : [])
-      .then(d => { setArticles(Array.isArray(d) ? d : []); setLoading(false); })
+      .then(data => {
+        const list = Array.isArray(data) ? data : [];
+        setAllArticles(list);
+        setArticles(list);
+
+        // Calculer les catégories avec leur nombre d'articles
+        const countMap: Record<string, number> = {};
+        list.forEach((a: any) => {
+          const cat = a.categorie || "Général";
+          countMap[cat] = (countMap[cat] || 0) + 1;
+        });
+        const sorted = Object.entries(countMap)
+          .sort((a, b) => b[1] - a[1])
+          .map(([name, count]) => ({ name, count }));
+        setCategoriesWithCount(sorted);
+        setLoading(false);
+      })
       .catch(() => setLoading(false));
   }, []);
+
+  // Filtrer les articles selon catégorie + recherche (par catégorie)
+  useEffect(() => {
+    let filtered = allArticles;
+    if (selectedCat !== "Toutes") {
+      filtered = filtered.filter(a => (a.categorie || "Général") === selectedCat);
+    }
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      filtered = filtered.filter(a =>
+        (a.categorie || "Général").toLowerCase().includes(q)
+      );
+    }
+    setArticles(filtered);
+  }, [selectedCat, searchQuery, allArticles]);
 
   function handleArticleClick(article: any) {
     if (article.acces_prive && !isLoggedIn) {
@@ -52,334 +309,330 @@ export default function BlogPage() {
     router.push(`/blog/${article.id}`);
   }
 
-  const SERVICES = [
-    { label:"Consulting", slug:"consulting" },
-    { label:"Audit sur site", slug:"audit-sur-site" },
-    { label:"Accompagnement", slug:"accompagnement" },
-    { label:"Formations", slug:"formations" },
-  ];
-
-  const filtered = articles.filter(a => {
-    const q = search.toLowerCase();
-    const matchSearch = !q ||
-      a.titre?.toLowerCase().includes(q) ||
-      a.description?.toLowerCase().includes(q) ||
-      (a.tags || []).some((t: string) => t.toLowerCase().includes(q)) ||
-      a.categorie?.toLowerCase().includes(q);
-    const matchCat = categorie === "Toutes" || a.categorie === categorie;
-    const matchType = !typeFilter || a.type === typeFilter;
-    return matchSearch && matchCat && matchType;
-  });
-
-  const tendance = filtered.filter(a => a.tres_tendance);
-  const autres = filtered.filter(a => !a.tres_tendance);
+  // Helper pour formater la date selon la langue
+  function formatDate(dateStr: string) {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return "";
+    return d.toLocaleDateString(lang === "fr" ? "fr-FR" : "en-GB", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+  }
 
   return (
-    <div style={{ fontFamily:"'Outfit',sans-serif", background:"#fff", minHeight:"100vh" }}>
+    <div style={{ fontFamily: "'DM Sans', sans-serif", background: "#F8FAFC", minHeight: "100vh" }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Fraunces:ital,wght@0,700;0,900;1,700&display=swap');
-        *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-        ::selection{background:#F7B500;color:#0A2540;}
-        .nl{color:#475569;text-decoration:none;font-size:14.5px;font-weight:500;transition:color .2s;}
-        .nl:hover{color:#F7B500;}
-        .di{display:block;padding:10px 18px;color:#334155;text-decoration:none;font-size:14px;font-weight:500;transition:background .15s,color .15s;white-space:nowrap;}
-        .di:hover{background:#FFFBEB;color:#F7B500;}
-        .bno{border:2px solid #0A2540;color:#0A2540;background:transparent;padding:9px 22px;border-radius:9px;font-weight:700;font-size:13.5px;cursor:pointer;transition:all .22s;font-family:inherit;}
-        .bno:hover{background:#F7B500;border-color:#F7B500;}
-        .bns{background:#F7B500;color:#0A2540;border:none;padding:9px 22px;border-radius:9px;font-weight:800;font-size:13.5px;cursor:pointer;transition:all .22s;font-family:inherit;}
-        .bns:hover{background:#e6a800;box-shadow:0 8px 20px rgba(247,181,0,.38);}
-        @keyframes spin{to{transform:rotate(360deg)}}
-        @keyframes fadeIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
-        .card-animation{animation:fadeIn .5s cubic-bezier(.22,1,.36,1) both;}
-        .search-inp{width:100%;background:#F8FAFC;border:1.5px solid #E2EAF4;border-radius:12px;padding:13px 16px 13px 44px;font-family:'Outfit',sans-serif;font-size:14px;color:#0A2540;outline:none;transition:all .2s;}
-        .search-inp:focus{border-color:#F7B500;box-shadow:0 0 0 3px rgba(247,181,0,.1);background:#fff;}
-        .cat-btn{border:1.5px solid #E2EAF4;border-radius:99px;padding:7px 16px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;background:#fff;color:#475569;white-space:nowrap;}
-        .cat-btn.active,.cat-btn:hover{border-color:#0A2540;background:#0A2540;color:#fff;}
-        .type-btn{border:1.5px solid #E2EAF4;border-radius:8px;padding:8px 16px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;background:#fff;color:#475569;}
-        .type-btn.active{border-color:#F7B500;background:#FFF8E1;color:#B45309;}
-        .modal-bg{position:fixed;inset:0;background:rgba(10,37,64,.6);z-index:999;display:flex;align-items:center;justify-content:center;padding:24px;backdrop-filter:blur(8px);}
-        .art-card{background:#fff;border-radius:20px;overflow:hidden;border:1px solid rgba(10,37,64,.07);box-shadow:0 4px 20px rgba(10,37,64,.06);display:flex;flex-direction:column;transition:transform .35s cubic-bezier(.22,1,.36,1),box-shadow .35s,border-color .35s;text-decoration:none;height:100%;}
-        .art-card:hover{transform:translateY(-8px);box-shadow:0 28px 60px rgba(10,37,64,.14);border-color:rgba(247,181,0,.3);}
-        .art-card:hover .art-img{transform:scale(1.05);}
-        .art-img{transition:transform .6s cubic-bezier(.22,1,.36,1);width:100%;height:100%;object-fit:cover;}
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800;0,9..40,900&display=swap');
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        ::selection { background: #F7B500; color: #0A2540; }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes fadeUp { from { opacity:0; transform:translateY(22px); } to { opacity:1; transform:none; } }
+        @keyframes langDrop{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+
+        .nav-l { color: #374151; text-decoration: none; font-size: 14px; font-weight: 500; transition: color .18s; }
+        .nav-l:hover { color: #F7B500; }
+        .nav-l.act { color: #0A2540; font-weight: 700; }
+        .drp-i { display: block; padding: 9px 16px; color: #374151; text-decoration: none; font-size: 13.5px; font-weight: 500; transition: background .12s, color .12s; }
+        .drp-i:hover { background: #FFFBEB; color: #F7B500; }
+
+        .search-wrap { position: relative; }
+        .search-wrap input { width: 100%; padding: 10px 40px 10px 14px; border: 1.5px solid #E5E7EB; border-radius: 10px; font-family: 'DM Sans', sans-serif; font-size: 13.5px; color: #374151; outline: none; transition: border-color .18s, box-shadow .18s; background: #fff; }
+        .search-wrap input:focus { border-color: #0A2540; box-shadow: 0 0 0 3px rgba(10,37,64,.07); }
+        .search-wrap .ico { position: absolute; right: 13px; top: 50%; transform: translateY(-50%); color: #9CA3AF; pointer-events: none; }
+
+        .cat-row { display: flex; align-items: center; justify-content: space-between; padding: 9px 14px; border-radius: 9px; cursor: pointer; transition: background .15s; }
+        .cat-row:hover { background: #F3F4F6; }
+        .cat-row.active { background: #0A2540; }
+        .cat-row.active .cat-name { color: #F7B500; font-weight: 700; }
+        .cat-row.active .cat-cnt { background: #F7B500; color: #0A2540; }
+        .cat-name { font-size: 13.5px; color: #374151; font-weight: 500; transition: color .15s; }
+        .cat-cnt { background: #E5E7EB; color: #6B7280; border-radius: 99px; padding: 2px 9px; font-size: 11px; font-weight: 700; min-width: 26px; text-align: center; transition: background .15s, color .15s; }
+
+        .art-row { display: flex; gap: 20px; background: #fff; border-radius: 16px; overflow: hidden; border: 1px solid #E5E7EB; transition: box-shadow .28s, transform .28s, border-color .28s; cursor: pointer; }
+        .art-row:hover { box-shadow: 0 12px 40px rgba(10,37,64,.1); transform: translateY(-3px); border-color: rgba(247,181,0,.35); }
+        .art-row:hover .art-thumb { transform: scale(1.06); }
+        .art-thumb { transition: transform .5s cubic-bezier(.22,1,.36,1); width: 100%; height: 100%; object-fit: cover; }
+
+        .modal-bg { position: fixed; inset: 0; background: rgba(10,37,64,.55); z-index: 999; display: flex; align-items: center; justify-content: center; padding: 24px; backdrop-filter: blur(8px); }
+
+        .sub-btn { width: 100%; padding: 12px; background: #0A2540; color: #F7B500; border: none; border-radius: 10px; font-family: 'DM Sans', sans-serif; font-weight: 700; font-size: 14px; cursor: pointer; transition: background .2s; }
+        .sub-btn:hover { background: #F7B500; color: #0A2540; }
+        .sub-inp { width: 100%; padding: 11px 14px; border: 1.5px solid #E5E7EB; border-radius: 10px; font-family: 'DM Sans', sans-serif; font-size: 13.5px; outline: none; transition: border-color .18s; }
+        .sub-inp:focus { border-color: #0A2540; }
+
+        ::-webkit-scrollbar { width: 5px; } ::-webkit-scrollbar-track { background: transparent; } ::-webkit-scrollbar-thumb { background: #D1D5DB; border-radius: 99px; }
       `}</style>
 
-      {/* Modal accès réservé */}
+      {/* MODAL ACCÈS PRIVÉ */}
       {showLockModal && (
         <div className="modal-bg" onClick={() => setShowLockModal(false)}>
-          <div style={{
-            background:"#fff", borderRadius:24, padding:"44px 40px",
-            maxWidth:420, width:"100%", textAlign:"center",
-            boxShadow:"0 40px 100px rgba(10,37,64,.3)",
-            position:"relative",
-          }} onClick={e => e.stopPropagation()}>
-            <button onClick={() => setShowLockModal(false)}
-              style={{ position:"absolute", top:14, right:16, background:"none", border:"none", fontSize:20, color:"#CBD5E1", cursor:"pointer" }}>
-              <FaTimes />
-            </button>
-            <div style={{
-              width:72, height:72, borderRadius:"50%",
-              background:"linear-gradient(135deg,#F7B500,#e6a800)",
-              display:"flex", alignItems:"center", justifyContent:"center",
-              margin:"0 auto 20px",
-              boxShadow:"0 10px 28px rgba(247,181,0,.3)",
-            }}>
-              <FaLock size={26} style={{ color:"#0A2540" }} />
+          <div style={{ background: "#fff", borderRadius: 22, padding: "44px 40px", maxWidth: 420, width: "100%", textAlign: "center", boxShadow: "0 40px 100px rgba(10,37,64,.28)", position: "relative" }} onClick={e => e.stopPropagation()}>
+            <button onClick={() => setShowLockModal(false)} style={{ position: "absolute", top: 14, right: 16, background: "none", border: "none", fontSize: 20, color: "#CBD5E1", cursor: "pointer" }}><FaTimes /></button>
+            <div style={{ width: 68, height: 68, borderRadius: "50%", background: "linear-gradient(135deg,#F7B500,#e6a800)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px", boxShadow: "0 10px 28px rgba(247,181,0,.3)" }}>
+              <FaLock size={24} style={{ color: "#0A2540" }} />
             </div>
-            <h3 style={{ fontFamily:"'Outfit',sans-serif", fontSize:22, fontWeight:800, color:"#0A2540", marginBottom:10 }}>
-              Contenu réservé aux membres
-            </h3>
-            <p style={{ color:"#64748B", fontSize:14.5, lineHeight:1.75, marginBottom:8 }}>
-              <strong style={{ color:"#0A2540" }}>« {lockArticle?.titre} »</strong>
+            <h3 style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 20, fontWeight: 800, color: "#0A2540", marginBottom: 10 }}>{tr.modal_title}</h3>
+            <p style={{ color: "#64748B", fontSize: 14, lineHeight: 1.75, marginBottom: 6 }}>
+              <strong style={{ color: "#0A2540" }}>{tr.modal_desc_prefix}{lockArticle?.titre}{tr.modal_desc_suffix}</strong>
             </p>
-            <p style={{ color:"#64748B", fontSize:14, lineHeight:1.75, marginBottom:28 }}>
-              Créez un compte gratuit ou connectez-vous pour accéder à cet article
-            </p>
-            <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
-              <Link href="/inscription" onClick={() => setShowLockModal(false)}>
-                <button style={{ width:"100%", background:"#0A2540", color:"#F7B500", border:"none", borderRadius:11, padding:"14px", fontFamily:"inherit", fontWeight:800, fontSize:15, cursor:"pointer" }}>
-                  Créer un compte gratuit
-                </button>
-              </Link>
-              <Link href="/connexion" onClick={() => setShowLockModal(false)}>
-                <button style={{ width:"100%", background:"transparent", color:"#0A2540", border:"1.5px solid #E2EAF4", borderRadius:11, padding:"12px", fontFamily:"inherit", fontWeight:600, fontSize:14, cursor:"pointer" }}>
-                  Se connecter
-                </button>
-              </Link>
+            <p style={{ color: "#64748B", fontSize: 13.5, lineHeight: 1.75, marginBottom: 28 }}>{tr.modal_text}</p>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              <Link href="/inscription" onClick={() => setShowLockModal(false)}><button style={{ width: "100%", background: "#0A2540", color: "#F7B500", border: "none", borderRadius: 11, padding: "13px", fontFamily: "inherit", fontWeight: 800, fontSize: 14.5, cursor: "pointer" }}>{tr.modal_create}</button></Link>
+              <Link href="/connexion" onClick={() => setShowLockModal(false)}><button style={{ width: "100%", background: "transparent", color: "#0A2540", border: "1.5px solid #E5E7EB", borderRadius: 11, padding: "11px", fontFamily: "inherit", fontWeight: 600, fontSize: 13.5, cursor: "pointer" }}>{tr.modal_login}</button></Link>
             </div>
           </div>
         </div>
       )}
 
-      {/* Header */}
-      <header style={{ background:"#fff", position:"sticky", top:0, zIndex:100, boxShadow:"0 1px 0 #EEF2F7,0 4px 18px rgba(10,37,64,.05)" }}>
-        <div style={{ maxWidth:1280, margin:"0 auto", padding:"0 28px", height:76, display:"flex", alignItems:"center", justifyContent:"space-between", gap:20 }}>
-          <Link href="/" style={{ display:"flex", alignItems:"center", gap:11, textDecoration:"none", flexShrink:0 }}>
-            <svg width="40" height="40" viewBox="0 0 46 46" fill="none">
-              <rect width="46" height="46" rx="11" fill="#0A2540" />
-              <text x="50%" y="55%" dominantBaseline="middle" textAnchor="middle" fill="#F7B500" fontSize="14" fontWeight="900" fontFamily="Arial">BEH</text>
-            </svg>
-            <span style={{ fontWeight:700, fontSize:18, color:"#0A2540" }}>
-              Business <span style={{ color:"#F7B500" }}>Expert</span> Hub
-            </span>
+      {/* HEADER AVEC SÉLECTEUR DE LANGUE */}
+      <header style={{ background: "#fff", position: "sticky", top: 0, zIndex: 100, borderBottom: "1px solid #F1F5F9", boxShadow: "0 1px 0 #EEF2F7,0 4px 16px rgba(10,37,64,.05)" }}>
+        <div style={{ maxWidth: 1280, margin: "0 auto", padding: "0 28px", height: 74, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 20 }}>
+          <Link href="/" style={{ display: "flex", alignItems: "center", gap: 11, textDecoration: "none", flexShrink: 0 }}>
+            <div style={{ width: 40, height: 40, background: "#0A2540", borderRadius: 11, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "Arial,sans-serif", fontWeight: 900, fontSize: 13, color: "#F7B500" }}>BEH</div>
+            <span style={{ fontFamily: "'DM Sans',sans-serif", fontWeight: 800, fontSize: 17, color: "#0A2540" }}>Business <span style={{ color: "#F7B500" }}>Expert</span> Hub</span>
           </Link>
-          <nav style={{ display:"flex", gap:20, alignItems:"center", flex:1, justifyContent:"center" }}>
-            <Link href="/" className="nl">Accueil</Link>
-            <Link href="/a-propos" className="nl">À propos</Link>
-            <div style={{ position:"relative" }} onMouseEnter={() => setNavOpen(true)} onMouseLeave={() => setNavOpen(false)}>
-              <span className="nl" style={{ cursor:"pointer", display:"flex", alignItems:"center", gap:4 }}>
-                Services <FaChevronDown size={9} />
-              </span>
+          <nav style={{ display: "flex", gap: 24, alignItems: "center" }}>
+            <Link href="/" className="nav-l">{tr.nav_home}</Link>
+            <Link href="/a-propos" className="nav-l">{tr.nav_about}</Link>
+            <div style={{ position: "relative" }} onMouseEnter={() => setNavOpen(true)} onMouseLeave={() => setNavOpen(false)}>
+              <span className="nav-l" style={{ cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>{tr.nav_services} <FaChevronDown size={9} /></span>
               {navOpen && (
-                <ul style={{ position:"absolute", top:"calc(100% + 10px)", left:0, background:"#fff", borderRadius:14, listStyle:"none", padding:"8px", margin:0, zIndex:200, minWidth:210, boxShadow:"0 16px 48px rgba(10,37,64,.14)", border:"1px solid #EEF2F7" }}>
-                  {SERVICES.map(s => (
-                    <li key={s.slug}><Link href={`/services/${s.slug}`} className="di">{s.label}</Link></li>
-                  ))}
+                <ul style={{ position: "absolute", top: "calc(100% + 10px)", left: 0, background: "#fff", borderRadius: 14, listStyle: "none", padding: "6px", margin: 0, zIndex: 200, minWidth: 200, boxShadow: "0 12px 44px rgba(10,37,64,.12)", border: "1px solid #F1F5F9" }}>
+                  {SERVICES.map(s => <li key={s.slug}><Link href={`/services/${s.slug}`} className="drp-i">{s.label}</Link></li>)}
                 </ul>
               )}
             </div>
-            <Link href="/experts" className="nl">Experts</Link>
-            <Link href="/blog" className="nl" style={{ color:"#F7B500", fontWeight:700 }}>Blog</Link>
-            <Link href="/contact" className="nl">Contact</Link>
+            <Link href="/experts" className="nav-l">{tr.nav_experts}</Link>
+            <Link href="/blog" className="nav-l act">{tr.nav_blog}</Link>
+            <Link href="/contact" className="nav-l">{tr.nav_contact}</Link>
           </nav>
-          <div style={{ display:"flex", gap:10, alignItems:"center", flexShrink:0 }}>
-            <Link href="/connexion"><button className="bno">Connexion</button></Link>
-            <Link href="/inscription"><button className="bns">S&apos;inscrire</button></Link>
+          <div style={{ display: "flex", gap: 10, alignItems: "center", flexShrink: 0 }}>
+            <LangSwitcher lang={lang} setLang={setLang} />
+            <div style={{ width: 1, height: 24, background: "#E5E7EB", margin: "0 4px" }} />
+            <Link href="/connexion" style={{ padding: "9px 20px", border: "1.5px solid rgba(10,37,64,.18)", borderRadius: 9, color: "#0A2540", fontWeight: 600, fontSize: 13.5, textDecoration: "none", transition: "all .18s", fontFamily: "'DM Sans',sans-serif" }}>{tr.btn_login}</Link>
+            <Link href="/inscription" style={{ padding: "9px 20px", background: "#F7B500", borderRadius: 9, color: "#0A2540", fontWeight: 800, fontSize: 13.5, textDecoration: "none", transition: "all .18s", fontFamily: "'DM Sans',sans-serif" }}>{tr.btn_signup}</Link>
           </div>
         </div>
       </header>
 
-      {/* Hero Blog */}
-      <section style={{
-        background:"linear-gradient(135deg,#0A2540 0%,#1a3f6f 60%,#0d2850 100%)",
-        padding:"64px 28px 52px",
-        position:"relative", overflow:"hidden",
-      }}>
-        <div style={{ position:"absolute", inset:0, backgroundImage:"radial-gradient(rgba(255,255,255,.02) 1px,transparent 1px)", backgroundSize:"44px 44px", pointerEvents:"none" }} />
-        <div style={{ maxWidth:1200, margin:"0 auto", position:"relative", zIndex:10 }}>
-          <div style={{ display:"flex", alignItems:"center", gap:9, marginBottom:20, opacity:.7 }}>
-            <Link href="/" style={{ color:"rgba(255,255,255,.5)", textDecoration:"none", fontSize:13 }}>Accueil</Link>
-            <span style={{ color:"rgba(255,255,255,.3)" }}>›</span>
-            <span style={{ color:"#F7B500", fontSize:13, fontWeight:600 }}>Blog</span>
+      {/* HERO */}
+      <section style={{ position: "relative", background: "#0A2540", overflow: "hidden", minHeight: 200 }}>
+        <div style={{ position: "absolute", inset: 0, backgroundImage: "url('https://images.unsplash.com/photo-1499750310107-5fef28a66643?w=1400&q=80')", backgroundSize: "cover", backgroundPosition: "center", opacity: .22 }} />
+        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(135deg,rgba(10,37,64,.97) 0%,rgba(10,37,64,.82) 60%,rgba(10,37,64,.65) 100%)" }} />
+        <div style={{ position: "absolute", inset: 0, backgroundImage: "radial-gradient(rgba(255,255,255,.02) 1px,transparent 1px)", backgroundSize: "40px 40px" }} />
+        <div style={{ position: "absolute", top: -80, right: -60, width: 400, height: 400, borderRadius: "50%", background: "radial-gradient(circle,rgba(247,181,0,.07) 0%,transparent 65%)" }} />
+
+        <div style={{ position: "relative", zIndex: 2, maxWidth: 1200, margin: "0 auto", padding: "52px 28px 44px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 22, opacity: .7 }}>
+            <Link href="/" style={{ color: "rgba(255,255,255,.45)", textDecoration: "none", fontSize: 12.5 }}>{tr.nav_home}</Link>
+            <span style={{ color: "rgba(255,255,255,.25)" }}>›</span>
+            <span style={{ color: "#F7B500", fontSize: 12.5, fontWeight: 600 }}>{tr.nav_blog}</span>
           </div>
-          <h1 style={{
-            fontFamily:"'Fraunces',serif",
-            fontSize:"clamp(36px,5vw,64px)",
-            fontWeight:900, color:"#fff",
-            lineHeight:1.1, marginBottom:16,
-          }}>
-            Insights &amp; <span style={{ color:"#F7B500", fontStyle:"italic" }}>Expertises</span>
+          <h1 style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "clamp(36px,5vw,52px)", fontWeight: 800, color: "#F7B500", lineHeight: 1.2, marginBottom: 14 }}>
+            {tr.hero_title}
           </h1>
-          <p style={{ fontSize:16, color:"rgba(255,255,255,.6)", maxWidth:520, lineHeight:1.85, marginBottom:36 }}>
-            Articles, conseils et analyses de nos experts pour accélérer la croissance de votre startup.
+          <p style={{ fontSize: 16, color: "rgba(255,255,255,.65)", maxWidth: 480, lineHeight: 1.75 }}>
+            {tr.hero_desc}
           </p>
-
-         
-
-          {/* Stats */}
-          <div style={{ display:"flex", gap:28, marginTop:28 }}>
-            <div><span style={{ fontSize:22, fontWeight:800, color:"#F7B500" }}>{articles.length}</span><span style={{ fontSize:12, color:"rgba(255,255,255,.4)", marginLeft:6 }}>articles publiés</span></div>
-          </div>
         </div>
       </section>
 
-      {/* Filtres */}
-      <div style={{ background:"#fff", borderBottom:"1px solid #F1F5F9", padding:"0 28px", position:"sticky", top:76, zIndex:90, boxShadow:"0 2px 12px rgba(10,37,64,.04)" }}>
-        <div style={{ maxWidth:1200, margin:"0 auto", padding:"14px 0", display:"flex", alignItems:"center", gap:16, overflowX:"auto" }}>
-          <div style={{ display:"flex", alignItems:"center", gap:6, flexShrink:0 }}>
-            <FaFilter size={11} style={{ color:"#94A3B8" }} />
-            <span style={{ fontSize:12, color:"#94A3B8", fontWeight:700, textTransform:"uppercase", letterSpacing:"1px" }}>Filtrer</span>
+      {/* MAIN */}
+      <main style={{ maxWidth: 1200, margin: "0 auto", padding: "40px 28px 80px", display: "grid", gridTemplateColumns: "1fr 320px", gap: 36, alignItems: "start" }}>
+
+        {/* COLONNE GAUCHE */}
+        <div>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
+            <h2 style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 24, fontWeight: 700, color: "#0A2540" }}>
+              {tr.articles_recent}
+            </h2>
+            <div style={{ fontSize: 13, color: "#9CA3AF" }}>
+              {articles.length} {articles.length > 1 ? tr.articles_count_plural : tr.articles_count}
+            </div>
           </div>
-          <div style={{ display:"flex", gap:6, flexShrink:0 }}>
-            {TYPES.map(t => (
-              <button key={t.val} className={`type-btn${typeFilter===t.val?" active":""}`} onClick={() => setTypeFilter(t.val)}>
-                {t.label}
-              </button>
+
+          {loading ? (
+            <div style={{ textAlign: "center", padding: "80px 0" }}>
+              <div style={{ width: 38, height: 38, border: "3px solid #F7B500", borderTopColor: "transparent", borderRadius: "50%", animation: "spin .8s linear infinite", margin: "0 auto 14px" }} />
+              <div style={{ color: "#9CA3AF", fontSize: 14 }}>{tr.loading}</div>
+            </div>
+          ) : articles.length === 0 ? (
+            <div style={{ textAlign: "center", padding: "80px 0", background: "#fff", borderRadius: 16, border: "1px solid #E5E7EB" }}>
+              <div style={{ fontSize: 48, marginBottom: 14 }}>📝</div>
+              <div style={{ fontWeight: 700, fontSize: 18, color: "#0A2540", marginBottom: 8 }}>{tr.no_articles}</div>
+              <div style={{ color: "#9CA3AF", fontSize: 14, marginBottom: 20 }}>{tr.no_articles_desc}</div>
+              <button onClick={() => { setSelectedCat("Toutes"); setSearchQuery(""); }} style={{ background: "#0A2540", color: "#fff", border: "none", borderRadius: 9, padding: "10px 22px", fontFamily: "inherit", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>{tr.reset_filters}</button>
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+              {articles.map((art, i) => (
+                <ArticleRow key={art.id} art={art} delay={i * 0.06} onClick={() => handleArticleClick(art)} tr={tr} formatDate={formatDate} />
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* SIDEBAR */}
+        <aside style={{ display: "flex", flexDirection: "column", gap: 24, position: "sticky", top: 90 }}>
+
+          {/* Recherche par catégorie */}
+          <div style={{ background: "#fff", borderRadius: 16, border: "1px solid #E5E7EB", padding: "20px 18px" }}>
+            <h3 style={{ fontSize: 14, fontWeight: 800, color: "#0A2540", marginBottom: 14, textTransform: "uppercase", letterSpacing: "1.2px" }}>{tr.search_category}</h3>
+            <div className="search-wrap">
+              <input
+                placeholder={tr.search_category}
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+              />
+              <FaSearch size={13} className="ico" />
+            </div>
+          </div>
+
+          {/* Catégories */}
+          <div style={{ background: "#fff", borderRadius: 16, border: "1px solid #E5E7EB", padding: "20px 18px" }}>
+            <h3 style={{ fontSize: 14, fontWeight: 800, color: "#0A2540", marginBottom: 16, textTransform: "uppercase", letterSpacing: "1.2px" }}>{tr.categories}</h3>
+            <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+              <div className={`cat-row${selectedCat === "Toutes" ? " active" : ""}`} onClick={() => setSelectedCat("Toutes")}>
+                <span className="cat-name">{tr.all_categories}</span>
+                <span className="cat-cnt" style={{ background: selectedCat === "Toutes" ? "#F7B500" : "#E5E7EB", color: selectedCat === "Toutes" ? "#0A2540" : "#6B7280", borderRadius: 99, padding: "2px 9px", fontSize: 11, fontWeight: 700 }}>
+                  {allArticles.length}
+                </span>
+              </div>
+              {categoriesWithCount.map(cat => (
+                <div key={cat.name} className={`cat-row${selectedCat === cat.name ? " active" : ""}`} onClick={() => setSelectedCat(cat.name)}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <FaTag size={10} style={{ color: selectedCat === cat.name ? "#F7B500" : "#9CA3AF", flexShrink: 0 }} />
+                    <span className="cat-name">{cat.name}</span>
+                  </div>
+                  <span className="cat-cnt" style={{ background: selectedCat === cat.name ? "#F7B500" : "#E5E7EB", color: selectedCat === cat.name ? "#0A2540" : "#6B7280", borderRadius: 99, padding: "2px 9px", fontSize: 11, fontWeight: 700 }}>
+                    {cat.count}
+                  </span>
+                </div>
+              ))}
+              {categoriesWithCount.length === 0 && DEFAULT_CATEGORIES.map(cat => (
+                <div key={cat} className={`cat-row${selectedCat === cat ? " active" : ""}`} onClick={() => setSelectedCat(cat)}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <FaTag size={10} style={{ color: selectedCat === cat ? "#F7B500" : "#9CA3AF", flexShrink: 0 }} />
+                    <span className="cat-name">{cat}</span>
+                  </div>
+                  <span className="cat-cnt" style={{ background: "#E5E7EB", color: "#6B7280", borderRadius: 99, padding: "2px 9px", fontSize: 11, fontWeight: 700 }}>0</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Restez informé */}
+          <div style={{ background: "linear-gradient(135deg,#0A2540,#1a3f6f)", borderRadius: 16, padding: "24px 20px", position: "relative", overflow: "hidden" }}>
+            <div style={{ position: "absolute", inset: 0, backgroundImage: "radial-gradient(rgba(255,255,255,.025) 1px,transparent 1px)", backgroundSize: "28px 28px" }} />
+            <div style={{ position: "relative", zIndex: 2 }}>
+              <div style={{ width: 44, height: 44, borderRadius: 12, background: "rgba(247,181,0,.15)", border: "1px solid rgba(247,181,0,.3)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 14, fontSize: 20 }}>✉️</div>
+              <h3 style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 18, fontWeight: 700, color: "#fff", marginBottom: 8 }}>{tr.stay_informed}</h3>
+              <p style={{ fontSize: 13, color: "rgba(255,255,255,.55)", lineHeight: 1.72, marginBottom: 16 }}>
+                {tr.newsletter_desc}
+              </p>
+              <input className="sub-inp" placeholder={tr.newsletter_placeholder} style={{ marginBottom: 10 }} />
+              <button className="sub-btn">{tr.newsletter_btn}</button>
+            </div>
+          </div>
+        </aside>
+      </main>
+
+      {/* FOOTER */}
+      <footer style={{ background: "#05101E", padding: "48px 28px 24px" }}>
+        <div style={{ maxWidth: 1200, margin: "0 auto" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr 1fr 1fr", gap: 40, marginBottom: 40 }}>
+            <div>
+              <Link href="/" style={{ display: "flex", alignItems: "center", gap: 10, textDecoration: "none", marginBottom: 16 }}>
+                <div style={{ width: 36, height: 36, background: "#0A2540", borderRadius: 9, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "Arial,sans-serif", fontWeight: 900, fontSize: 12, color: "#F7B500" }}>BEH</div>
+                <span style={{ fontFamily: "'DM Sans',sans-serif", fontWeight: 800, fontSize: 15, color: "#fff" }}>Business <span style={{ color: "#F7B500" }}>Expert</span> Hub</span>
+              </Link>
+              <p style={{ color: "rgba(255,255,255,.3)", fontSize: 13, lineHeight: 1.78 }}>{tr.footer_desc}</p>
+            </div>
+            {[
+              { title: tr.footer_nav, links: [[tr.nav_home, "/"],[tr.nav_about, "/a-propos"],[tr.nav_services, "/services"],[tr.nav_experts, "/experts"],[tr.nav_blog, "/blog"],[tr.nav_contact, "/contact"]] },
+              { title: tr.footer_services, links: SERVICES.map(s => [s.label, `/services/${s.slug}`]) },
+              { title: tr.footer_about, links: [[tr.footer_about_us, "/a-propos"],[tr.footer_mission, "/a-propos#mission"],[tr.footer_careers, "#"],[tr.footer_press, "#"]] },
+            ].map(col => (
+              <div key={col.title}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,.28)", letterSpacing: "2px", textTransform: "uppercase", marginBottom: 18 }}>{col.title}</div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 11 }}>
+                  {col.links.map(([label, href]) => (
+                    <Link key={label} href={href} style={{ color: "rgba(255,255,255,.38)", fontSize: 13.5, textDecoration: "none", transition: "color .2s" }}
+                      onMouseEnter={e => (e.target as HTMLElement).style.color = "#F7B500"}
+                      onMouseLeave={e => (e.target as HTMLElement).style.color = "rgba(255,255,255,.38)"}>
+                      {label}
+                    </Link>
+                  ))}
+                </div>
+              </div>
             ))}
           </div>
-          <div style={{ width:1, height:24, background:"#E2EAF4", flexShrink:0 }} />
-          <div style={{ display:"flex", gap:6, overflowX:"auto" }}>
-            {CATEGORIES.map(c => (
-              <button key={c} className={`cat-btn${categorie===c?" active":""}`} onClick={() => setCategorie(c)}>
-                {c}
-              </button>
-            ))}
+          <div style={{ borderTop: "1px solid rgba(255,255,255,.06)", paddingTop: 24, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
+            <p style={{ color: "rgba(255,255,255,.2)", fontSize: 13 }}>{tr.footer_copy}</p>
+            <div style={{ display: "flex", gap: 22 }}>
+              {[tr.footer_legal, tr.footer_privacy, tr.footer_cgu].map(item => (
+                <Link key={item} href="#" style={{ color: "rgba(255,255,255,.2)", fontSize: 12.5, textDecoration: "none" }}>{item}</Link>
+              ))}
+            </div>
           </div>
+        </div>
+      </footer>
+    </div>
+  );
+}
+
+// ─── COMPOSANT ARTICLE ROW (avec traduction et date formatée) ───────────────────────────
+function ArticleRow({ art, delay, onClick, tr, formatDate }: { art: any; delay: number; onClick: () => void; tr: Record<string, string>; formatDate: (date: string) => string }) {
+  const cat = art.categorie || art.type || "Article";
+  const dateStr = formatDate(art.createdAt);
+
+  return (
+    <div className="art-row" onClick={onClick} style={{ animation: `fadeUp .55s cubic-bezier(.22,1,.36,1) ${delay}s both` }}>
+      {/* Image */}
+      <div style={{ width: 220, height: 165, flexShrink: 0, position: "relative", background: "linear-gradient(135deg,#0A2540,#1a3f6f)", overflow: "hidden" }}>
+        {art.image ? (
+          <img src={`${BASE}/uploads/articles-img/${art.image}`} alt={art.titre} className="art-thumb" />
+        ) : (
+          <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 36, color: "rgba(247,181,0,.4)" }}>📝</div>
+        )}
+        <div style={{ position: "absolute", top: 10, left: 10 }}>
+          <span style={{ background: "#F7B500", color: "#0A2540", borderRadius: 99, padding: "3px 10px", fontSize: 10.5, fontWeight: 700 }}>{cat}</span>
         </div>
       </div>
 
-      {/* Contenu principal - Cartes avec images */}
-      <main style={{ maxWidth:1200, margin:"0 auto", padding:"48px 28px 80px" }}>
-        {loading ? (
-          <div style={{ textAlign:"center", padding:"80px 0" }}>
-            <div style={{ width:40, height:40, border:"3px solid #F7B500", borderTopColor:"transparent", borderRadius:"50%", animation:"spin .8s linear infinite", margin:"0 auto 16px" }} />
-            <div style={{ color:"#94A3B8", fontSize:14 }}>Chargement des articles...</div>
+      {/* Contenu */}
+      <div style={{ flex: 1, padding: "18px 20px 16px", display: "flex", flexDirection: "column" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 10 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+            <FaCalendarAlt size={10} style={{ color: "#9CA3AF" }} />
+            <span style={{ fontSize: 12, color: "#9CA3AF" }}>{dateStr}</span>
           </div>
-        ) : filtered.length === 0 ? (
-          <div style={{ textAlign:"center", padding:"80px 0" }}>
-            <div style={{ fontSize:52, marginBottom:16 }}>📝</div>
-            <div style={{ fontWeight:700, fontSize:18, color:"#0A2540", marginBottom:8 }}>Aucun article trouvé</div>
-            <div style={{ color:"#94A3B8", fontSize:14 }}>Essayez d'autres filtres ou mots-clés</div>
-            <button onClick={() => { setSearch(""); setCategorie("Toutes"); setTypeFilter(""); }}
-              style={{ marginTop:20, background:"#0A2540", color:"#fff", border:"none", borderRadius:9, padding:"10px 22px", fontFamily:"inherit", fontWeight:700, fontSize:13, cursor:"pointer" }}>
-              Réinitialiser les filtres
-            </button>
+          {art.duree_lecture && (
+            <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+              <FaClock size={10} style={{ color: "#9CA3AF" }} />
+              <span style={{ fontSize: 12, color: "#9CA3AF" }}>{art.duree_lecture}</span>
+            </div>
+          )}
+          <div style={{ display: "flex", alignItems: "center", gap: 5, marginLeft: "auto" }}>
+            <FaEye size={10} style={{ color: "#9CA3AF" }} />
+            <span style={{ fontSize: 12, color: "#9CA3AF" }}>{art.vues || 0}</span>
           </div>
-        ) : (
-          <>
-            {/* Section Très tendance */}
-            {tendance.length > 0 && (
-              <div style={{ marginBottom:48 }}>
-                <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:24 }}>
-                  <FaFire style={{ color:"#F7B500", fontSize:18 }} />
-                  <h2 style={{ fontSize:20, fontWeight:800, color:"#0A2540" }}>🔥 Très tendance</h2>
-                </div>
-                <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:28 }}>
-                  {tendance.map((art, i) => (
-                    <div key={art.id} className="card-animation" style={{ animationDelay: `${i * 0.1}s` }}>
-                      <div className="art-card" onClick={() => handleArticleClick(art)} style={{ cursor: "pointer" }}>
-                        <div style={{ position:"relative", height:200, background:"linear-gradient(135deg,#0A2540,#1a3f6f)", overflow:"hidden", flexShrink:0 }}>
-                          {art.image ? (
-                            <img src={`${BASE}/uploads/articles-img/${art.image}`} alt={art.titre} className="art-img" />
-                          ) : (
-                            <div style={{ width:"100%", height:"100%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:48, background:"#0A2540" }}>📝</div>
-                          )}
-                          <div style={{ position:"absolute", inset:0, background:"linear-gradient(180deg,transparent 40%,rgba(10,37,64,.6) 100%)" }} />
-                          <div style={{ position:"absolute", top:12, left:12 }}>
-                            <span style={{ background:"#F7B500", color:"#0A2540", borderRadius:99, padding:"4px 12px", fontSize:11, fontWeight:700 }}>
-                              {art.categorie || art.type || "Article"}
-                            </span>
-                          </div>
-                          <div style={{ position:"absolute", bottom:12, right:12, display:"flex", alignItems:"center", gap:5, background:"rgba(10,37,64,.75)", backdropFilter:"blur(8px)", borderRadius:99, padding:"3px 10px" }}>
-                            <FaClock size={10} style={{ color:"#F7B500" }} />
-                            <span style={{ fontSize:11, color:"#fff", fontWeight:600 }}>{art.duree_lecture || "5 min"}</span>
-                          </div>
-                        </div>
-                        <div style={{ padding:"18px 20px", display:"flex", flexDirection:"column", flex:1 }}>
-                          <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:10 }}>
-                            <FaCalendarAlt size={11} style={{ color:"#94A3B8" }} />
-                            <span style={{ fontSize:11, color:"#94A3B8" }}>{new Date(art.createdAt).toLocaleDateString("fr-FR", { day:"numeric", month:"short", year:"numeric" })}</span>
-                            <span style={{ marginLeft:"auto", display:"flex", alignItems:"center", gap:3 }}>
-                              <FaEye size={10} style={{ color:"#94A3B8" }} />
-                              <span style={{ fontSize:11, color:"#94A3B8" }}>{art.vues || 0}</span>
-                            </span>
-                          </div>
-                          <h3 style={{ fontSize:16, fontWeight:800, color:"#0A2540", marginBottom:8, lineHeight:1.35 }}>{art.titre}</h3>
-                          <p style={{ fontSize:12.5, color:"#64748B", lineHeight:1.65, marginBottom:12, display:"-webkit-box", WebkitLineClamp:2, WebkitBoxOrient:"vertical", overflow:"hidden" }}>{art.description}</p>
-                          <div style={{ marginTop:"auto", display:"flex", alignItems:"center", gap:6, color:"#F7B500", fontSize:12, fontWeight:700 }}>
-                            Lire l'article <FaArrowRight size={10} />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+        </div>
 
-            {/* Section Autres articles */}
-            {autres.length > 0 && (
-              <div>
-                <div style={{ marginBottom:24 }}>
-                  <h2 style={{ fontSize:20, fontWeight:800, color:"#0A2540" }}>📖 Tous les articles</h2>
-                </div>
-                <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:28 }}>
-                  {autres.map((art, i) => (
-                    <div key={art.id} className="card-animation" style={{ animationDelay: `${(tendance.length + i) * 0.1}s` }}>
-                      <div className="art-card" onClick={() => handleArticleClick(art)} style={{ cursor: "pointer" }}>
-                        <div style={{ position:"relative", height:200, background:"linear-gradient(135deg,#0A2540,#1a3f6f)", overflow:"hidden", flexShrink:0 }}>
-                          {art.image ? (
-                            <img src={`${BASE}/uploads/articles-img/${art.image}`} alt={art.titre} className="art-img" />
-                          ) : (
-                            <div style={{ width:"100%", height:"100%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:48, background:"#0A2540" }}>📝</div>
-                          )}
-                          <div style={{ position:"absolute", inset:0, background:"linear-gradient(180deg,transparent 40%,rgba(10,37,64,.6) 100%)" }} />
-                          <div style={{ position:"absolute", top:12, left:12 }}>
-                            <span style={{ background:art.couleur_point || "#3B82F6", color:"#fff", borderRadius:99, padding:"4px 12px", fontSize:11, fontWeight:700 }}>
-                              {art.categorie || art.type || "Article"}
-                            </span>
-                          </div>
-                          <div style={{ position:"absolute", bottom:12, right:12, display:"flex", alignItems:"center", gap:5, background:"rgba(10,37,64,.75)", backdropFilter:"blur(8px)", borderRadius:99, padding:"3px 10px" }}>
-                            <FaClock size={10} style={{ color:"#F7B500" }} />
-                            <span style={{ fontSize:11, color:"#fff", fontWeight:600 }}>{art.duree_lecture || "5 min"}</span>
-                          </div>
-                        </div>
-                        <div style={{ padding:"18px 20px", display:"flex", flexDirection:"column", flex:1 }}>
-                          <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:10 }}>
-                            <FaCalendarAlt size={11} style={{ color:"#94A3B8" }} />
-                            <span style={{ fontSize:11, color:"#94A3B8" }}>{new Date(art.createdAt).toLocaleDateString("fr-FR", { day:"numeric", month:"short", year:"numeric" })}</span>
-                            <span style={{ marginLeft:"auto", display:"flex", alignItems:"center", gap:3 }}>
-                              <FaEye size={10} style={{ color:"#94A3B8" }} />
-                              <span style={{ fontSize:11, color:"#94A3B8" }}>{art.vues || 0}</span>
-                            </span>
-                          </div>
-                          <h3 style={{ fontSize:16, fontWeight:800, color:"#0A2540", marginBottom:8, lineHeight:1.35 }}>{art.titre}</h3>
-                          <p style={{ fontSize:12.5, color:"#64748B", lineHeight:1.65, marginBottom:12, display:"-webkit-box", WebkitLineClamp:2, WebkitBoxOrient:"vertical", overflow:"hidden" }}>{art.description}</p>
-                          <div style={{ marginTop:"auto", display:"flex", alignItems:"center", gap:6, color:"#F7B500", fontSize:12, fontWeight:700 }}>
-                            Lire l'article <FaArrowRight size={10} />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+        <h3 style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 17, fontWeight: 800, color: "#0A2540", marginBottom: 8, lineHeight: 1.35 }}>{art.titre}</h3>
 
-            {/* Résultat recherche */}
-            {search && (
-              <div style={{ marginTop:32, padding:"12px 18px", background:"#F8FAFC", borderRadius:10, fontSize:13, color:"#64748B", textAlign:"center" }}>
-                <strong style={{ color:"#0A2540" }}>{filtered.length}</strong> résultat{filtered.length>1?"s":""} pour « <strong style={{ color:"#F7B500" }}>{search}</strong> »
-              </div>
-            )}
-          </>
-        )}
-      </main>
+        <p style={{ fontSize: 13.5, color: "#64748B", lineHeight: 1.68, marginBottom: 14, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+          {art.description}
+        </p>
 
-      {/* Footer */}
-      <footer style={{ background:"#05101E", color:"rgba(255,255,255,.25)", padding:"28px", textAlign:"center", fontSize:13 }}>
-        © 2026 Business Expert Hub · Tous droits réservés
-      </footer>
+        <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "auto" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, color: "#0A2540", fontSize: 12.5, fontWeight: 700, background: "#F8FAFC", border: "1.5px solid #E5E7EB", borderRadius: 99, padding: "5px 14px", transition: "all .18s" }}>
+            {tr.read} <FaArrowRight size={10} />
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

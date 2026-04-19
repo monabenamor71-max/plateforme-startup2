@@ -42,4 +42,17 @@ export class StartupsController {
     console.log(`📸 Upload photo pour user ID: ${req.user.id}, fichier: ${file.filename}`);
     return this.startupsService.updatePhoto(req.user.id, file.filename);
   }
+
+  /**
+   * Retourne la liste des experts triés :
+   * - ceux recommandés (selon le secteur de la startup) en premier,
+   * - puis tous les autres experts.
+   * Route protégée par JWT.
+   */
+  @Get('experts-recommandes')
+  @UseGuards(JwtAuthGuard)
+  async getRecommendedExperts(@Request() req: any) {
+    console.log(`🎯 /startups/experts-recommandes appelé par user ID: ${req.user.id}`);
+    return this.startupsService.getRecommendedExperts(req.user.id);
+  }
 }

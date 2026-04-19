@@ -1,9 +1,11 @@
+// src/demandes-service/demandes-service.service.ts
 import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
 import { DemandeService } from './demande-service.entity';
 import { Formation } from '../formations/formation.entity';
 import { Expert } from '../user/expert.entity';
+import { FormationsService } from '../formations/formations.service';
 
 @Injectable()
 export class DemandesServiceService {
@@ -16,91 +18,34 @@ export class DemandesServiceService {
     private formationRepo: Repository<Formation>,
     @InjectRepository(Expert)
     private expertRepo: Repository<Expert>,
+    private formationsService: FormationsService,
   ) {}
 
-  async create(data: Partial<DemandeService>) {
-    const demande = this.repo.create(data);
-    return this.repo.save(demande);
-  }
-
-  async getAll() {
-    try {
-      const demandes = await this.repo.find({
-        relations: ['user', 'formation', 'expert_assigne', 'expert_assigne.user'],
-        order: { createdAt: 'DESC' },
-      });
-      // Nettoyage des champs JSON (au cas où ils seraient null)
-      return demandes.map(d => ({
-        ...d,
-        experts_notifies: Array.isArray(d.experts_notifies) ? d.experts_notifies : [],
-        experts_acceptes: Array.isArray(d.experts_acceptes) ? d.experts_acceptes : [],
-      }));
-    } catch (error) {
-      this.logger.error('Erreur dans getAll()', error);
-      throw new Error('Impossible de récupérer les demandes');
-    }
-  }
-
-  async getMesDemandes(userId: number) {
-    return this.repo.find({
-      where: { user_id: userId },
-      relations: ['formation'],
-      order: { createdAt: 'DESC' },
-    });
-  }
-
-  async getById(id: number) {
-    return this.repo.findOne({ where: { id }, relations: ['formation', 'user'] });
-  }
-
+// src/demandes-service/demandes-service.service.ts
+async getAll() {
+  const demandes = await this.repo.find({
+    relations: ['user', 'formation', 'expert_assigne', 'expert_assigne.user'], // ← formation est crucial
+    order: { createdAt: 'DESC' },
+  });
+  return demandes.map(d => ({
+    ...d,
+    experts_notifies: Array.isArray(d.experts_notifies) ? d.experts_notifies : [],
+    experts_acceptes: Array.isArray(d.experts_acceptes) ? d.experts_acceptes : [],
+  }));
+}
   async updateStatut(id: number, statut: string, commentaire?: string) {
-    await this.repo.update(id, { statut, commentaire_admin: commentaire });
-    return this.repo.findOne({ where: { id } });
+    const demande = await this.repo.findOne({ where: { id } });
+    if (!demande) throw new NotFoundException('Demande non trouvée');
+    demande.statut = statut;
+    if (commentaire) demande.commentaire_admin = commentaire;
+    return this.repo.save(demande);
   }
 
   async supprimer(id: number) {
-    await this.repo.delete(id);
-    return { success: true };
-  }
-
-  async createFormationDemande(userId: number, formationId: number) {
-    const formation = await this.formationRepo.findOne({ where: { id: formationId, statut: 'publie' } });
-    if (!formation) throw new NotFoundException('Formation non trouvée');
-    if (formation.places_limitees && formation.places_disponibles <= 0)
-      throw new BadRequestException("Plus de places disponibles");
-    const demande = this.repo.create({
-      user_id: userId,
-      service: 'formation',
-      description: `Demande de formation : ${formation.titre}`,
-      formation_id: formation.id,
-      statut: 'en_attente'
-    });
-    return this.repo.save(demande);
-  }
-
-  async acceptFormationDemande(demandeId: number) {
-    const demande = await this.repo.findOne({ where: { id: demandeId, service: 'formation' }, relations: ['formation'] });
+    const demande = await this.repo.findOne({ where: { id } });
     if (!demande) throw new NotFoundException('Demande non trouvée');
-    if (demande.statut !== 'en_attente') throw new BadRequestException('Déjà traitée');
-    const formation = demande.formation;
-    if (formation.places_limitees) {
-      if (formation.places_disponibles <= 0) throw new BadRequestException('Plus de places disponibles');
-      formation.places_disponibles -= 1;
-      await this.formationRepo.save(formation);
-    }
-    demande.statut = 'acceptee';
-    return this.repo.save(demande);
+    return this.repo.remove(demande);
   }
-
-  async rejectFormationDemande(demandeId: number) {
-    const demande = await this.repo.findOne({ where: { id: demandeId, service: 'formation' } });
-    if (!demande) throw new NotFoundException('Demande non trouvée');
-    if (demande.statut !== 'en_attente') throw new BadRequestException('Déjà traitée');
-    demande.statut = 'refusee';
-    return this.repo.save(demande);
-  }
-
-  // --- NOTIFICATIONS ET ASSIGNATION ---
 
   async notifierExperts(demandeId: number, expertIds: number[]) {
     const demande = await this.repo.findOne({ where: { id: demandeId } });
@@ -128,7 +73,7 @@ export class DemandesServiceService {
     if (!demande) throw new NotFoundException('Demande non trouvée');
     const acceptes = Array.isArray(demande.experts_acceptes) ? demande.experts_acceptes : [];
     if (!acceptes.includes(expertId))
-      throw new BadRequestException(`L'expert ${expertId} n'a pas accepté la mission (acceptés: ${JSON.stringify(acceptes)})`);
+      throw new BadRequestException(`L'expert ${expertId} n'a pas accepté la mission`);
     if (demande.expert_assigne_id) throw new BadRequestException('Un expert est déjà assigné');
     demande.expert_assigne_id = expertId;
     demande.statut = 'acceptee';
@@ -137,6 +82,78 @@ export class DemandesServiceService {
     return { message: 'Expert assigné avec succès' };
   }
 
+  // ==================== STARTUPS ====================
+  async getMesDemandes(userId: number) {
+    return this.repo.find({
+      where: { user_id: userId },
+      relations: ['formation', 'expert_assigne', 'expert_assigne.user'],
+      order: { createdAt: 'DESC' },
+    });
+  }
+
+  async create(data: Partial<DemandeService>) {
+    const demande = this.repo.create(data);
+    return this.repo.save(demande);
+  }
+
+  async createFormationDemande(userId: number, formationId: number) {
+    const formation = await this.formationRepo.findOne({ where: { id: formationId, statut: 'publie' } });
+    if (!formation) throw new NotFoundException('Formation non trouvée');
+    // Vérification des places
+    if (formation.places_limitees && formation.places_disponibles <= 0) {
+      throw new BadRequestException('Plus de places disponibles pour cette formation');
+    }
+    const demande = this.repo.create({
+      user_id: userId,
+      service: 'formation',
+      description: `Demande de formation : ${formation.titre}`,
+      formation_id: formation.id,
+      statut: 'en_attente'
+    });
+    return this.repo.save(demande);
+  }
+
+  async acceptFormationDemande(demandeId: number) {
+    const demande = await this.repo.findOne({ where: { id: demandeId, service: 'formation' }, relations: ['formation'] });
+    if (!demande) throw new NotFoundException('Demande non trouvée');
+    if (demande.statut !== 'en_attente') throw new BadRequestException('Déjà traitée');
+    const formation = demande.formation;
+    if (formation.places_limitees) {
+      if (formation.places_disponibles <= 0) {
+        throw new BadRequestException('Plus de places disponibles');
+      }
+      // Décrémenter les places
+      await this.formationsService.decrementPlaces(formation.id);
+    }
+    demande.statut = 'acceptee';
+    return this.repo.save(demande);
+  }
+
+  async rejectFormationDemande(demandeId: number) {
+    const demande = await this.repo.findOne({ where: { id: demandeId, service: 'formation' } });
+    if (!demande) throw new NotFoundException('Demande non trouvée');
+    if (demande.statut !== 'en_attente') throw new BadRequestException('Déjà traitée');
+    demande.statut = 'refusee';
+    return this.repo.save(demande);
+  }
+
+  async updateDemande(id: number, userId: number, data: { description?: string; delai?: string; objectif?: string; telephone?: string }) {
+    const demande = await this.repo.findOne({ where: { id, user_id: userId } });
+    if (!demande) throw new NotFoundException('Demande non trouvée ou accès non autorisé');
+    if (demande.statut !== 'en_attente') throw new BadRequestException('Seules les demandes en attente peuvent être modifiées');
+    await this.repo.update(id, data);
+    return this.repo.findOne({ where: { id } });
+  }
+
+  async deleteDemande(id: number, userId: number) {
+    const demande = await this.repo.findOne({ where: { id, user_id: userId } });
+    if (!demande) throw new NotFoundException('Demande non trouvée ou accès non autorisé');
+    if (demande.statut !== 'en_attente') throw new BadRequestException('Seules les demandes en attente peuvent être supprimées');
+    await this.repo.delete(id);
+    return { success: true };
+  }
+
+  // ==================== EXPERTS ====================
   async getDemandesAssignees(expertId: number) {
     return this.repo.find({
       where: { expert_assigne_id: expertId },
@@ -174,7 +191,6 @@ export class DemandesServiceService {
   async refuserMission(demandeId: number, expertId: number) {
     const demande = await this.repo.findOne({ where: { id: demandeId } });
     if (!demande) throw new NotFoundException('Demande non trouvée');
-    // Optionnel : enregistrer le refus
     return { message: 'Refus enregistré' };
   }
 }

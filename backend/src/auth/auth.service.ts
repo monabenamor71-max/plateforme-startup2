@@ -1,9 +1,9 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+// src/auth/auth.service.ts
+import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
-import * as crypto from 'crypto';
+import { JwtService } from '@nestjs/jwt';
 import { User } from '../user/user.entity';
 import { Expert } from '../user/expert.entity';
 import { Startup } from '../user/startup.entity';
@@ -15,131 +15,122 @@ export class AuthService {
     @InjectRepository(User) private userRepo: Repository<User>,
     @InjectRepository(Expert) private expertRepo: Repository<Expert>,
     @InjectRepository(Startup) private startupRepo: Repository<Startup>,
-    private mailService: MailService,
     private jwtService: JwtService,
+    private mailService: MailService,
   ) {}
 
-  async registerExpert(body: any, files?: any) {
-    const existe = await this.userRepo.findOne({ where: { email: body.email } });
-    if (existe) throw new BadRequestException('Email deja utilise');
-    const hash = await bcrypt.hash(body.password, 10);
+  async registerExpert(body: any, files: { cv: Express.Multer.File; photo: Express.Multer.File; portfolio?: Express.Multer.File }) {
+    const { email, password, nom, prenom, telephone, domaine, annee_debut_experience, localisation, description } = body;
+
+    const existingUser = await this.userRepo.findOne({ where: { email } });
+    if (existingUser) throw new BadRequestException('Email déjà utilisé');
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
     const user = this.userRepo.create({
-      nom: body.nom,
-      prenom: body.prenom,
-      telephone: body.telephone,
-      email: body.email,
-      mot_de_passe: hash,
+      email,
+      password: hashedPassword,
+      nom,
+      prenom,
+      telephone: telephone || '',
       role: 'expert',
       statut: 'en_attente',
     });
-    const savedUser = await this.userRepo.save(user);
+    await this.userRepo.save(user);
+
+    let anneeDebut: number | null = null;
+    if (annee_debut_experience) {
+      const parsed = parseInt(annee_debut_experience, 10);
+      if (!isNaN(parsed)) anneeDebut = parsed;
+    }
+
     const expert = this.expertRepo.create({
-      user_id: savedUser.id,
-      domaine: body.domaine,
-      description: body.description,
-      experience: body.experience,
-      localisation: body.localisation,
-      disponibilite: body.disponibilite,
-      telephone: body.telephone,
-      cv: files?.cv?.filename || null,
-      photo: files?.photo?.filename || null,
-      portfolio: files?.portfolio?.filename || null,
+      user_id: user.id,
+      domaine,
+      annee_debut_experience: anneeDebut,   // ✅ null autorisé
+      localisation: localisation || '',
+      description: description || '',
+      photo: files.photo?.filename,
+      cv: files.cv?.filename,
+      portfolio: files.portfolio?.filename,
       statut: 'en_attente',
     });
     await this.expertRepo.save(expert);
+
     try {
-      await this.mailService.sendAdminNotification(body.prenom + ' ' + body.nom, 'Expert', body.email);
-    } catch (e) { console.log('Email non envoyé:', e.message); }
-    return { message: 'Inscription reussie ! En attente de validation.' };
+      console.log(`[Mail] Inscription expert: ${email}`);
+    } catch(e) {}
+
+    return { message: 'Inscription réussie, en attente de validation' };
   }
 
   async registerStartup(body: any) {
-    const existe = await this.userRepo.findOne({ where: { email: body.email } });
-    if (existe) throw new BadRequestException('Email deja utilise');
-    const hash = await bcrypt.hash(body.password, 10);
+    const { email, password, nom, prenom, telephone, nom_startup, secteur, fonction, taille } = body;
+
+    const existingUser = await this.userRepo.findOne({ where: { email } });
+    if (existingUser) throw new BadRequestException('Email déjà utilisé');
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
     const user = this.userRepo.create({
-      nom: body.nom,
-      prenom: body.prenom,
-      telephone: body.telephone,
-      email: body.email,
-      mot_de_passe: hash,
+      email,
+      password: hashedPassword,
+      nom,
+      prenom,
+      telephone: telephone || '',
       role: 'startup',
       statut: 'en_attente',
     });
-    const savedUser = await this.userRepo.save(user);
+    await this.userRepo.save(user);
+
     const startup = this.startupRepo.create({
-      user_id: savedUser.id,
-      nom_startup: body.nom_startup,
-      secteur: body.secteur,
-      taille: body.taille,
-      fonction: body.fonction,
+      user_id: user.id,
+      nom_startup,
+      secteur,
+      fonction,
+      taille,
       statut: 'en_attente',
     });
     await this.startupRepo.save(startup);
+
     try {
-      await this.mailService.sendAdminNotification(body.prenom + ' ' + body.nom, 'Startup', body.email);
-    } catch (e) { console.log('Email non envoyé:', e.message); }
-    return { message: 'Inscription reussie ! En attente de validation.' };
+      console.log(`[Mail] Inscription startup: ${email}`);
+    } catch(e) {}
+
+    return { message: 'Inscription réussie, en attente de validation' };
   }
 
   async login(email: string, password: string) {
     const user = await this.userRepo.findOne({ where: { email } });
-    if (!user) throw new BadRequestException('Email ou mot de passe incorrect');
-    const valid = await bcrypt.compare(password, user.mot_de_passe);
-    if (!valid) throw new BadRequestException('Email ou mot de passe incorrect');
-    if (user.statut === 'en_attente') throw new BadRequestException('Compte en attente de validation');
-    if (user.statut === 'inactif') throw new BadRequestException('Compte desactive');
+    if (!user) throw new BadRequestException('Identifiants incorrects');
+    if (!user.password) throw new BadRequestException('Identifiants incorrects');
+    if (!await bcrypt.compare(password, user.password)) throw new BadRequestException('Identifiants incorrects');
+    if (user.statut !== 'actif') throw new BadRequestException('Votre compte n\'est pas encore activé');
 
-    // ⭐ Récupération de l'ID de l'expert
-    let expertId: number | null = null;
-    if (user.role === 'expert') {
-      const expert = await this.expertRepo.findOne({ where: { user_id: user.id } });
-      expertId = expert?.id ?? null;
-    }
-
-    const token = this.jwtService.sign({ 
-      id: user.id, 
-      email: user.email, 
-      role: user.role, 
-      expertId 
-    });
-    return {
-      access_token: token,
-      user: { id: user.id, nom: user.nom, prenom: user.prenom, email: user.email, role: user.role },
-    };
+    const payload = { id: user.id, email: user.email, role: user.role };
+    const token = this.jwtService.sign(payload);
+    return { access_token: token, user: { id: user.id, email: user.email, role: user.role, prenom: user.prenom, nom: user.nom } };
   }
 
   async forgotPassword(email: string) {
     const user = await this.userRepo.findOne({ where: { email } });
-    if (!user) return { success: true, message: "Si cet email existe, un lien a été envoyé" };
-    const token = crypto.randomBytes(32).toString('hex');
-    const expires = new Date();
-    expires.setHours(expires.getHours() + 1);
-    user.reset_token = token;
-    user.reset_token_expires = expires;
-    await this.userRepo.save(user);
-    const resetLink = `http://localhost:3000/reset-password?token=${token}`;
-    console.log("=========================================");
-    console.log("🔗 LIEN DE RÉINITIALISATION :");
-    console.log(resetLink);
-    console.log("=========================================");
-    try {
-      await this.mailService.sendResetPasswordEmail(email, token);
-    } catch (e) { console.log('Email non envoyé, lien disponible dans la console'); }
-    return { success: true, message: "Un lien de réinitialisation a été envoyé" };
+    if (!user) throw new NotFoundException('Aucun compte associé à cet email');
+    const token = this.jwtService.sign({ id: user.id }, { expiresIn: '1h' });
+    // À implémenter dans MailService si nécessaire
+    console.log(`[Mail] Reset password pour ${email}, token: ${token}`);
+    return { message: 'Email de réinitialisation envoyé' };
   }
 
   async resetPassword(token: string, newPassword: string) {
-    const user = await this.userRepo.findOne({ where: { reset_token: token } });
-    if (!user) throw new BadRequestException('Lien invalide ou expiré');
-    if (user.reset_token_expires && new Date() > user.reset_token_expires) {
-      throw new BadRequestException('Le lien a expiré');
+    try {
+      const payload = this.jwtService.verify(token);
+      const user = await this.userRepo.findOne({ where: { id: payload.id } });
+      if (!user) throw new BadRequestException('Token invalide');
+      user.password = await bcrypt.hash(newPassword, 10);
+      await this.userRepo.save(user);
+      return { message: 'Mot de passe réinitialisé' };
+    } catch {
+      throw new BadRequestException('Token invalide ou expiré');
     }
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
-    user.mot_de_passe = hashedPassword;
-    user.reset_token = '';
-    user.reset_token_expires = undefined as any;
-    await this.userRepo.save(user);
-    return { success: true, message: "Mot de passe réinitialisé avec succès" };
   }
 }

@@ -1,4 +1,5 @@
-import { Controller, Post, Body, UseInterceptors, UploadedFiles } from '@nestjs/common';
+// src/auth/auth.controller.ts
+import { Controller, Post, Body, UseInterceptors, UploadedFiles, BadRequestException } from '@nestjs/common';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
@@ -29,20 +30,36 @@ export class AuthController {
     }),
     fileFilter: (req, file, cb) => {
       if (file.fieldname === 'photo') {
-        if (!file.originalname.match(/\.(jpg|jpeg|png|gif|webp)$/)) {
-          return cb(new Error('Seules les images sont autorisées'), false);
+        const allowedImageExt = /\.(jpg|jpeg|png|gif|webp)$/i;
+        if (!allowedImageExt.test(file.originalname)) {
+          return cb(new BadRequestException('La photo doit être au format JPG, JPEG, PNG, GIF ou WEBP'), false);
+        }
+      } 
+      else if (file.fieldname === 'cv') {
+        const allowedCvExt = /\.(pdf|doc|docx)$/i;
+        if (!allowedCvExt.test(file.originalname)) {
+          return cb(new BadRequestException('Le CV doit être au format PDF, DOC ou DOCX'), false);
+        }
+      }
+      else if (file.fieldname === 'portfolio') {
+        const allowedPortfolioExt = /\.(pdf|doc|docx|ppt|pptx|zip)$/i;
+        if (!allowedPortfolioExt.test(file.originalname)) {
+          return cb(new BadRequestException('Le portfolio doit être au format PDF, DOC, DOCX, PPT, PPTX ou ZIP'), false);
         }
       }
       cb(null, true);
     },
-    limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB
+    limits: { fileSize: 10 * 1024 * 1024 },
   }))
-  registerExpert(
+  async registerExpert(
     @Body() body: any,
     @UploadedFiles() files: { cv?: Express.Multer.File[]; photo?: Express.Multer.File[]; portfolio?: Express.Multer.File[] },
   ) {
-    const cvFile = files.cv?.[0];
-    const photoFile = files.photo?.[0];
+    if (!files.photo || files.photo.length === 0) throw new BadRequestException('La photo est requise');
+    if (!files.cv || files.cv.length === 0) throw new BadRequestException('Le CV est requis');
+
+    const cvFile = files.cv[0];
+    const photoFile = files.photo[0];
     const portfolioFile = files.portfolio?.[0];
     return this.authService.registerExpert(body, { cv: cvFile, photo: photoFile, portfolio: portfolioFile });
   }
@@ -56,10 +73,6 @@ export class AuthController {
   login(@Body() body: any) {
     return this.authService.login(body.email, body.password);
   }
-
-  // ============================================
-  // ROUTES MOT DE PASSE OUBLIÉ - AJOUTER ICI
-  // ============================================
 
   @Post('forgot-password')
   async forgotPassword(@Body('email') email: string) {

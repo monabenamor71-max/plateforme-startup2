@@ -1,8 +1,8 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, CreateDateColumn } from "typeorm";
-import { User } from "../user/user.entity";
-import { Expert } from "../user/expert.entity";
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, CreateDateColumn } from 'typeorm';
+import { User } from '../user/user.entity';
+import { Expert } from '../user/expert.entity';
 
-@Entity("rendezvous")
+@Entity('rendezvous')
 export class Rendezvous {
   @PrimaryGeneratedColumn()
   id: number;
@@ -13,18 +13,21 @@ export class Rendezvous {
   @Column()
   client_id: number;
 
+  @Column({ nullable: true })   // ← AJOUTER CE CHAMP
+  sujet: string;
+
   @ManyToOne(() => Expert)
-  @JoinColumn({ name: "expert_id" })
+  @JoinColumn({ name: 'expert_id' })
   expert: Expert;
 
   @ManyToOne(() => User)
-  @JoinColumn({ name: "client_id" })
+  @JoinColumn({ name: 'client_id' })
   client: User;
 
-  @Column({ type: "datetime" })
+  @Column({ type: 'datetime' })
   date_rdv: Date;
 
-  @Column({ type: "enum", enum: ["en_attente","confirme","annule"], default: "en_attente" })
+  @Column({ type: 'enum', enum: ['en_attente', 'confirme', 'annule'], default: 'en_attente' })
   statut: string;
 
   @CreateDateColumn()

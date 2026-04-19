@@ -1,3 +1,4 @@
+// src/formations/formation.entity.ts
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from "typeorm";
 
 @Entity("formations")
@@ -20,8 +21,8 @@ export class Formation {
   @Column({ default: "payant" })
   type: string;
 
-  @Column({ type: 'int', nullable: true })
-  prix: number;   // ✅ type number (pas string)
+  @Column({ type: "int", nullable: true })
+  prix: number;
 
   @Column({ default: false })
   places_limitees: boolean;
@@ -50,24 +51,29 @@ export class Formation {
   @Column({ default: false })
   a_la_une: boolean;
 
-  @Column({ type: 'date', nullable: true })
+  @Column({ type: "date", nullable: true })
   dateDebut: Date;
 
-  @Column({ type: 'date', nullable: true })
+  @Column({ type: "date", nullable: true })
   dateFin: Date;
 
-  // ✅ CHAMPS MANQUANTS (ajoutez-les impérativement)
   @Column({ nullable: true })
   expertId: number;
 
   @Column({ nullable: true })
   lien_formation: string;
 
+  @Column({ default: false })
+  gratuit: boolean;
+
   @Column({ nullable: true })
   niveau: string;
 
-  @Column({ default: false })
-  gratuit: boolean;
+  @Column({ nullable: true })
+  categorie: string;
+
+  @Column({ type: "text", nullable: true })
+  commentaire_admin: string;
 
   @CreateDateColumn()
   createdAt: Date;
