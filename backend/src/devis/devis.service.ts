@@ -1,8 +1,10 @@
+// src/devis/devis.service.ts
 import { Injectable, NotFoundException, BadRequestException, UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
 import { Devis } from './devis.entity';
 import { DemandeService } from '../demandes-service/demande-service.entity';
+import { Expert } from '../user/expert.entity';
 
 @Injectable()
 export class DevisService {
@@ -11,26 +13,43 @@ export class DevisService {
     private devisRepo: Repository<Devis>,
     @InjectRepository(DemandeService)
     private demandeRepo: Repository<DemandeService>,
+    @InjectRepository(Expert)
+    private expertRepo: Repository<Expert>,
   ) {}
 
-  async create(data: { demande_id: number; expert_id: number; montant: number; description: string; delai?: string }) {
+  // ⚠️ Cette méthode accepte deux arguments : userId et data
+  async create(userId: number, data: { demande_id: number; montant: number; description: string; delai?: string }) {
+    const expert = await this.expertRepo.findOne({ where: { user_id: userId } });
+    if (!expert) throw new NotFoundException('Expert non trouvé pour cet utilisateur');
+
     const demande = await this.demandeRepo.findOne({ where: { id: data.demande_id } });
     if (!demande) throw new NotFoundException('Demande introuvable');
-    if (demande.expert_assigne_id !== data.expert_id) {
+    if (demande.expert_assigne_id !== expert.id) {
       throw new BadRequestException('Vous n\'êtes pas l\'expert assigné à cette mission');
     }
-    const devis = this.devisRepo.create(data);
+
+    const devis = this.devisRepo.create({
+      demande_id: data.demande_id,
+      expert_id: expert.id,
+      montant: data.montant,
+      description: data.description,
+      delai: data.delai,
+    });
     return this.devisRepo.save(devis);
   }
 
-  async findByExpert(expertId: number) {
+  // Expert : voir ses devis
+  async findByExpert(userId: number) {
+    const expert = await this.expertRepo.findOne({ where: { user_id: userId } });
+    if (!expert) return [];
     return this.devisRepo.find({
-      where: { expert_id: expertId },
+      where: { expert_id: expert.id },
       relations: ['demande', 'demande.user'],
       order: { createdAt: 'DESC' },
     });
   }
 
+  // Client : voir ses devis reçus
   async findByClient(userId: number) {
     const demandes = await this.demandeRepo.find({
       where: { user_id: userId },
@@ -45,7 +64,7 @@ export class DevisService {
     });
   }
 
-  // ⭐ ADMIN : récupérer tous les devis
+  // Admin : voir tous les devis
   async findAll() {
     return this.devisRepo.find({
       relations: ['demande', 'demande.user', 'expert', 'expert.user'],
@@ -53,6 +72,7 @@ export class DevisService {
     });
   }
 
+  // Client : accepter/refuser un devis
   async updateStatutByClient(devisId: number, userId: number, statut: string) {
     const devis = await this.devisRepo.findOne({ where: { id: devisId }, relations: ['demande'] });
     if (!devis) throw new NotFoundException('Devis introuvable');
@@ -66,6 +86,7 @@ export class DevisService {
     return this.devisRepo.save(devis);
   }
 
+  // Admin : changer statut
   async updateStatut(id: number, statut: string) {
     const devis = await this.devisRepo.findOne({ where: { id } });
     if (!devis) throw new NotFoundException('Devis introuvable');

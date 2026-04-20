@@ -38,8 +38,6 @@ export class ExpertsController {
     return this.expertsService.updateProfil(req.user.id, body);
   }
 
-  // ✅ Route PATCH 'disponibilite' supprimée
-
   @Post('photo')
   @UseGuards(JwtAuthGuard)
   @UseInterceptors(FileInterceptor('photo', {

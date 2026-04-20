@@ -175,7 +175,7 @@ const T: Record<Lang, Record<string, string>> = {
     timeline4_title: "Recognition", timeline4_desc: "Obtaining the label Best startup support platform.",
     timeline5_title: "Scale-up", timeline5_desc: "Exceeding 100 startups supported.",
     timeline6_title: "Regional leader", timeline6_desc: "Consolidating our position as a reference.",
-    videos_badge: "Media & Interviews",
+    videos_badge: "Nos apparitions médiatiques ",
     videos_title: "BEH in the",
     videos_title_highlight: "media",
     videos_desc: "Our experts and founders speak on radio programs, television and podcasts to share their vision of the startup ecosystem.",

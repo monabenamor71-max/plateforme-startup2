@@ -12,27 +12,24 @@ export class DevisController {
   @UseGuards(JwtAuthGuard)
   @Post()
   async create(@Req() req: any, @Body() body: { demande_id: number; montant: number; description: string; delai?: string }) {
-    const expertId = req.user.expertId;
-    if (!expertId) throw new Error('Expert non authentifié');
-    return this.devisService.create({
+    const userId = req.user.id;
+    return this.devisService.create(userId, {
       demande_id: body.demande_id,
-      expert_id: expertId,
       montant: body.montant,
       description: body.description,
       delai: body.delai,
     });
   }
 
-  // Expert : voir ses devis envoyés
+  // Expert : voir ses devis
   @UseGuards(JwtAuthGuard)
   @Get('expert/mes-devis')
   async getMesDevis(@Req() req: any) {
-    const expertId = req.user.expertId;
-    if (!expertId) throw new Error('Expert non authentifié');
-    return this.devisService.findByExpert(expertId);
+    const userId = req.user.id;
+    return this.devisService.findByExpert(userId);
   }
 
-  // Startup : voir les devis reçus
+  // Client : voir ses devis reçus
   @UseGuards(JwtAuthGuard)
   @Get('client/mes-devis')
   async getMesDevisClient(@Req() req: any) {
@@ -40,15 +37,7 @@ export class DevisController {
     return this.devisService.findByClient(userId);
   }
 
-  // Startup : accepter/refuser un devis
-  @UseGuards(JwtAuthGuard)
-  @Patch(':id/client-statut')
-  async updateStatutClient(@Param('id') id: string, @Req() req: any, @Body() body: { statut: string }) {
-    const userId = req.user.id;
-    return this.devisService.updateStatutByClient(+id, userId, body.statut);
-  }
-
-  // ⭐ ADMIN : voir tous les devis
+  // Admin : voir tous les devis
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
   @Get('all')
@@ -56,7 +45,15 @@ export class DevisController {
     return this.devisService.findAll();
   }
 
-  // Admin : changer le statut d’un devis
+  // Client : accepter/refuser un devis
+  @UseGuards(JwtAuthGuard)
+  @Patch(':id/client-statut')
+  async updateStatutClient(@Param('id') id: string, @Req() req: any, @Body() body: { statut: string }) {
+    const userId = req.user.id;
+    return this.devisService.updateStatutByClient(+id, userId, body.statut);
+  }
+
+  // Admin : changer statut (optionnel)
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
   @Patch(':id/statut')

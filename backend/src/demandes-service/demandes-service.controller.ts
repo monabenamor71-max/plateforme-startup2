@@ -1,5 +1,8 @@
 // src/demandes-service/demandes-service.controller.ts
-import { Controller, Get, Post, Patch, Put, Delete, Body, Param, UseGuards, Req } from '@nestjs/common';
+import {
+  Controller, Get, Post, Patch, Put, Delete,
+  Body, Param, UseGuards, Req,
+} from '@nestjs/common';
 import { DemandesServiceService } from './demandes-service.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
@@ -10,6 +13,7 @@ export class DemandesServiceController {
   constructor(private readonly service: DemandesServiceService) {}
 
   // ==================== ADMIN ====================
+
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
   @Get('all')
@@ -20,7 +24,10 @@ export class DemandesServiceController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
   @Patch(':id/statut')
-  updateStatut(@Param('id') id: string, @Body() body: { statut: string; commentaire?: string }) {
+  updateStatut(
+    @Param('id') id: string,
+    @Body() body: { statut: string; commentaire?: string },
+  ) {
     return this.service.updateStatut(+id, body.statut, body.commentaire);
   }
 
@@ -34,7 +41,10 @@ export class DemandesServiceController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
   @Post(':id/notifier-experts')
-  async notifierExperts(@Param('id') id: string, @Body() body: { expert_ids: number[] }) {
+  notifierExperts(
+    @Param('id') id: string,
+    @Body() body: { expert_ids: number[] },
+  ) {
     return this.service.notifierExperts(+id, body.expert_ids);
   }
 
@@ -48,16 +58,19 @@ export class DemandesServiceController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
   @Patch(':id/assigner')
-  assignerExpert(@Param('id') id: string, @Body() body: { expert_id: number; commentaire?: string }) {
+  assignerExpert(
+    @Param('id') id: string,
+    @Body() body: { expert_id: number; commentaire?: string },
+  ) {
     return this.service.assignerExpert(+id, body.expert_id, body.commentaire);
   }
 
- @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('admin')
-@Patch('formation/:demandeId/accept')
-acceptFormationDemande(@Param('demandeId') demandeId: string) {
-  return this.service.acceptFormationDemande(+demandeId);
-}
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @Patch('formation/:demandeId/accept')
+  acceptFormationDemande(@Param('demandeId') demandeId: string) {
+    return this.service.acceptFormationDemande(+demandeId);
+  }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
@@ -67,6 +80,7 @@ acceptFormationDemande(@Param('demandeId') demandeId: string) {
   }
 
   // ==================== STARTUPS ====================
+
   @UseGuards(JwtAuthGuard)
   @Get('mes-demandes')
   getMesDemandes(@Req() req: any) {
@@ -82,56 +96,52 @@ acceptFormationDemande(@Param('demandeId') demandeId: string) {
 
   @UseGuards(JwtAuthGuard)
   @Post('formation/:formationId')
-  createFormationDemande(@Param('formationId') formationId: string, @Req() req: any) {
+  createFormationDemande(
+    @Param('formationId') formationId: string,
+    @Req() req: any,
+  ) {
     return this.service.createFormationDemande(req.user.id, +formationId);
   }
 
   @UseGuards(JwtAuthGuard)
   @Put(':id')
-  async updateDemande(
+  updateDemande(
     @Param('id') id: string,
     @Body() body: { description?: string; delai?: string; objectif?: string; telephone?: string },
-    @Req() req: any
+    @Req() req: any,
   ) {
     return this.service.updateDemande(+id, req.user.id, body);
   }
 
   @UseGuards(JwtAuthGuard)
   @Delete('client/:id')
-  async deleteDemande(@Param('id') id: string, @Req() req: any) {
+  deleteDemande(@Param('id') id: string, @Req() req: any) {
     return this.service.deleteDemande(+id, req.user.id);
   }
 
   // ==================== EXPERTS ====================
+
   @UseGuards(JwtAuthGuard)
   @Get('expert/assignees')
   async getDemandesAssignees(@Req() req: any) {
-    const expertId = req.user.expertId;
-    if (!expertId) throw new Error('Expert non authentifié');
-    return this.service.getDemandesAssignees(expertId);
+    return this.service.getDemandesAssignees(req.user.id);
   }
 
   @UseGuards(JwtAuthGuard)
   @Get('expert/notifications')
   async getNotifications(@Req() req: any) {
-    const expertId = req.user.expertId;
-    if (!expertId) throw new Error('Expert non authentifié');
-    return this.service.getNotificationsForExpert(expertId);
+    return this.service.getNotificationsForExpert(req.user.id);
   }
 
   @UseGuards(JwtAuthGuard)
   @Patch(':id/accepter-mission')
   accepterMission(@Param('id') id: string, @Req() req: any) {
-    const expertId = req.user.expertId;
-    if (!expertId) throw new Error('Expert non authentifié');
-    return this.service.accepterMission(+id, expertId);
+    return this.service.accepterMission(+id, req.user.id);
   }
 
   @UseGuards(JwtAuthGuard)
   @Patch(':id/refuser-mission')
   refuserMission(@Param('id') id: string, @Req() req: any) {
-    const expertId = req.user.expertId;
-    if (!expertId) throw new Error('Expert non authentifié');
-    return this.service.refuserMission(+id, expertId);
+    return this.service.refuserMission(+id, req.user.id);
   }
 }

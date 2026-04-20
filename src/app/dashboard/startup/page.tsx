@@ -1226,11 +1226,32 @@ export default function DashboardStartup() {
     }
   }
 
-  async function accepterDevis(devisId: number) {
+  async function accepterDevis(devisId: number, expertId: number) {
     try {
       const r = await fetch(`${BASE}/devis/${devisId}/client-statut`, { method: "PATCH", headers: hdrJ(), body: JSON.stringify({ statut: "accepte" }) });
-      if (r.ok) { notify("✅ Devis accepté !"); loadMesDevis(); }
-      else notify("Erreur", false);
+      if (r.ok) {
+        notify("✅ Devis accepté ! Vous pouvez contacter l'expert.");
+        await loadMesDevis();
+        // Proposer de contacter l'expert ou prendre RDV
+        const expert = experts.find(e => e.id === expertId);
+        if (expert) {
+          const ok = confirm("Souhaitez-vous contacter cet expert maintenant ?\n(OK = aller dans Messages, Annuler = rester ici)");
+          if (ok) {
+            setSelectedExpert(expert);
+            setTab("messages");
+            loadConversation(expert.user_id || expert.user?.id);
+          } else {
+            const rdvOk = confirm("Prendre un rendez-vous avec cet expert ?");
+            if (rdvOk) {
+              setRdvForm({ ...rdvForm, expert_id: String(expert.id), sujet: "Suite à l'acceptation du devis" });
+              setTab("rdv");
+            }
+          }
+        }
+      } else {
+        const err = await r.text();
+        notify(`❌ Erreur ${err}`, false);
+      }
     } catch { notify("Erreur réseau", false); }
   }
 
@@ -2167,27 +2188,36 @@ export default function DashboardStartup() {
                 <div style={{ color: "#8A9AB5", fontSize: 14 }}>Vos devis apparaîtront ici dès qu'un expert vous en enverra un</div>
               </div>
             ) : (
-              mesDevis.map(devis => (
-                <div key={devis.id} className="card" style={{ marginBottom: 14 }}>
-                  <div style={{ padding: "20px 24px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
-                    <div>
-                      <div style={{ fontWeight: 700, fontSize: 15, color: "#0A2540", marginBottom: 3 }}>{devis.expert?.user?.prenom} {devis.expert?.user?.nom}</div>
-                      <div style={{ fontSize: 16, color: "#F7B500", fontWeight: 800, marginBottom: 4 }}>{devis.montant} DT</div>
-                      {devis.description && <div style={{ fontSize: 13, color: "#64748B" }}>{devis.description}</div>}
-                    </div>
-                    <div>
-                      {devis.statut === "en_attente" && (
-                        <div style={{ display: "flex", gap: 8 }}>
-                          <button className="btn btn-green" onClick={() => accepterDevis(devis.id)}>✅ Accepter</button>
-                          <button className="btn btn-outline" onClick={() => refuserDevis(devis.id)}>❌ Refuser</button>
-                        </div>
-                      )}
-                      {devis.statut === "accepte" && <span style={{ background: "#ECFDF5", color: "#059669", borderRadius: 99, padding: "8px 16px", fontSize: 13, fontWeight: 700 }}>✅ Accepté</span>}
-                      {devis.statut === "refuse" && <span style={{ background: "#FEF2F2", color: "#DC2626", borderRadius: 99, padding: "8px 16px", fontSize: 13, fontWeight: 700 }}>❌ Refusé</span>}
+              mesDevis.map(devis => {
+                const expertId = devis.expert?.id;
+                return (
+                  <div key={devis.id} className="card" style={{ marginBottom: 14 }}>
+                    <div style={{ padding: "20px 24px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
+                      <div>
+                        <div style={{ fontWeight: 700, fontSize: 15, color: "#0A2540", marginBottom: 3 }}>{devis.expert?.user?.prenom} {devis.expert?.user?.nom}</div>
+                        <div style={{ fontSize: 16, color: "#F7B500", fontWeight: 800, marginBottom: 4 }}>{devis.montant} DT</div>
+                        {devis.description && <div style={{ fontSize: 13, color: "#64748B" }}>{devis.description}</div>}
+                      </div>
+                      <div>
+                        {devis.statut === "en_attente" && (
+                          <div style={{ display: "flex", gap: 8 }}>
+                            <button className="btn btn-green" onClick={() => accepterDevis(devis.id, expertId)}>✅ Accepter</button>
+                            <button className="btn btn-outline" onClick={() => refuserDevis(devis.id)}>❌ Refuser</button>
+                          </div>
+                        )}
+                        {devis.statut === "accepte" && (
+                          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                            <span style={{ background: "#ECFDF5", color: "#059669", borderRadius: 99, padding: "8px 16px", fontSize: 13, fontWeight: 700 }}>✅ Accepté</span>
+                            <button className="btn btn-purple" onClick={() => { const ex = experts.find(e => e.id === expertId); if (ex) { setSelectedExpert(ex); setTab("messages"); loadConversation(ex.user_id || ex.user?.id); } }} style={{ padding: "8px 14px", fontSize: 12 }}><FaComments /> Contacter</button>
+                            <button className="btn btn-gold" onClick={() => { const ex = experts.find(e => e.id === expertId); if (ex) { setRdvForm({ ...rdvForm, expert_id: String(ex.id), sujet: "Suite à l'acceptation du devis" }); setTab("rdv"); } }} style={{ padding: "8px 14px", fontSize: 12 }}><FaCalendar /> RDV</button>
+                          </div>
+                        )}
+                        {devis.statut === "refuse" && <span style={{ background: "#FEF2F2", color: "#DC2626", borderRadius: 99, padding: "8px 16px", fontSize: 13, fontWeight: 700 }}>❌ Refusé</span>}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
         )}

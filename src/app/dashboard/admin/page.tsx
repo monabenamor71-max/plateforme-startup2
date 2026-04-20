@@ -334,7 +334,7 @@ function DashboardView({ experts, startups, temoignages, demandes, formations, s
   );
 }
 
-// ==================== MODAL DEMANDE ====================
+// ==================== MODAL DEMANDE (avec filtrage par domaine et visualisation profil expert) ====================
 function ModalDemande({ demande, experts, commentaireAdmin, setCommentaireAdmin, onChangerStatut, onNotifierExperts, onAssignerExpert, onAccepterFormation, onRefuserFormation, onClose }: any) {
   const svc = demande?.service || "";
   const isFormation = svc === "formations" || svc === "formation";
@@ -342,6 +342,7 @@ function ModalDemande({ demande, experts, commentaireAdmin, setCommentaireAdmin,
   const meta = SERVICE_META[svc] || { label: svc, icon: "🛠️", color: "#3B82F6", domaines: [] };
 
   const expertsValides = experts.filter((e: any) => e.statut === "valide");
+  // Filtrage par domaine selon le service
   const expertsFiltres = meta.domaines.length > 0
     ? expertsValides.filter((e: any) => meta.domaines.some((d: string) => e.domaine?.toLowerCase().includes(d.toLowerCase())))
     : expertsValides;
@@ -379,6 +380,7 @@ function ModalDemande({ demande, experts, commentaireAdmin, setCommentaireAdmin,
         </div>
 
         <div style={{ padding: "22px 26px", maxHeight: "80vh", overflowY: "auto" }}>
+          {/* Informations client */}
           <div style={{ background: "#F8FAFC", borderRadius: 14, padding: "16px 18px", marginBottom: 18, border: "1px solid #EEF2F7" }}>
             <div style={{ fontWeight: 700, fontSize: 13, color: "#0A2540", marginBottom: 12 }}>👤 Informations du client</div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
@@ -398,6 +400,7 @@ function ModalDemande({ demande, experts, commentaireAdmin, setCommentaireAdmin,
             </div>
           </div>
 
+          {/* Détails demande */}
           <div style={{ background: "#F8FAFC", borderRadius: 14, padding: "16px 18px", marginBottom: 18, border: "1px solid #EEF2F7" }}>
             <div style={{ fontWeight: 700, fontSize: 13, color: "#0A2540", marginBottom: 12 }}>📋 Détails de la demande</div>
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12, flexWrap: "wrap" }}>
@@ -419,6 +422,7 @@ function ModalDemande({ demande, experts, commentaireAdmin, setCommentaireAdmin,
             </div>
           </div>
 
+          {/* Formation si applicable */}
           {isFormation && formation && (
             <div style={{ background: "#F3E8FF", border: "2px solid #DDD6FE", borderRadius: 14, padding: "18px 20px", marginBottom: 18 }}>
               <div style={{ fontWeight: 700, fontSize: 15, color: "#6B21A8", marginBottom: 12 }}>
@@ -458,6 +462,7 @@ function ModalDemande({ demande, experts, commentaireAdmin, setCommentaireAdmin,
             </div>
           )}
 
+          {/* Gestion des experts (notification + assignation) */}
           {needsExpert && demande.statut === "en_attente" && (
             <div style={{ border: "1.5px solid #EEF2F7", borderRadius: 14, overflow: "hidden", marginBottom: 18 }}>
               <div style={{ display: "flex", borderBottom: "1px solid #EEF2F7", background: "#FAFBFE" }}>
@@ -500,7 +505,7 @@ function ModalDemande({ demande, experts, commentaireAdmin, setCommentaireAdmin,
                             </div>
                             <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
                               <button className="btn btn-gray" style={{ fontSize: 12, padding: "4px 8px" }}
-                                onClick={() => { setDescExpert(ex); setShowDescModal(true); }}>📄 Voir</button>
+                                onClick={() => { setDescExpert(ex); setShowDescModal(true); }}>📄 Voir profil</button>
                               {alreadyNotified
                                 ? <Badge color={expertsAcceptesIds.includes(ex.id) ? "green" : "yellow"}>{expertsAcceptesIds.includes(ex.id) ? "✅ A accepté" : "⏳ Notifié"}</Badge>
                                 : <Badge color="gray">Non notifié</Badge>
@@ -551,10 +556,14 @@ function ModalDemande({ demande, experts, commentaireAdmin, setCommentaireAdmin,
                                   <div style={{ fontSize: 11, color: "#22C55E", fontWeight: 700 }}>✅ A accepté la mission</div>
                                 </div>
                               </div>
-                              {isAssigned
-                                ? <Badge color="green">✅ Assigné</Badge>
-                                : <button className="btn btn-green" style={{ fontSize: 13, padding: "9px 18px" }} onClick={() => onAssignerExpert(demande.id, ex.id, commentaireAdmin)}>👤 Assigner</button>
-                              }
+                              <div style={{ display: "flex", gap: 6 }}>
+                                {isAssigned
+                                  ? <Badge color="green">✅ Assigné</Badge>
+                                  : <button className="btn btn-green" style={{ fontSize: 13, padding: "9px 18px" }} onClick={() => onAssignerExpert(demande.id, ex.id, commentaireAdmin)}>👤 Assigner</button>
+                                }
+                                <button className="btn btn-gray" style={{ fontSize: 12, padding: "4px 8px" }}
+                                  onClick={() => { setDescExpert(ex); setShowDescModal(true); }}>📄 Voir profil</button>
+                              </div>
                             </div>
                           );
                         })}
@@ -566,6 +575,7 @@ function ModalDemande({ demande, experts, commentaireAdmin, setCommentaireAdmin,
             </div>
           )}
 
+          {/* Actions admin */}
           <div style={{ background: "#F8FAFC", border: "1px solid #EEF2F7", borderRadius: 14, padding: "18px 20px" }}>
             <div style={{ fontWeight: 700, color: "#0A2540", fontSize: 14, marginBottom: 14 }}>⚙️ Actions administrateur</div>
             <div style={{ marginBottom: 14 }}>
@@ -607,6 +617,7 @@ function ModalDemande({ demande, experts, commentaireAdmin, setCommentaireAdmin,
         </div>
       </div>
 
+      {/* Modal de visualisation du profil expert */}
       {showDescModal && descExpert && (
         <div className="modal-bg" onClick={() => setShowDescModal(false)}>
           <div className="modal" style={{ maxWidth: 500 }} onClick={(e: any) => e.stopPropagation()}>
@@ -1425,21 +1436,10 @@ export default function DashboardAdmin() {
                       <div style={{ padding: "14px 20px", borderBottom: "1px solid #F1F5F9", background: "#FAFBFE" }}><span style={{ fontWeight: 700, fontSize: 14.5 }}>🎯 Experts ({experts.length}) · {enAttenteExperts.length} en attente</span></div>
                       <table style={{ width: "100%", borderCollapse: "collapse" }}>
                         <thead>
-                          <tr>
-                            <th>Expert</th>
-                            <th>Email</th>
-                            <th>Domaine</th>
-                            <th>Localisation</th>
-                            <th>Statut</th>
-                            <th>Actions</th>
-                          </tr>
+                          <tr><th>Expert</th><th>Email</th><th>Domaine</th><th>Localisation</th><th>Statut</th><th>Actions</th></tr>
                         </thead>
                         <tbody>
-                          {experts.length === 0 && (
-                            <tr>
-                              <td colSpan={6} style={{ textAlign: "center", padding: 40, color: "#94A3B8" }}>Aucun expert</td>
-                            </tr>
-                          )}
+                          {experts.length === 0 && <tr><td colSpan={6} style={{ textAlign: "center", padding: 40, color: "#94A3B8" }}>Aucun expert</td></tr>}
                           {experts.map((e: any) => (
                             <tr key={e.id}>
                               <td><div style={{ display: "flex", alignItems: "center", gap: 8 }}><Avatar nom={e.user?.nom} prenom={e.user?.prenom} photo={e.photo} size={32} /><span style={{ fontWeight: 600 }}>{e.user?.prenom} {e.user?.nom}</span></div></td>
@@ -1461,22 +1461,10 @@ export default function DashboardAdmin() {
                       <div style={{ padding: "14px 20px", borderBottom: "1px solid #F1F5F9", background: "#FAFBFE" }}><span style={{ fontWeight: 700, fontSize: 14.5 }}>🚀 Startups ({startups.length}) · {enAttenteStartups.length} en attente</span></div>
                       <table style={{ width: "100%", borderCollapse: "collapse" }}>
                         <thead>
-                          <tr>
-                            <th>Responsable</th>
-                            <th>Email</th>
-                            <th>Startup</th>
-                            <th>Secteur</th>
-                            <th>Taille</th>
-                            <th>Statut</th>
-                            <th>Actions</th>
-                          </tr>
+                          <tr><th>Responsable</th><th>Email</th><th>Startup</th><th>Secteur</th><th>Taille</th><th>Statut</th><th>Actions</th></tr>
                         </thead>
                         <tbody>
-                          {startups.length === 0 && (
-                            <tr>
-                              <td colSpan={7} style={{ textAlign: "center", padding: 40, color: "#94A3B8" }}>Aucune startup</td>
-                            </tr>
-                          )}
+                          {startups.length === 0 && <tr><td colSpan={7} style={{ textAlign: "center", padding: 40, color: "#94A3B8" }}>Aucune startup</td></tr>}
                           {startups.map((s: any) => (
                             <tr key={s.id}>
                               <td><div style={{ display: "flex", alignItems: "center", gap: 8 }}><Avatar nom={s.user?.nom} prenom={s.user?.prenom} size={32} /><span style={{ fontWeight: 600 }}>{s.user?.prenom} {s.user?.nom}</span></div></td>
@@ -1576,23 +1564,10 @@ export default function DashboardAdmin() {
                 {tab === "formations" && (
                   <div style={{ padding: "24px 28px" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, flexWrap: "wrap", gap: 12 }}>
-                      <div>
-                        <h2 style={{ fontSize: 17, fontWeight: 800, color: "#0A2540" }}>📚 Formations ({formations.length})</h2>
-                        <div style={{ fontSize: 13, color: "#8A9AB5", marginTop: 2 }}>
-                          {formations.filter((f: any) => f.statut === "publie").length} publiées · 
-                          {formations.filter((f: any) => f.statut === "en_attente").length} en attente · 
-                          {formations.filter((f: any) => f.statut === "brouillon").length} brouillons
-                        </div>
-                      </div>
+                      <div><h2 style={{ fontSize: 17, fontWeight: 800, color: "#0A2540" }}>📚 Formations ({formations.length})</h2><div style={{ fontSize: 13, color: "#8A9AB5", marginTop: 2 }}>{formations.filter((f: any) => f.statut === "publie").length} publiées · {formations.filter((f: any) => f.statut === "en_attente").length} en attente · {formations.filter((f: any) => f.statut === "brouillon").length} brouillons</div></div>
                       <button className="btn btn-green" style={{ padding: "9px 20px" }} onClick={() => { resetFormationForm(); setShowFormationModal(true); }}>📚 Nouvelle formation</button>
                     </div>
-
-                    {formations.length === 0 ? (
-                      <div style={{ background: "#fff", border: "1.5px solid #EEF2F7", borderRadius: 16, padding: "60px 0", textAlign: "center", color: "#94A3B8" }}>
-                        <div style={{ fontSize: 40, marginBottom: 12 }}>📚</div>
-                        <div style={{ fontWeight: 600 }}>Aucune formation</div>
-                      </div>
-                    ) : (
+                    {formations.length === 0 ? <div style={{ background: "#fff", border: "1.5px solid #EEF2F7", borderRadius: 16, padding: "60px 0", textAlign: "center", color: "#94A3B8" }}><div style={{ fontSize: 40, marginBottom: 12 }}>📚</div><div style={{ fontWeight: 600 }}>Aucune formation</div></div> : (
                       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
                         {formations.map((f: any) => {
                           const borderColor = f.statut === "publie" ? "#A7F3D0" : f.statut === "en_attente" ? "#FDE68A" : f.statut === "brouillon" ? "#FDE68A" : "#D1D5DB";
@@ -1604,43 +1579,17 @@ export default function DashboardAdmin() {
                                 <div style={{ display: "flex", gap: 12 }}>
                                   {f.image && <img src={`${BASE}/uploads/formations/${f.image}`} style={{ width: 76, height: 76, borderRadius: 10, objectFit: "cover", flexShrink: 0 }} onError={(e: any) => e.currentTarget.style.display = "none"} />}
                                   <div style={{ flex: 1 }}>
-                                    <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginBottom: 6 }}>
-                                      {f.statut === "publie" && <Badge color="green">✅ Publiée</Badge>}
-                                      {f.statut === "en_attente" && <Badge color="yellow">📝 En attente (expert)</Badge>}
-                                      {f.statut === "brouillon" && <Badge color="yellow">📝 Brouillon</Badge>}
-                                      {f.statut === "archive" && <Badge color="gray">📦 Archivée</Badge>}
-                                      {f.certifiante && <Badge color="purple">🎓 Certifiante</Badge>}
-                                      {f.expertId && <Badge color="teal">👤 Expert</Badge>}
-                                    </div>
+                                    <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginBottom: 6 }}>{f.statut === "publie" && <Badge color="green">✅ Publiée</Badge>}{f.statut === "en_attente" && <Badge color="yellow">📝 En attente (expert)</Badge>}{f.statut === "brouillon" && <Badge color="yellow">📝 Brouillon</Badge>}{f.statut === "archive" && <Badge color="gray">📦 Archivée</Badge>}{f.certifiante && <Badge color="purple">🎓 Certifiante</Badge>}{f.expertId && <Badge color="teal">👤 Expert</Badge>}</div>
                                     <div style={{ fontWeight: 700, fontSize: 14, color: "#0A2540" }}>{f.titre}</div>
                                     {f.domaine && <div style={{ fontSize: 11, color: "#64748B", marginTop: 3 }}>📁 {f.domaine}</div>}
                                     {f.formateur && <div style={{ fontSize: 12, color: "#64748B" }}>👨‍🏫 {f.formateur}</div>}
-                                    <div style={{ display: "flex", flexWrap: "wrap", gap: 7, marginTop: 6 }}>
-                                      {f.gratuit ? <span style={{ fontSize: 11, color: "#22C55E" }}>🎁 Gratuit</span> : f.prix && <span style={{ fontSize: 11, color: "#F7B500" }}>💰 {f.prix} DT</span>}
-                                      {f.duree && <span style={{ fontSize: 11, color: "#64748B" }}>⏱ {f.duree}</span>}
-                                      {f.places_limitees ? (
-                                        <span style={{ fontSize: 11, fontWeight: 700, color: (f.places_disponibles ?? 0) > 0 ? "#22C55E" : "#EF4444" }}>
-                                          🎟️ {f.places_disponibles ?? 0} place(s)
-                                        </span>
-                                      ) : (
-                                        <span style={{ fontSize: 11, color: "#64748B" }}>🎟️ Illimitées</span>
-                                      )}
-                                    </div>
+                                    <div style={{ display: "flex", flexWrap: "wrap", gap: 7, marginTop: 6 }}>{f.gratuit ? <span style={{ fontSize: 11, color: "#22C55E" }}>🎁 Gratuit</span> : f.prix && <span style={{ fontSize: 11, color: "#F7B500" }}>💰 {f.prix} DT</span>}{f.duree && <span style={{ fontSize: 11, color: "#64748B" }}>⏱ {f.duree}</span>}{f.places_limitees ? <span style={{ fontSize: 11, fontWeight: 700, color: (f.places_disponibles ?? 0) > 0 ? "#22C55E" : "#EF4444" }}>🎟️ {f.places_disponibles ?? 0} place(s)</span> : <span style={{ fontSize: 11, color: "#64748B" }}>🎟️ Illimitées</span>}</div>
                                   </div>
                                 </div>
                                 <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
-                                  {f.statut === "en_attente" && (
-                                    <>
-                                      <button className="btn btn-green" onClick={() => publierFormation(f.id)}>✅ Publier</button>
-                                      <button className="btn btn-red" onClick={() => refuserFormation(f.id)}>❌ Refuser</button>
-                                    </>
-                                  )}
-                                  {f.statut === "brouillon" && (
-                                    <button className="btn btn-green" onClick={() => publierFormation(f.id)}>✅ Publier</button>
-                                  )}
-                                  {f.statut === "publie" && (
-                                    <button className="btn btn-gray" onClick={() => archiverFormation(f.id)}>📦 Archiver</button>
-                                  )}
+                                  {f.statut === "en_attente" && <><button className="btn btn-green" onClick={() => publierFormation(f.id)}>✅ Publier</button><button className="btn btn-red" onClick={() => refuserFormation(f.id)}>❌ Refuser</button></>}
+                                  {f.statut === "brouillon" && <button className="btn btn-green" onClick={() => publierFormation(f.id)}>✅ Publier</button>}
+                                  {f.statut === "publie" && <button className="btn btn-gray" onClick={() => archiverFormation(f.id)}>📦 Archiver</button>}
                                   <button className="btn btn-blue" onClick={() => {
                                     setEditingFormation(f);
                                     setFormationForm({
@@ -1677,11 +1626,10 @@ export default function DashboardAdmin() {
                     )}
                   </div>
                 )}
-               
-                {tab === "medias" && <MediasAdmin medias={medias} loadMedias={loadMedias} setToast={setToast} />}
+                             {tab === "medias" && <MediasAdmin medias={medias} loadMedias={loadMedias} setToast={setToast} />}
               </>
             )}
-                  </div>
+          </div>
         </div>
     </>
   );
