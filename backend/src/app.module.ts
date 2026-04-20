@@ -17,10 +17,13 @@ import { ServicesPlateformeModule } from './services-plateforme/services-platefo
 import { FormationsModule } from './formations/formations.module';
 import { ContactModule } from './contact/contact.module';
 import { NewsletterModule } from './newsletter/newsletter.module';
+import { CommentsModule } from './comments/comments.module';
+import { BlogModule } from './blog/blog.module';          // Blog
+import { MediaModule } from './media/media.module';  
+
 import { User } from './user/user.entity';
 import { Expert } from './user/expert.entity';
 import { Startup } from './user/startup.entity';
-import { CommentsModule } from './comments/comments.module';
 import { Comment } from './comments/comment.entity';
 import { Rendezvous } from './rendez-vous/rendezvous.entity';
 import { Message } from './messages/message.entity';
@@ -33,8 +36,9 @@ import { ContactConfig } from './contact/contact-config.entity';
 import { Newsletter } from './newsletter/newsletter.entity';
 import { Formation } from './formations/formation.entity';
 import { Devis } from './devis/devis.entity';
-import { Blog } from './blog/blog.entity';                 // ← AJOUT
-import { BlogModule } from './blog/blog.module';          // ← AJOUT
+import { Blog } from './blog/blog.entity';
+import { Media } from './media/media.entity';
+        
 
 @Module({
   imports: [
@@ -50,17 +54,31 @@ import { BlogModule } from './blog/blog.module';          // ← AJOUT
         Message, Temoignage, Histoire, DemandeService,
         ServicePlateforme, ContactMessage, ContactConfig, Newsletter, Comment,
         Formation, Devis,
-        Blog,                                              // ← AJOUT
+        Blog,
+        Media,                                            
       ],
       synchronize: true,
       logging: true,
     }),
-    UserModule, AuthModule, MailModule, AdminModule, ExpertsModule,
-    StartupsModule, RendezVousModule,
-    MessagesModule, TemoignagesModule, HistoireModule,
-    DemandesServiceModule, ServicesPlateformeModule, ContactModule,
-    CommentsModule, NewsletterModule, FormationsModule, DevisModule,
-    BlogModule,                                          // ← AJOUT
+    UserModule,
+    AuthModule,
+    MailModule,
+    AdminModule,
+    ExpertsModule,
+    StartupsModule,
+    RendezVousModule,
+    MessagesModule,
+    TemoignagesModule,
+    HistoireModule,
+    DemandesServiceModule,
+    ServicesPlateformeModule,
+    ContactModule,
+    CommentsModule,
+    NewsletterModule,
+    FormationsModule,
+    DevisModule,
+    BlogModule,
+    MediaModule,                                          // ← AJOUT
   ],
 })
 export class AppModule {}

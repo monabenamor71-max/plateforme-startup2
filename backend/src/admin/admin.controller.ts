@@ -1,16 +1,27 @@
 // src/admin/admin.controller.ts
 import {
-  Controller, Get, Patch, Delete, Param, Body, UseGuards, Post, Put, UseInterceptors, UploadedFiles,
+  Controller,
+  Get,
+  Patch,
+  Delete,
+  Param,
+  Body,
+  UseGuards,
+  Post,
+  Put,
+  UseInterceptors,
+  UploadedFile,
+  UploadedFiles,
 } from '@nestjs/common';
 import { AdminService } from './admin.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
-import { FileFieldsInterceptor } from '@nestjs/platform-express';
+import { FileFieldsInterceptor, FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
 
-// Configuration du stockage pour les images et PDF
+// Configuration du stockage pour les articles (images + PDF)
 const articleStorage = diskStorage({
   destination: (_req, file, cb) => {
     if (file.fieldname === 'image') {
@@ -26,6 +37,17 @@ const articleStorage = diskStorage({
     } else {
       cb(null, `article-${unique}.pdf`);
     }
+  },
+});
+
+// Configuration du stockage pour les miniatures des médias
+const mediaStorage = diskStorage({
+  destination: (_req, file, cb) => {
+    cb(null, './uploads/videos-miniatures');
+  },
+  filename: (_req, file, cb) => {
+    const unique = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+    cb(null, `miniature-${unique}${extname(file.originalname)}`);
   },
 });
 
@@ -167,5 +189,37 @@ export class AdminController {
   @Delete('articles/:id')
   async deleteArticle(@Param('id') id: number) {
     return this.adminService.deleteArticle(id);
+  }
+
+  // ==================== MÉDIAS (VIDÉOS) ====================
+  @Get('medias/all')
+  async getAllMedias() {
+    return this.adminService.getAllMediasAdmin();
+  }
+
+  @Get('medias/:id')
+  async getMediaById(@Param('id') id: number) {
+    return this.adminService.getMediaById(id);
+  }
+
+  @Post('medias/create')
+  @UseInterceptors(FileInterceptor('miniature_file', { storage: mediaStorage }))
+  async createMedia(@Body() body: any, @UploadedFile() miniatureFile: Express.Multer.File) {
+    return this.adminService.createMedia(body, miniatureFile);
+  }
+
+  @Put('medias/:id')
+  @UseInterceptors(FileInterceptor('miniature_file', { storage: mediaStorage }))
+  async updateMedia(
+    @Param('id') id: number,
+    @Body() body: any,
+    @UploadedFile() miniatureFile: Express.Multer.File,
+  ) {
+    return this.adminService.updateMedia(id, body, miniatureFile);
+  }
+
+  @Delete('medias/:id')
+  async deleteMedia(@Param('id') id: number) {
+    return this.adminService.deleteMedia(id);
   }
 }

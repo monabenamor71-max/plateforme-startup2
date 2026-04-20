@@ -7,6 +7,7 @@ import { Expert } from '../user/expert.entity';
 import { Startup } from '../user/startup.entity';
 import { Blog } from '../blog/blog.entity';
 import { MailService } from '../mail/mail.service';
+import { MediaService } from '../media/media.service';
 
 @Injectable()
 export class AdminService {
@@ -16,6 +17,7 @@ export class AdminService {
     @InjectRepository(Startup) private startupRepo: Repository<Startup>,
     @InjectRepository(Blog) private blogRepo: Repository<Blog>,
     private mailService: MailService,
+    private mediaService: MediaService,
   ) {}
 
   // ==================== USERS ====================
@@ -167,7 +169,7 @@ export class AdminService {
     return { experts, startups };
   }
 
-  // ==================== BLOG (ARTICLES) ====================
+  // ==================== BLOG ====================
   async getAllArticlesAdmin() {
     return this.blogRepo.find({
       order: { createdAt: 'DESC' },
@@ -186,11 +188,11 @@ export class AdminService {
       description: data.description,
       contenu: data.contenu,
       type: data.type || 'article',
-      categorie: data.categorie,       // ← remplace domaine
+      categorie: data.categorie,
       duree_lecture: data.duree_lecture,
       statut: data.statut || 'brouillon',
       image: imageFile?.filename || null,
-      pdf: pdfFile?.filename || null,  // ← ajout PDF
+      pdf: pdfFile?.filename || null,
     });
     return this.blogRepo.save(article);
   }
@@ -212,5 +214,26 @@ export class AdminService {
   async deleteArticle(id: number) {
     const article = await this.findArticleById(id);
     return this.blogRepo.remove(article);
+  }
+
+  // ==================== MÉDIAS ====================
+  async getAllMediasAdmin() {
+    return this.mediaService.findAllAdmin();
+  }
+
+  async getMediaById(id: number) {
+    return this.mediaService.findOne(id);
+  }
+
+  async createMedia(data: any, miniatureFile: Express.Multer.File) {
+    return this.mediaService.create(data, miniatureFile);
+  }
+
+  async updateMedia(id: number, data: any, miniatureFile: Express.Multer.File) {
+    return this.mediaService.update(id, data, miniatureFile);
+  }
+
+  async deleteMedia(id: number) {
+    return this.mediaService.delete(id);
   }
 }

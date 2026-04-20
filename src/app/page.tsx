@@ -9,7 +9,7 @@ import {
   FaEnvelope, FaArrowRight, FaLock, FaCheck,
   FaCalendarAlt, FaFacebookF, FaInstagram, FaLinkedinIn,
   FaChevronDown, FaMapMarkerAlt, FaPhone, FaEye, FaEyeSlash,
-  FaRocket, FaUserPlus, FaClock, FaGlobe,
+  FaRocket, FaUserPlus, FaClock, FaTag, FaStar, FaGlobe,
 } from "react-icons/fa";
 
 // ==================== TRADUCTIONS ====================
@@ -18,6 +18,7 @@ type Lang = "fr" | "en";
 
 const T: Record<Lang, Record<string, string>> = {
   fr: {
+    // Header
     nav_home:       "Accueil",
     nav_about:      "À propos",
     nav_services:   "Services",
@@ -26,6 +27,7 @@ const T: Record<Lang, Record<string, string>> = {
     nav_contact:    "Contact",
     btn_login:      "Connexion",
     btn_signup:     "S'inscrire",
+    // Hero
     hero_badge:     "Cabinet de consulting & conseil",
     hero_h1_a:      "Propulsez votre",
     hero_h1_b:      "startup",
@@ -33,6 +35,7 @@ const T: Record<Lang, Record<string, string>> = {
     hero_p:         "Plateforme d'experts spécialisée dans l'accompagnement stratégique des startups et entreprises en croissance.",
     hero_cta1:      "Découvrir nos services",
     hero_cta2:      "Contactez-nous",
+    // ADN
     adn_title:      "Notre",
     adn_title2:     "ADN",
     adn_link:       "En savoir plus",
@@ -43,6 +46,7 @@ const T: Record<Lang, Record<string, string>> = {
     adn1_body:      "Offrir aux startups un accès privilégié à des experts certifiés pour structurer leur stratégie, accélérer leur croissance et réussir leurs levées de fonds.",
     adn2_title:     "Nos Valeurs",
     adn2_body:      "Excellence, transparence et engagement humain. Chaque accompagnement est unique et conçu pour maximiser l'impact durable de votre entreprise.",
+    // Experts
     experts_badge:  "Notre équipe",
     experts_title:  "Nos",
     experts_title2: "Experts",
@@ -52,17 +56,21 @@ const T: Record<Lang, Record<string, string>> = {
     experts_book:   "📅 Réserver",
     experts_all:    "Voir tous nos experts",
     experts_empty:  "Aucun expert disponible pour le moment.",
+    // Modal expert
     modal_title:    "Accès réservé",
     modal_p:        "Créez un compte gratuit ou connectez-vous pour accéder aux profils experts et réserver un rendez-vous.",
     modal_create:   "Créer un compte",
     modal_login:    "Se connecter",
+    // Partenaires
     partners_title: "Nos",
     partners_title2:"Partenaires",
+    // Témoignages
     temo_badge:     "Témoignages",
     temo_title:     "Ce que disent nos",
     temo_title2:    "clients",
     temo_empty:     "Aucun témoignage pour l'instant",
     temo_empty_sub: "Les témoignages apparaîtront ici après validation.",
+    // Newsletter
     nl_badge:       "Newsletter",
     nl_title:       "Restez",
     nl_title2:      "informé",
@@ -71,6 +79,7 @@ const T: Record<Lang, Record<string, string>> = {
     nl_btn:         "S'inscrire",
     nl_loading:     "⏳ Inscription...",
     nl_success:     "✅ Vous êtes inscrit avec succès !",
+    // Articles
     art_badge:      "Actualités",
     art_title:      "Nos derniers",
     art_title2:     "articles",
@@ -78,6 +87,7 @@ const T: Record<Lang, Record<string, string>> = {
     art_empty:      "Aucun article pour le moment",
     art_read:       "Lire l'article",
     art_members:    "Membres",
+    // Footer
     foot_nav:       "Navigation",
     foot_services:  "Services",
     foot_contact:   "Contact",
@@ -86,6 +96,7 @@ const T: Record<Lang, Record<string, string>> = {
     foot_privacy:   "Confidentialité",
     foot_copy:      "© 2026 Business Expert Hub. Tous droits réservés.",
     foot_desc:      "Plateforme premium de mise en relation entre startups ambitieuses et experts certifiés.",
+    // Popup
     pop_badge:      "Plateforme exclusive",
     pop_h2:         "Rejoignez notre plateforme",
     pop_p:          "Accédez à nos experts, services et opportunités exclusives",
@@ -111,6 +122,7 @@ const T: Record<Lang, Record<string, string>> = {
     str_strong:     "Fort",
   },
   en: {
+    // Header
     nav_home:       "Home",
     nav_about:      "About",
     nav_services:   "Services",
@@ -119,6 +131,7 @@ const T: Record<Lang, Record<string, string>> = {
     nav_contact:    "Contact",
     btn_login:      "Login",
     btn_signup:     "Sign up",
+    // Hero
     hero_badge:     "Consulting & advisory firm",
     hero_h1_a:      "Launch your",
     hero_h1_b:      "startup",
@@ -126,6 +139,7 @@ const T: Record<Lang, Record<string, string>> = {
     hero_p:         "An expert platform specialised in strategic support for startups and growing companies.",
     hero_cta1:      "Discover our services",
     hero_cta2:      "Contact us",
+    // ADN
     adn_title:      "Our",
     adn_title2:     "DNA",
     adn_link:       "Learn more",
@@ -136,6 +150,7 @@ const T: Record<Lang, Record<string, string>> = {
     adn1_body:      "Give startups privileged access to certified experts to structure their strategy, accelerate growth and succeed in fundraising.",
     adn2_title:     "Our Values",
     adn2_body:      "Excellence, transparency and human commitment. Every engagement is unique and designed to maximise lasting impact.",
+    // Experts
     experts_badge:  "Our team",
     experts_title:  "Our",
     experts_title2: "Certified",
@@ -145,17 +160,21 @@ const T: Record<Lang, Record<string, string>> = {
     experts_book:   "📅 Book",
     experts_all:    "See all our experts",
     experts_empty:  "No experts available at the moment.",
+    // Modal expert
     modal_title:    "Restricted access",
     modal_p:        "Create a free account or log in to access expert profiles and book an appointment.",
     modal_create:   "Create an account",
     modal_login:    "Log in",
+    // Partenaires
     partners_title: "Our",
     partners_title2:"Partners",
+    // Témoignages
     temo_badge:     "Testimonials",
     temo_title:     "What our",
     temo_title2:    "clients say",
     temo_empty:     "No testimonials yet",
     temo_empty_sub: "Testimonials will appear here after validation.",
+    // Newsletter
     nl_badge:       "Newsletter",
     nl_title:       "Stay",
     nl_title2:      "informed",
@@ -164,6 +183,7 @@ const T: Record<Lang, Record<string, string>> = {
     nl_btn:         "Subscribe",
     nl_loading:     "⏳ Subscribing...",
     nl_success:     "✅ Successfully subscribed!",
+    // Articles
     art_badge:      "News",
     art_title:      "Our latest",
     art_title2:     "articles",
@@ -171,6 +191,7 @@ const T: Record<Lang, Record<string, string>> = {
     art_empty:      "No articles yet",
     art_read:       "Read article",
     art_members:    "Members",
+    // Footer
     foot_nav:       "Navigation",
     foot_services:  "Services",
     foot_contact:   "Contact",
@@ -179,6 +200,7 @@ const T: Record<Lang, Record<string, string>> = {
     foot_privacy:   "Privacy policy",
     foot_copy:      "© 2026 Business Expert Hub. All rights reserved.",
     foot_desc:      "Premium platform connecting ambitious startups with certified experts.",
+    // Popup
     pop_badge:      "Exclusive platform",
     pop_h2:         "Join our platform",
     pop_p:          "Access our experts, services and exclusive opportunities",
@@ -303,10 +325,10 @@ const ADN_COLORS  = ["#3B82F6", "#F7B500", "#10B981"];
 const ADN_IMGS    = ["/vision.png", "/mission.png", "/valeurs.png"];
 const ADN_ANCHORS = ["vision", "mission", "valeurs"];
 const SERVICES = [
-  { label: { fr: "Consulting",      en: "Consulting"    }, slug: "consulting"      },
-  { label: { fr: "Audit sur site",  en: "On-site Audit" }, slug: "audit-sur-site"  },
-  { label: { fr: "Nos plateformes", en: "Our platforms"  }, slug: "nos-plateformes" },
-  { label: { fr: "Formations",      en: "Training"       }, slug: "formations"      },
+  { label: { fr: "Consulting",      en: "Consulting"   }, slug: "consulting"      },
+  { label: { fr: "Audit sur site",  en: "On-site Audit"}, slug: "audit-sur-site"  },
+  { label: { fr: "Nos plateformes", en: "Our platforms" }, slug: "nos-plateformes" },
+  { label: { fr: "Formations",      en: "Training"      }, slug: "formations"      },
 ];
 const LOGOS = [
   "/logos/partenaire1.png", "/logos/partenaire2.png", "/logos/partenaire3.png",
@@ -314,7 +336,7 @@ const LOGOS = [
   "/logos/partenaire7.png",
 ];
 
-// ==================== SÉLECTEUR DE LANGUE — style globe + code ====================
+// ==================== SÉLECTEUR DE LANGUE ====================
 
 function LangSwitcher({ lang, setLang }: { lang: Lang; setLang: (l: Lang) => void }) {
   const [open, setOpen] = useState(false);
@@ -328,10 +350,12 @@ function LangSwitcher({ lang, setLang }: { lang: Lang; setLang: (l: Lang) => voi
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
-  const LANGS: { code: Lang; label: string; short: string }[] = [
-    { code: "fr", label: "Français", short: "FR" },
-    { code: "en", label: "English",  short: "EN" },
+  const LANGS: { code: Lang; flag: string; label: string; short: string }[] = [
+    { code: "fr", flag: "🇫🇷", label: "Français", short: "FR" },
+    { code: "en", flag: "🇬🇧", label: "English",  short: "EN" },
   ];
+
+  const current = LANGS.find(l => l.code === lang)!;
 
   function select(code: Lang) {
     setLang(code);
@@ -339,68 +363,67 @@ function LangSwitcher({ lang, setLang }: { lang: Lang; setLang: (l: Lang) => voi
     if (typeof window !== "undefined") localStorage.setItem("beh_lang", code);
   }
 
-  const current = LANGS.find(l => l.code === lang)!;
-
   return (
     <div ref={ref} style={{ position: "relative", flexShrink: 0 }}>
-      {/* Bouton : globe + code langue */}
       <button
         onClick={() => setOpen(!open)}
         style={{
-          display: "flex", alignItems: "center", gap: 6,
-          background: "transparent",
-          border: "none",
-          padding: "6px 8px",
-          cursor: "pointer",
-          fontFamily: "'Outfit', sans-serif",
-          fontSize: 13.5, fontWeight: 600,
-          color: "#374151",
-          borderRadius: 8,
-          transition: "color .18s, background .18s",
-          outline: "none",
+          display: "flex", alignItems: "center", gap: 7,
+          background: open ? "#F7F9FC" : "#fff",
+          border: `1.5px solid ${open ? "#0A2540" : "#E2EAF4"}`,
+          borderRadius: 10, padding: "7px 13px",
+          cursor: "pointer", fontFamily: "'Outfit',sans-serif",
+          fontSize: 13, fontWeight: 700, color: "#0A2540",
+          transition: "all .18s", outline: "none",
+          boxShadow: open ? "0 4px 16px rgba(10,37,64,.10)" : "none",
         }}
-        onMouseEnter={e => { e.currentTarget.style.color = "#0A2540"; e.currentTarget.style.background = "#F3F4F6"; }}
-        onMouseLeave={e => { if (!open) { e.currentTarget.style.color = "#374151"; e.currentTarget.style.background = "transparent"; } }}
+        onMouseEnter={e => { if (!open) { e.currentTarget.style.borderColor = "#0A2540"; e.currentTarget.style.background = "#F7F9FC"; } }}
+        onMouseLeave={e => { if (!open) { e.currentTarget.style.borderColor = "#E2EAF4"; e.currentTarget.style.background = "#fff"; } }}
       >
-        {/* Icône globe SVG — identique à la capture */}
-        <FaGlobe size={15} style={{ color: "#6B7280", flexShrink: 0 }} />
-        <span style={{ letterSpacing: ".3px" }}>{current.short}</span>
+        <span style={{
+          width: 22, height: 22, borderRadius: 6,
+          background: "#F1F5F9", display: "flex", alignItems: "center", justifyContent: "center",
+          fontSize: 14, lineHeight: 1, flexShrink: 0,
+          boxShadow: "inset 0 0 0 1px rgba(10,37,64,.07)",
+        }}>{current.flag}</span>
+        <span style={{ letterSpacing: ".5px" }}>{current.short}</span>
+        <FaChevronDown size={9} style={{ color: "#94A3B8", transition: "transform .2s", transform: open ? "rotate(180deg)" : "none" }} />
       </button>
 
-      {/* Dropdown */}
       {open && (
         <div style={{
-          position: "absolute", top: "calc(100% + 6px)", right: 0,
-          background: "#fff", borderRadius: 12,
-          boxShadow: "0 8px 32px rgba(10,37,64,.13)",
-          border: "1px solid #E5E7EB",
-          overflow: "hidden", minWidth: 140, zIndex: 400,
-          animation: "langDrop .15s cubic-bezier(.22,1,.36,1)",
+          position: "absolute", top: "calc(100% + 8px)", right: 0,
+          background: "#fff", borderRadius: 14,
+          boxShadow: "0 16px 48px rgba(10,37,64,.16)",
+          border: "1.5px solid #EEF2F7",
+          overflow: "hidden", minWidth: 160, zIndex: 400,
+          animation: "langDrop .18s cubic-bezier(.22,1,.36,1)",
         }}>
           {LANGS.map(l => (
             <button
               key={l.code}
               onClick={() => select(l.code)}
               style={{
-                width: "100%", display: "flex", alignItems: "center", gap: 10,
-                padding: "10px 14px",
-                background: l.code === lang ? "#F9FAFB" : "transparent",
-                border: "none", cursor: "pointer",
-                fontFamily: "'Outfit', sans-serif",
-                fontSize: 13.5,
-                fontWeight: l.code === lang ? 700 : 500,
-                color: l.code === lang ? "#0A2540" : "#6B7280",
-                transition: "background .12s, color .12s",
-                textAlign: "left",
+                width: "100%", display: "flex", alignItems: "center", gap: 12,
+                padding: "11px 16px", background: l.code === lang ? "#F7F9FC" : "transparent",
+                border: "none", cursor: "pointer", fontFamily: "'Outfit',sans-serif",
+                fontSize: 14, fontWeight: l.code === lang ? 700 : 500,
+                color: l.code === lang ? "#0A2540" : "#475569",
+                transition: "background .15s,color .15s", textAlign: "left",
               }}
-              onMouseEnter={e => { if (l.code !== lang) { e.currentTarget.style.background = "#F3F4F6"; e.currentTarget.style.color = "#374151"; } }}
-              onMouseLeave={e => { if (l.code !== lang) { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#6B7280"; } }}
+              onMouseEnter={e => { if (l.code !== lang) e.currentTarget.style.background = "#F8FAFC"; }}
+              onMouseLeave={e => { if (l.code !== lang) e.currentTarget.style.background = "transparent"; }}
             >
-              <FaGlobe size={13} style={{ color: l.code === lang ? "#F7B500" : "#9CA3AF", flexShrink: 0 }} />
+              <span style={{
+                width: 26, height: 26, borderRadius: 7,
+                background: "#F1F5F9", display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: 16, flexShrink: 0,
+                boxShadow: "inset 0 0 0 1px rgba(10,37,64,.06)",
+              }}>{l.flag}</span>
               <span style={{ flex: 1 }}>{l.label}</span>
               {l.code === lang && (
-                <span style={{ width: 16, height: 16, borderRadius: "50%", background: "#0A2540", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <FaCheck size={7} style={{ color: "#F7B500" }} />
+                <span style={{ width: 18, height: 18, borderRadius: "50%", background: "#0A2540", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <FaCheck size={8} style={{ color: "#F7B500" }} />
                 </span>
               )}
             </button>
@@ -433,7 +456,7 @@ function SignupPopup({ onClose, t }: { onClose: () => void; t: Record<string, st
     <div style={{ position: "fixed", inset: 0, zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
       <div style={{ position: "absolute", inset: 0, background: "rgba(4,12,24,.82)", backdropFilter: "blur(12px)" }} onClick={onClose} />
       <div style={{ position: "relative", zIndex: 10, width: "100%", maxWidth: 960, borderRadius: 28, overflow: "hidden", display: "grid", gridTemplateColumns: "1fr 1fr", boxShadow: "0 40px 120px rgba(0,0,0,.65)", animation: "popIn .4s cubic-bezier(.22,1,.36,1)" }}>
-        {/* Col gauche */}
+        {/* Colonne gauche */}
         <div style={{ background: "linear-gradient(145deg,#0A2540 0%,#0f3564 50%,#1a4a80 100%)", padding: "52px 44px", display: "flex", flexDirection: "column", justifyContent: "space-between", position: "relative", overflow: "hidden" }}>
           <div style={{ position: "absolute", top: -60, right: -60, width: 220, height: 220, borderRadius: "50%", background: "rgba(247,181,0,.07)", pointerEvents: "none" }} />
           <div style={{ position: "absolute", bottom: -40, left: -40, width: 160, height: 160, borderRadius: "50%", background: "rgba(247,181,0,.05)", pointerEvents: "none" }} />
@@ -461,8 +484,7 @@ function SignupPopup({ onClose, t }: { onClose: () => void; t: Record<string, st
             <span style={{ fontWeight: 600, fontSize: 14, color: "rgba(255,255,255,.45)" }}>Business Expert Hub</span>
           </div>
         </div>
-
-        {/* Col droite */}
+        {/* Colonne droite */}
         <div style={{ background: "#fff", padding: "48px 44px", display: "flex", flexDirection: "column", justifyContent: "center", position: "relative" }}>
           {step === "success" ? (
             <div style={{ textAlign: "center", padding: "20px 0" }}>
@@ -570,6 +592,7 @@ function SignupPopup({ onClose, t }: { onClose: () => void; t: Record<string, st
 export default function Home() {
   const router = useRouter();
 
+  // ── Langue ──
   const [lang, setLang] = useState<Lang>("fr");
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -578,6 +601,7 @@ export default function Home() {
   }, []);
   const tr = T[lang];
 
+  // ── Redirection si connecté ──
   useEffect(() => {
     if (typeof window === "undefined") return;
     const raw = localStorage.getItem("user");
@@ -607,6 +631,7 @@ export default function Home() {
   const popupShown = useRef(false);
   const [articlesAccueil, setArticlesAccueil] = useState<ArticleAPI[]>([]);
 
+  // Popup
   useEffect(() => {
     if (typeof window !== "undefined" && localStorage.getItem("beh_popup_dismissed")) return;
     const timer = setTimeout(() => { if (!popupShown.current) { popupShown.current = true; setShowPopup(true); } }, 8000);
@@ -709,7 +734,7 @@ export default function Home() {
         @keyframes spin     { to{transform:rotate(360deg)} }
         @keyframes hzoom    { 0%{transform:scale(1.08)} 100%{transform:scale(1)} }
         @keyframes hfi      { from{opacity:0;transform:translateY(26px)} to{opacity:1;transform:translateY(0)} }
-        @keyframes langDrop { from{opacity:0;transform:translateY(-6px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes langDrop { from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:translateY(0)} }
         .hi { animation:hzoom 2.2s cubic-bezier(.22,1,.36,1) forwards; }
         .hc > * { animation:hfi .9s cubic-bezier(.22,1,.36,1) both; }
         .hc > *:nth-child(1){animation-delay:.04s}
@@ -742,7 +767,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* ══ HEADER ══ */}
+      {/* ══ HEADER avec sélecteur de langue et lien "Services" cliquable ══ */}
       <header style={{ background: "#fff", position: "sticky", top: 0, zIndex: 100, boxShadow: "0 1px 0 #EEF2F7,0 4px 18px rgba(10,37,64,.05)" }}>
         <div style={{ maxWidth: 1280, margin: "0 auto", padding: "0 28px", height: 76, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
           {/* Logo */}
@@ -760,10 +785,11 @@ export default function Home() {
           <nav style={{ display: "flex", gap: 20, alignItems: "center", flex: 1, justifyContent: "center" }}>
             <Link href="/" className="nl" style={{ color: "#F7B500", fontWeight: 700 }}>{tr.nav_home}</Link>
             <Link href="/a-propos" className="nl">{tr.nav_about}</Link>
+            {/* Services : lien direct + dropdown */}
             <div style={{ position: "relative" }} onMouseEnter={() => setServOpen(true)} onMouseLeave={() => setServOpen(false)}>
-              <span className="nl" style={{ cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
+              <Link href="/services" className="nl" style={{ cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
                 {tr.nav_services} <FaChevronDown size={9} />
-              </span>
+              </Link>
               {servOpen && (
                 <ul style={{ position: "absolute", top: "calc(100% + 10px)", left: 0, background: "#fff", borderRadius: 14, listStyle: "none", padding: "8px", margin: 0, zIndex: 200, minWidth: 210, boxShadow: "0 16px 48px rgba(10,37,64,.14)", border: "1px solid #EEF2F7" }}>
                   {SERVICES.map(s => (
@@ -777,13 +803,11 @@ export default function Home() {
             <Link href="/contact" className="nl">{tr.nav_contact}</Link>
           </nav>
 
-          {/* Actions + langue */}
-          <div style={{ display: "flex", gap: 8, alignItems: "center", flexShrink: 0 }}>
-            {/* Séparateur */}
-            <div style={{ width: 1, height: 24, background: "#E5E7EB", margin: "0 2px" }} />
-            {/* Sélecteur langue — style globe + FR */}
+          {/* Actions + sélecteur de langue */}
+          <div style={{ display: "flex", gap: 10, alignItems: "center", flexShrink: 0 }}>
+            <div style={{ width: 1, height: 26, background: "#E2EAF4", margin: "0 4px" }} />
             <LangSwitcher lang={lang} setLang={setLang} />
-            <div style={{ width: 1, height: 24, background: "#E5E7EB", margin: "0 2px" }} />
+            <div style={{ width: 1, height: 26, background: "#E2EAF4", margin: "0 4px" }} />
             <Link href="/connexion"><button className="bno">{tr.btn_login}</button></Link>
             <Link href="/inscription"><button className="bns">{tr.btn_signup}</button></Link>
           </div>
@@ -1128,11 +1152,7 @@ export default function Home() {
               <div>
                 <div style={{ fontSize: 10.5, fontWeight: 700, color: "rgba(255,255,255,.3)", textTransform: "uppercase", letterSpacing: "1.8px", marginBottom: 14 }}>{tr.foot_social}</div>
                 <div style={{ display: "flex", gap: 10 }}>
-                  {[
-                    { Icon: FaFacebookF,  href: "https://facebook.com",  bg: "#1877F2" },
-                    { Icon: FaInstagram,  href: "https://instagram.com", bg: "linear-gradient(45deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888)" },
-                    { Icon: FaLinkedinIn, href: "https://linkedin.com",  bg: "#0A66C2" },
-                  ].map((s, i) => (
+                  {[{ Icon: FaFacebookF, href: "https://facebook.com", bg: "#1877F2" }, { Icon: FaInstagram, href: "https://instagram.com", bg: "linear-gradient(45deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888)" }, { Icon: FaLinkedinIn, href: "https://linkedin.com", bg: "#0A66C2" }].map((s, i) => (
                     <a key={i} href={s.href} target="_blank" rel="noopener noreferrer" className="sb" style={{ background: s.bg, color: "#fff" }}><s.Icon /></a>
                   ))}
                 </div>
@@ -1141,16 +1161,8 @@ export default function Home() {
             <div>
               <h4 style={{ color: "rgba(255,255,255,.4)", fontWeight: 700, fontSize: 10.5, textTransform: "uppercase", letterSpacing: "1.8px", marginBottom: 20 }}>{tr.foot_nav}</h4>
               <ul style={{ listStyle: "none", padding: 0, display: "flex", flexDirection: "column", gap: 12 }}>
-                {[
-                  { l: tr.nav_home, h: "/" }, { l: tr.nav_about, h: "/a-propos" },
-                  { l: tr.nav_services, h: "/services" }, { l: tr.nav_experts, h: "/experts" },
-                  { l: tr.nav_blog, h: "/blog" }, { l: tr.nav_contact, h: "/contact" },
-                ].map(({ l, h }) => (
-                  <li key={l}><Link href={h} style={{ color: "rgba(255,255,255,.32)", fontSize: 14, textDecoration: "none", display: "flex", alignItems: "center", gap: 8, transition: "color .2s" }}
-                    onMouseEnter={e => (e.currentTarget as HTMLAnchorElement).style.color = "#F7B500"}
-                    onMouseLeave={e => (e.currentTarget as HTMLAnchorElement).style.color = "rgba(255,255,255,.32)"}>
-                    <span style={{ width: 5, height: 5, borderRadius: "50%", background: "rgba(247,181,0,.4)", flexShrink: 0 }} />{l}
-                  </Link></li>
+                {[{ l: tr.nav_home, h: "/" }, { l: tr.nav_about, h: "/a-propos" }, { l: tr.nav_services, h: "/services" }, { l: tr.nav_experts, h: "/experts" }, { l: tr.nav_blog, h: "/blog" }, { l: tr.nav_contact, h: "/contact" }].map(({ l, h }) => (
+                  <li key={l}><Link href={h} style={{ color: "rgba(255,255,255,.32)", fontSize: 14, textDecoration: "none", display: "flex", alignItems: "center", gap: 8, transition: "color .2s" }} onMouseEnter={e => (e.currentTarget as HTMLAnchorElement).style.color = "#F7B500"} onMouseLeave={e => (e.currentTarget as HTMLAnchorElement).style.color = "rgba(255,255,255,.32)"}><span style={{ width: 5, height: 5, borderRadius: "50%", background: "rgba(247,181,0,.4)", flexShrink: 0 }} />{l}</Link></li>
                 ))}
               </ul>
             </div>
@@ -1158,28 +1170,15 @@ export default function Home() {
               <h4 style={{ color: "rgba(255,255,255,.4)", fontWeight: 700, fontSize: 10.5, textTransform: "uppercase", letterSpacing: "1.8px", marginBottom: 20 }}>{tr.foot_services}</h4>
               <ul style={{ listStyle: "none", padding: 0, display: "flex", flexDirection: "column", gap: 12 }}>
                 {SERVICES.map(s => (
-                  <li key={s.slug}><Link href={`/services/${s.slug}`} style={{ color: "rgba(255,255,255,.32)", fontSize: 14, textDecoration: "none", display: "flex", alignItems: "center", gap: 8, transition: "color .2s" }}
-                    onMouseEnter={e => (e.currentTarget as HTMLAnchorElement).style.color = "#F7B500"}
-                    onMouseLeave={e => (e.currentTarget as HTMLAnchorElement).style.color = "rgba(255,255,255,.32)"}>
-                    <span style={{ width: 5, height: 5, borderRadius: "50%", background: "rgba(247,181,0,.4)", flexShrink: 0 }} />{s.label[lang]}
-                  </Link></li>
+                  <li key={s.slug}><Link href={`/services/${s.slug}`} style={{ color: "rgba(255,255,255,.32)", fontSize: 14, textDecoration: "none", display: "flex", alignItems: "center", gap: 8, transition: "color .2s" }} onMouseEnter={e => (e.currentTarget as HTMLAnchorElement).style.color = "#F7B500"} onMouseLeave={e => (e.currentTarget as HTMLAnchorElement).style.color = "rgba(255,255,255,.32)"}><span style={{ width: 5, height: 5, borderRadius: "50%", background: "rgba(247,181,0,.4)", flexShrink: 0 }} />{s.label[lang]}</Link></li>
                 ))}
               </ul>
             </div>
             <div>
               <h4 style={{ color: "rgba(255,255,255,.4)", fontWeight: 700, fontSize: 10.5, textTransform: "uppercase", letterSpacing: "1.8px", marginBottom: 20 }}>{tr.foot_contact}</h4>
               <ul style={{ listStyle: "none", padding: 0, display: "flex", flexDirection: "column", gap: 16 }}>
-                {[
-                  { Icon: FaEnvelope,     text: "contact@beh.com",    href: "mailto:contact@beh.com"   },
-                  { Icon: FaPhone,        text: "+216 00 000 000",    href: "tel:+21600000000"          },
-                  { Icon: FaMapMarkerAlt, text: "Tunis, Tunisie",     href: "#"                         },
-                ].map((item, i) => (
-                  <li key={i}><a href={item.href} style={{ color: "rgba(255,255,255,.32)", fontSize: 13.5, textDecoration: "none", display: "flex", alignItems: "center", gap: 12, transition: "color .2s" }}
-                    onMouseEnter={e => (e.currentTarget as HTMLAnchorElement).style.color = "#F7B500"}
-                    onMouseLeave={e => (e.currentTarget as HTMLAnchorElement).style.color = "rgba(255,255,255,.32)"}>
-                    <div style={{ width: 34, height: 34, borderRadius: 9, background: "rgba(255,255,255,.06)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: 13 }}><item.Icon /></div>
-                    {item.text}
-                  </a></li>
+                {[{ Icon: FaEnvelope, text: "contact@beh.com", href: "mailto:contact@beh.com" }, { Icon: FaPhone, text: "+216 00 000 000", href: "tel:+21600000000" }, { Icon: FaMapMarkerAlt, text: "Tunis, Tunisie", href: "#" }].map((item, i) => (
+                  <li key={i}><a href={item.href} style={{ color: "rgba(255,255,255,.32)", fontSize: 13.5, textDecoration: "none", display: "flex", alignItems: "center", gap: 12, transition: "color .2s" }} onMouseEnter={e => (e.currentTarget as HTMLAnchorElement).style.color = "#F7B500"} onMouseLeave={e => (e.currentTarget as HTMLAnchorElement).style.color = "rgba(255,255,255,.32)"}><div style={{ width: 34, height: 34, borderRadius: 9, background: "rgba(255,255,255,.06)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: 13 }}><item.Icon /></div>{item.text}</a></li>
                 ))}
               </ul>
             </div>
@@ -1188,11 +1187,7 @@ export default function Home() {
             <p style={{ margin: 0, color: "rgba(255,255,255,.18)", fontSize: 12.5 }}>{tr.foot_copy}</p>
             <div style={{ display: "flex", gap: 20 }}>
               {[tr.foot_legal, tr.foot_privacy].map(l => (
-                <Link key={l} href="#" style={{ color: "rgba(255,255,255,.18)", fontSize: 12.5, textDecoration: "none", transition: "color .2s" }}
-                  onMouseEnter={e => (e.currentTarget as HTMLAnchorElement).style.color = "#F7B500"}
-                  onMouseLeave={e => (e.currentTarget as HTMLAnchorElement).style.color = "rgba(255,255,255,.18)"}>
-                  {l}
-                </Link>
+                <Link key={l} href="#" style={{ color: "rgba(255,255,255,.18)", fontSize: 12.5, textDecoration: "none", transition: "color .2s" }} onMouseEnter={e => (e.currentTarget as HTMLAnchorElement).style.color = "#F7B500"} onMouseLeave={e => (e.currentTarget as HTMLAnchorElement).style.color = "rgba(255,255,255,.18)"}>{l}</Link>
               ))}
             </div>
           </div>

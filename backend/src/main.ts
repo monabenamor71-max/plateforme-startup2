@@ -2,8 +2,24 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import * as path from 'path';
+import { mkdirSync, existsSync } from 'fs';  // ← ajout
 
 async function bootstrap() {
+  // ========== CRÉATION AUTOMATIQUE DES DOSSIERS ==========
+  const uploadDirs = [
+    './uploads',
+    './uploads/articles-img',
+    './uploads/articles-pdf',
+    './uploads/videos-miniatures',
+  ];
+  uploadDirs.forEach(dir => {
+    if (!existsSync(dir)) {
+      mkdirSync(dir, { recursive: true });
+      console.log(`✅ Dossier créé : ${dir}`);
+    }
+  });
+  // ======================================================
+
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
   
   app.enableCors({
