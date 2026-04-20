@@ -2,7 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import * as path from 'path';
-import { mkdirSync, existsSync } from 'fs';  // ← ajout
+import { mkdirSync, existsSync } from 'fs';
 
 async function bootstrap() {
   // ========== CRÉATION AUTOMATIQUE DES DOSSIERS ==========
@@ -11,6 +11,8 @@ async function bootstrap() {
     './uploads/articles-img',
     './uploads/articles-pdf',
     './uploads/videos-miniatures',
+    './uploads/podcasts-audio',    // ← ajout
+    './uploads/podcasts-images',   // ← ajout
   ];
   uploadDirs.forEach(dir => {
     if (!existsSync(dir)) {

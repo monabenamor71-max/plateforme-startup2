@@ -1,6 +1,5 @@
-// src/user/expert.entity.ts
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
-import { User } from './user.entity';   // ← correction : './user.entity'
+import { User } from './user.entity';
 
 @Entity('experts')
 export class Expert {
@@ -33,7 +32,7 @@ export class Expert {
   experience: string;
 
   @Column({ type: 'int', nullable: true })
-  annee_debut_experience: number | null;
+  annee_debut_experience: number | null;   // ← année de début (nullable)
 
   @Column({ nullable: true })
   localisation: string;

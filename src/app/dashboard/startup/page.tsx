@@ -9,7 +9,7 @@ import {
   FaCheck, FaCamera, FaComments, FaCalendar, FaStar, FaCheckCircle,
   FaChartLine, FaSearchPlus, FaDesktop, FaPlay, FaMicrophone,
   FaUsers, FaClock, FaCertificate, FaExternalLinkAlt, FaTimes,
-  FaMobile, FaLaptopCode, FaEdit, FaTrash, FaSave,
+  FaMobile, FaLaptopCode, FaEdit, FaTrash, FaSave, FaHeadphones,
 } from "react-icons/fa";
 
 const BASE = "http://localhost:3001";
@@ -203,62 +203,41 @@ function FormationModal({ formation, onClose, demanderFormation, demandeExiste, 
   );
 }
 
-// ─── MODAL PODCAST ───────────────────────────────────────────────────────────
+// ─── MODAL PODCAST (lecteur audio) ───────────────────────────────────────────
 
-function PodcastModal({ podcast, onClose, openService }: { podcast: any; onClose: () => void; openService: (slug: string) => void }) {
-  const modeInfo = MODE_LABELS[podcast.mode] || { label: "En ligne", color: "#22C55E" };
+function PodcastModal({ podcast, onClose }: { podcast: any; onClose: () => void }) {
+  const audioRef = useRef<HTMLAudioElement>(null);
+
+  useEffect(() => {
+    if (audioRef.current) audioRef.current.load();
+  }, [podcast]);
+
   return (
     <div className="modal-bg" onClick={onClose}>
-      <div className="modal-box" onClick={e => e.stopPropagation()}>
-        <div style={{ position: "relative", height: 190, background: "linear-gradient(135deg,#2d1b5e,#4c1d95)", overflow: "hidden", borderRadius: "24px 24px 0 0" }}>
-          {podcast.image && (
-            <img src={`${BASE}/uploads/formations/${podcast.image}`} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", opacity: .45 }} />
-          )}
-          <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top,rgba(45,27,94,.92),transparent)" }} />
-          <button onClick={onClose} style={{ position: "absolute", top: 16, right: 16, width: 36, height: 36, borderRadius: "50%", background: "rgba(255,255,255,.15)", border: "1px solid rgba(255,255,255,.25)", color: "#fff", fontSize: 16, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <FaTimes />
-          </button>
-          <div style={{ position: "absolute", bottom: 20, left: 20, right: 60, display: "flex", alignItems: "flex-end", gap: 14 }}>
-            <div style={{ width: 52, height: 52, borderRadius: 14, background: "rgba(139,92,246,.35)", border: "1.5px solid rgba(139,92,246,.55)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-              <FaMicrophone style={{ color: "#C4B5FD", fontSize: 22 }} />
-            </div>
-            <div>
-              <div style={{ display: "flex", gap: 6, marginBottom: 6 }}>
-                <span style={{ background: "#7C3AED", color: "#fff", borderRadius: 99, padding: "3px 10px", fontSize: 11, fontWeight: 700 }}>🎙️ Podcast</span>
-                {podcast.domaine && <span style={{ background: "rgba(255,255,255,.15)", color: "rgba(255,255,255,.85)", borderRadius: 99, padding: "3px 10px", fontSize: 11, fontWeight: 600 }}>{podcast.domaine}</span>}
+      <div className="modal-box" style={{ maxWidth: 550 }} onClick={e => e.stopPropagation()}>
+        <div style={{ background: "linear-gradient(135deg,#2d1b5e,#4c1d95)", padding: "20px 24px", borderRadius: "20px 20px 0 0", position: "relative" }}>
+          <button onClick={onClose} style={{ position: "absolute", top: 16, right: 16, width: 32, height: 32, borderRadius: "50%", background: "rgba(255,255,255,.15)", border: "none", cursor: "pointer", color: "#fff", fontSize: 14 }}>✕</button>
+          <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
+            {podcast.image ? (
+              <img src={`${BASE}/uploads/podcasts-images/${podcast.image}`} alt="" style={{ width: 70, height: 70, borderRadius: 12, objectFit: "cover" }} />
+            ) : (
+              <div style={{ width: 70, height: 70, borderRadius: 12, background: "rgba(139,92,246,.3)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <FaMicrophone style={{ fontSize: 32, color: "#C4B5FD" }} />
               </div>
-              <div style={{ color: "#fff", fontWeight: 900, fontSize: 18, lineHeight: 1.25 }}>{podcast.titre}</div>
+            )}
+            <div>
+              <div style={{ color: "rgba(255,255,255,.7)", fontSize: 11, fontWeight: 700, textTransform: "uppercase" }}>Podcast</div>
+              <div style={{ color: "#fff", fontWeight: 800, fontSize: 18 }}>{podcast.titre}</div>
+              {podcast.auteur && <div style={{ color: "rgba(255,255,255,.6)", fontSize: 13, marginTop: 4 }}>🎙️ {podcast.auteur}</div>}
             </div>
           </div>
         </div>
         <div style={{ padding: "24px 28px" }}>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 20 }}>
-            {[
-              { label: "Animateur", val: podcast.formateur || "BEH Expert", color: "#8B5CF6" },
-              { label: "Durée", val: podcast.duree || "Non précisée", color: "#F7B500" },
-              { label: "Mode", val: modeInfo.label, color: modeInfo.color },
-              { label: "Prix", val: podcast.prix ? `${podcast.prix} DT` : "Gratuit", color: podcast.prix ? "#0A2540" : "#22C55E" },
-            ].map((row, i) => (
-              <div key={i} style={{ background: "#F8FAFC", borderRadius: 12, padding: "12px 14px", display: "flex", alignItems: "center", gap: 10 }}>
-                <div style={{ width: 28, height: 28, borderRadius: 8, background: `${row.color}18`, color: row.color, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: 10, fontWeight: 700 }}>●</div>
-                <div>
-                  <div style={{ fontSize: 10, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "1px" }}>{row.label}</div>
-                  <div style={{ fontSize: 13.5, fontWeight: 600, color: "#0A2540" }}>{row.val}</div>
-                </div>
-              </div>
-            ))}
+          {podcast.description && <p style={{ fontSize: 14, color: "#475569", lineHeight: 1.8, marginBottom: 20 }}>{podcast.description}</p>}
+          <audio ref={audioRef} src={`${BASE}/uploads/podcasts-audio/${podcast.url_audio}`} preload="metadata" style={{ width: "100%", marginBottom: 16 }} controls />
+          <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
+            <button className="btn btn-gray" onClick={onClose}>Fermer</button>
           </div>
-          {podcast.description && (
-            <p style={{ fontSize: 14, color: "#475569", lineHeight: 1.8, margin: "0 0 20px" }}>{podcast.description}</p>
-          )}
-          <div style={{ background: "#F5F3FF", border: "1px solid #DDD6FE", borderRadius: 12, padding: "12px 16px", marginBottom: 20, fontSize: 13, color: "#5B21B6" }}>
-            🎧 Accédez à l'intégralité des épisodes en faisant une demande. Notre équipe vous donnera accès sous 24h.
-          </div>
-          <button
-            onClick={() => { onClose(); openService("formations"); }}
-            style={{ width: "100%", background: "linear-gradient(135deg,#7C3AED,#6D28D9)", color: "#fff", border: "none", borderRadius: 14, padding: "16px", fontWeight: 900, fontSize: 15, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 10 }}>
-            <FaPlay /> Demander l'accès
-          </button>
         </div>
       </div>
     </div>
@@ -344,7 +323,7 @@ function FormationCard({ f, onSelect, demanderFormation, demandeExiste, annulerD
   );
 }
 
-// ─── CARTE PODCAST ───────────────────────────────────────────────────────────
+// ─── CARTE PODCAST (avec écoute) ───────────────────────────────────────────
 
 function PodcastCard({ p, onSelect }: { p: any; onSelect: (p: any) => void }) {
   return (
@@ -352,7 +331,7 @@ function PodcastCard({ p, onSelect }: { p: any; onSelect: (p: any) => void }) {
       <div style={{ display: "flex", gap: 0 }}>
         <div style={{ width: 140, flexShrink: 0, background: "linear-gradient(135deg,#2d1b5e,#4c1d95)", position: "relative", display: "flex", alignItems: "center", justifyContent: "center", minHeight: 140 }}>
           {p.image && (
-            <img src={`${BASE}/uploads/formations/${p.image}`} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", opacity: .65, position: "absolute", inset: 0 }} />
+            <img src={`${BASE}/uploads/podcasts-images/${p.image}`} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", opacity: .65, position: "absolute", inset: 0 }} />
           )}
           <div style={{ position: "relative", zIndex: 2, width: 50, height: 50, borderRadius: "50%", background: "rgba(139,92,246,.3)", border: "2px solid rgba(139,92,246,.5)", display: "flex", alignItems: "center", justifyContent: "center" }}>
             <FaMicrophone style={{ color: "#C4B5FD", fontSize: 20 }} />
@@ -369,14 +348,13 @@ function PodcastCard({ p, onSelect }: { p: any; onSelect: (p: any) => void }) {
           )}
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
             <div style={{ display: "flex", gap: 8, fontSize: 11.5, color: "#8A9AB5" }}>
-              {p.formateur && <span><FaUsers style={{ fontSize: 10, marginRight: 3 }} />{p.formateur}</span>}
-              {p.duree && <span><FaClock style={{ fontSize: 10, marginRight: 3 }} />{p.duree}</span>}
+              {p.auteur && <span><FaUsers style={{ fontSize: 10, marginRight: 3 }} />{p.auteur}</span>}
             </div>
             <button
               className="btn btn-purple"
               style={{ fontSize: 11.5, padding: "7px 14px" }}
               onClick={e => { e.stopPropagation(); onSelect(p); }}>
-              <FaPlay style={{ fontSize: 10 }} /> Voir détails
+              <FaHeadphones style={{ fontSize: 11 }} /> Écouter
             </button>
           </div>
         </div>
@@ -908,6 +886,9 @@ export default function DashboardStartup() {
   const [formSearch, setFormSearch] = useState("");
   const [demandeForm, setDemandeForm] = useState({ service: "", description: "", delai: "", objectif: "", telephone: "", type_application: "" });
 
+  const [customService, setCustomService] = useState("");
+  const [showCustomInput, setShowCustomInput] = useState(false);
+
   const msgEndRef = useRef<HTMLDivElement>(null);
 
   const tk = useCallback(() => localStorage.getItem("token") || "", []);
@@ -938,6 +919,11 @@ export default function DashboardStartup() {
     setTAnim(true);
     setTimeout(() => { setTIdx(i); setTAnim(false); }, 280);
   }
+
+  const navigateToServicesTab = useCallback((subTab: "catalogue" | "formations" | "podcasts" | "personnalise") => {
+    setTab("services");
+    setServiceTab(subTab);
+  }, []);
 
   const loadStartupData = useCallback(async (currentToken: string) => {
     const authHdr = { Authorization: `Bearer ${currentToken}` };
@@ -1005,15 +991,23 @@ export default function DashboardStartup() {
   const loadFormationsData = useCallback(async () => {
     setFormationsLoading(true);
     try {
-      const res = await fetch(`${BASE}/formations/public?_=${Date.now()}`);
-      if (res.ok) {
-        const data = await res.json();
-        if (Array.isArray(data)) {
-          setFormations(data.filter((f: any) => f.statut === "publie" && (!f.categorie || f.categorie !== "podcast")));
-          setPodcasts(data.filter((f: any) => f.statut === "publie" && f.categorie === "podcast"));
-        }
-      }
-    } catch {}
+      // Formations
+      const formationsRes = await fetch(`${BASE}/formations/public?_=${Date.now()}`);
+      if (formationsRes.ok) {
+        const data = await formationsRes.json();
+        setFormations(Array.isArray(data) ? data : []);
+      } else setFormations([]);
+
+      // Podcasts
+      const podcastsRes = await fetch(`${BASE}/podcasts/public?_=${Date.now()}`);
+      if (podcastsRes.ok) {
+        const data = await podcastsRes.json();
+        setPodcasts(Array.isArray(data) ? data : []);
+      } else setPodcasts([]);
+    } catch {
+      setFormations([]);
+      setPodcasts([]);
+    }
     setFormationsLoading(false);
   }, []);
 
@@ -1145,14 +1139,20 @@ export default function DashboardStartup() {
   async function envoyerDemande(e: React.FormEvent) {
     e.preventDefault();
     if (!demandeForm.description) { notify("Décrivez votre besoin", false); return; }
+    let finalService = demandeForm.service;
+    if (finalService === "Autre service" && customService.trim()) {
+      finalService = customService.trim();
+    }
     setSendingDemande(true);
     try {
-      const r = await fetch(`${BASE}/demandes-service`, { method: "POST", headers: hdrJ(), body: JSON.stringify({ ...demandeForm }) });
+      const r = await fetch(`${BASE}/demandes-service`, { method: "POST", headers: hdrJ(), body: JSON.stringify({ ...demandeForm, service: finalService }) });
       if (r.ok) {
         notify("✅ Demande envoyée ! Notre équipe vous contacte sous 24h.");
         setServiceModal(null);
         setShowPlateformesModal(false);
         setDemandeForm({ service: "", description: "", delai: "", objectif: "", telephone: "", type_application: "" });
+        setCustomService("");
+        setShowCustomInput(false);
         await reloadDemandes();
         setTimeout(() => setTab("mes-demandes"), 800);
       } else {
@@ -1220,6 +1220,8 @@ export default function DashboardStartup() {
     if (slug === "nos-plateformes") {
       setDemandeForm({ ...demandeForm, service: "nos-plateformes", telephone: tel, type_application: "" });
       setShowPlateformesModal(true);
+    } else if (slug === "formations") {
+      navigateToServicesTab("formations");
     } else {
       setDemandeForm({ ...demandeForm, service: slug, telephone: tel, type_application: "" });
       setServiceModal(slug);
@@ -1232,7 +1234,6 @@ export default function DashboardStartup() {
       if (r.ok) {
         notify("✅ Devis accepté ! Vous pouvez contacter l'expert.");
         await loadMesDevis();
-        // Proposer de contacter l'expert ou prendre RDV
         const expert = experts.find(e => e.id === expertId);
         if (expert) {
           const ok = confirm("Souhaitez-vous contacter cet expert maintenant ?\n(OK = aller dans Messages, Annuler = rester ici)");
@@ -1288,6 +1289,13 @@ export default function DashboardStartup() {
     const d = f.domaine || "Autres";
     if (!formsByDomaine[d]) formsByDomaine[d] = [];
     formsByDomaine[d].push(f);
+  });
+
+  const podcastDomaines = ["Tous", ...Array.from(new Set(podcasts.map(p => p.domaine || "Autres"))).filter(Boolean).sort()];
+  const filteredPodcasts = podcasts.filter(p => {
+    const matchD = domaineFilter === "Tous" || p.domaine === domaineFilter;
+    const matchS = !formSearch || p.titre?.toLowerCase().includes(formSearch.toLowerCase()) || p.description?.toLowerCase().includes(formSearch.toLowerCase());
+    return matchD && matchS;
   });
 
   const TABS: { id: Tab; label: string; icon: string }[] = [
@@ -1392,7 +1400,6 @@ export default function DashboardStartup() {
         <PodcastModal
           podcast={selectedPodcast}
           onClose={() => setSelectedPodcast(null)}
-          openService={openService}
         />
       )}
 
@@ -1464,7 +1471,6 @@ export default function DashboardStartup() {
         {/* ACCUEIL */}
         {tab === "accueil" && (
           <div>
-            {/* Hero */}
             <section style={{ position: "relative", overflow: "hidden", minHeight: 440 }}>
               <div style={{ position: "absolute", inset: 0 }}>
                 <Image src="/image.png" alt="" fill priority style={{ objectFit: "cover" }} sizes="100vw" />
@@ -1488,7 +1494,6 @@ export default function DashboardStartup() {
               </div>
             </section>
 
-            {/* ADN */}
             <section style={{ padding: "64px 28px", background: "#F8FAFC" }}>
               <div style={{ maxWidth: 1200, margin: "0 auto" }}>
                 <Reveal>
@@ -1516,7 +1521,6 @@ export default function DashboardStartup() {
               </div>
             </section>
 
-            {/* Experts recommandés */}
             <section style={{ padding: "64px 28px", background: "#fff" }}>
               <div style={{ maxWidth: 1200, margin: "0 auto" }}>
                 <Reveal>
@@ -1554,7 +1558,6 @@ export default function DashboardStartup() {
               </div>
             </section>
 
-            {/* Témoignages */}
             {pubTemos.length > 0 && (
               <section style={{ padding: "64px 28px", background: "#F8FAFC" }}>
                 <div style={{ maxWidth: 780, margin: "0 auto" }}>
@@ -1590,7 +1593,6 @@ export default function DashboardStartup() {
               </section>
             )}
 
-            {/* CTA */}
             <section style={{ padding: "56px 28px", background: "linear-gradient(135deg,#0A2540,#0f3460)" }}>
               <div style={{ maxWidth: 600, margin: "0 auto", textAlign: "center" }}>
                 <Reveal>
@@ -1733,20 +1735,31 @@ export default function DashboardStartup() {
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20, flexWrap: "wrap", gap: 12 }}>
                   <div>
                     <h2 style={{ fontWeight: 800, fontSize: 20, color: "#0A2540", marginBottom: 4 }}>🎙️ Podcasts exclusifs</h2>
-                    <p style={{ fontSize: 13, color: "#64748B" }}>{podcasts.length} podcast{podcasts.length !== 1 ? "s" : ""} disponibles</p>
+                    <p style={{ fontSize: 13, color: "#64748B" }}>{filteredPodcasts.length} podcast{filteredPodcasts.length !== 1 ? "s" : ""} disponibles</p>
                   </div>
                   <button className="btn btn-purple" onClick={() => openService("formations")} style={{ padding: "10px 20px", fontSize: 13 }}>
                     <FaPaperPlane size={11} /> Demander l'accès
                   </button>
                 </div>
-                {podcasts.length === 0 ? (
+                <div style={{ background: "#F8FAFC", border: "1px solid #E8EEF6", borderRadius: 14, padding: "16px 18px", marginBottom: 20 }}>
+                  <div style={{ position: "relative", marginBottom: 12 }}>
+                    <FaSearch style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#94A3B8", fontSize: 13 }} />
+                    <input className="inp" placeholder="Rechercher un podcast..." style={{ paddingLeft: 36 }} value={formSearch} onChange={e => setFormSearch(e.target.value)} />
+                  </div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 7 }}>
+                    {podcastDomaines.map(d => (
+                      <button key={d} className={`pill${domaineFilter === d ? " active" : ""}`} onClick={() => setDomaineFilter(d)}>{d}</button>
+                    ))}
+                  </div>
+                </div>
+                {filteredPodcasts.length === 0 ? (
                   <div style={{ textAlign: "center", padding: "60px 0" }}>
                     <div style={{ fontSize: 48, marginBottom: 14 }}>🎙️</div>
                     <div style={{ fontWeight: 700, fontSize: 17, color: "#0A2540" }}>Aucun podcast disponible</div>
                   </div>
                 ) : (
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 18 }}>
-                    {podcasts.map(p => (
+                    {filteredPodcasts.map(p => (
                       <PodcastCard key={p.id} p={p} onSelect={setSelectedPodcast} />
                     ))}
                   </div>
@@ -1769,19 +1782,45 @@ export default function DashboardStartup() {
                   <form
                     onSubmit={e => {
                       e.preventDefault();
-                      setDemandeForm({ ...demandeForm, service: demandeForm.service || "personnalise" });
+                      let finalService = demandeForm.service;
+                      if (finalService === "Autre service" && customService.trim()) {
+                        finalService = customService.trim();
+                      }
+                      setDemandeForm({ ...demandeForm, service: finalService });
                       envoyerDemande(e);
                     }}
                     style={{ padding: "24px" }}>
                     <div style={{ marginBottom: 16 }}>
                       <label className="lbl">Type de service souhaité</label>
-                      <select className="inp" value={demandeForm.service || ""} onChange={e => setDemandeForm({ ...demandeForm, service: e.target.value })}>
+                      <select
+                        className="inp"
+                        value={demandeForm.service || ""}
+                        onChange={e => {
+                          const val = e.target.value;
+                          setDemandeForm({ ...demandeForm, service: val });
+                          setShowCustomInput(val === "Autre service");
+                          if (val !== "Autre service") setCustomService("");
+                        }}
+                      >
                         <option value="">Sélectionner...</option>
-                        {["Formation sur mesure", "Développement d'application", "Audit spécialisé", "Consulting avancé", "Coaching dirigeant", "Autre service"].map(s => (
+                        {["Formation sur mesure", "Développement d'application", "Audit spécialisé", "Consulting avancé", "Autre service"].map(s => (
                           <option key={s} value={s}>{s}</option>
                         ))}
                       </select>
                     </div>
+                    {showCustomInput && (
+                      <div style={{ marginBottom: 16 }}>
+                        <label className="lbl">Précisez votre service</label>
+                        <input
+                          className="inp"
+                          type="text"
+                          placeholder="Ex: Assistance juridique, Traduction, etc."
+                          value={customService}
+                          onChange={e => setCustomService(e.target.value)}
+                          required={demandeForm.service === "Autre service"}
+                        />
+                      </div>
+                    )}
                     <div style={{ marginBottom: 16 }}>
                       <label className="lbl">Décrivez votre besoin *</label>
                       <textarea className="inp" rows={5} placeholder="Expliquez votre contexte, vos contraintes..." required value={demandeForm.description} onChange={e => setDemandeForm({ ...demandeForm, description: e.target.value })} />
@@ -1889,7 +1928,6 @@ export default function DashboardStartup() {
 
             {filteredExperts.some(e => e._sectorMatch) && filteredExperts.some(e => !e._sectorMatch) && !expertFilter ? (
               <div>
-                {/* Experts du même secteur */}
                 <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
                   <div style={{ height: 2, flex: 1, background: "linear-gradient(90deg,#F7B500,#FDE68A)" }} />
                   <span style={{ background: "#FEF3C7", color: "#92400E", borderRadius: 99, padding: "4px 14px", fontSize: 12, fontWeight: 700, whiteSpace: "nowrap" }}>⭐ Experts de votre secteur — {startup?.secteur}</span>
@@ -1905,7 +1943,6 @@ export default function DashboardStartup() {
                   ))}
                 </div>
 
-                {/* Autres experts */}
                 <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
                   <div style={{ height: 2, flex: 1, background: "#E8EEF6" }} />
                   <span style={{ background: "#F8FAFC", color: "#64748B", borderRadius: 99, padding: "4px 14px", fontSize: 12, fontWeight: 700, border: "1px solid #E2E8F0", whiteSpace: "nowrap" }}>Autres experts</span>

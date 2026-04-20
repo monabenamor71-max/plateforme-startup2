@@ -13,12 +13,10 @@ import {
 const BASE = "http://localhost:3001";
 
 // ==================== TRADUCTIONS ====================
-
 type Lang = "fr" | "en";
 
 const T: Record<Lang, Record<string, string>> = {
   fr: {
-    // Header
     nav_home: "Accueil",
     nav_about: "À propos",
     nav_services: "Services",
@@ -27,7 +25,6 @@ const T: Record<Lang, Record<string, string>> = {
     nav_contact: "Contact",
     btn_login: "Connexion",
     btn_signup: "S'inscrire",
-    // Hero
     hero_badge: "Apprentissage continu",
     hero_title: "Formations &",
     hero_title_highlight: "Podcasts",
@@ -35,20 +32,16 @@ const T: Record<Lang, Record<string, string>> = {
     hero_stat_formations: "formations",
     hero_stat_podcasts: "podcasts",
     hero_btn_signup: "S'inscrire",
-    // Tabs
     tab_formations: "Formations",
     tab_podcasts: "Podcasts",
-    // Filters
     filter_placeholder: "Rechercher une formation, un formateur...",
     filter_domaine: "Domaine",
     filter_results: "formation trouvée",
     filter_results_plural: "formations trouvées",
     filter_no_results: "Aucune formation trouvée",
     filter_no_results_desc: "Essayez de modifier vos filtres de recherche",
-    // Podcast filters
     podcast_placeholder: "Rechercher un podcast, un expert...",
     podcast_no_results: "Aucun podcast trouvé",
-    // Cards
     card_certifiante: "CERTIFIANTE",
     card_en_savoir_plus: "En savoir plus",
     card_acceder: "Accéder",
@@ -56,7 +49,6 @@ const T: Record<Lang, Record<string, string>> = {
     card_places_restantes: "place restante",
     card_places_restantes_plural: "places restantes",
     card_complet: "Complet",
-    // Modal
     modal_formateur: "Formateur",
     modal_duree: "Durée",
     modal_mode: "Mode",
@@ -68,13 +60,10 @@ const T: Record<Lang, Record<string, string>> = {
     modal_inscrire_gratuit: "S'inscrire gratuitement pour accéder",
     modal_deja_inscrit: "Déjà inscrit ?",
     modal_se_connecter: "Se connecter",
-    // Podcasts
     podcast_label: "Podcast",
     podcast_ecouter: "Écouter",
-    // Footer
     footer_copy: "© 2026 Business Expert Hub",
     footer_tagline: "Formations certifiantes et podcasts exclusifs",
-    // Common
     gratuit: "Gratuit",
     payant: "Payant",
     presentiel: "Présentiel",
@@ -82,7 +71,6 @@ const T: Record<Lang, Record<string, string>> = {
     loading: "Chargement des formations...",
   },
   en: {
-    // Header
     nav_home: "Home",
     nav_about: "About",
     nav_services: "Services",
@@ -91,7 +79,6 @@ const T: Record<Lang, Record<string, string>> = {
     nav_contact: "Contact",
     btn_login: "Login",
     btn_signup: "Sign up",
-    // Hero
     hero_badge: "Continuous learning",
     hero_title: "Trainings &",
     hero_title_highlight: "Podcasts",
@@ -99,20 +86,16 @@ const T: Record<Lang, Record<string, string>> = {
     hero_stat_formations: "trainings",
     hero_stat_podcasts: "podcasts",
     hero_btn_signup: "Sign up",
-    // Tabs
     tab_formations: "Trainings",
     tab_podcasts: "Podcasts",
-    // Filters
     filter_placeholder: "Search for a training, instructor...",
     filter_domaine: "Domain",
     filter_results: "training found",
     filter_results_plural: "trainings found",
     filter_no_results: "No training found",
     filter_no_results_desc: "Try modifying your search filters",
-    // Podcast filters
     podcast_placeholder: "Search for a podcast, expert...",
     podcast_no_results: "No podcast found",
-    // Cards
     card_certifiante: "CERTIFIED",
     card_en_savoir_plus: "Learn more",
     card_acceder: "Access",
@@ -120,7 +103,6 @@ const T: Record<Lang, Record<string, string>> = {
     card_places_restantes: "place left",
     card_places_restantes_plural: "places left",
     card_complet: "Full",
-    // Modal
     modal_formateur: "Instructor",
     modal_duree: "Duration",
     modal_mode: "Mode",
@@ -132,13 +114,10 @@ const T: Record<Lang, Record<string, string>> = {
     modal_inscrire_gratuit: "Sign up for free to access",
     modal_deja_inscrit: "Already registered?",
     modal_se_connecter: "Log in",
-    // Podcasts
     podcast_label: "Podcast",
     podcast_ecouter: "Listen",
-    // Footer
     footer_copy: "© 2026 Business Expert Hub",
     footer_tagline: "Certified trainings & exclusive podcasts",
-    // Common
     gratuit: "Free",
     payant: "Paid",
     presentiel: "In-person",
@@ -148,7 +127,6 @@ const T: Record<Lang, Record<string, string>> = {
 };
 
 // ==================== SÉLECTEUR DE LANGUE ====================
-
 function LangSwitcher({ lang, setLang }: { lang: Lang; setLang: (l: Lang) => void }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -242,7 +220,6 @@ function LangSwitcher({ lang, setLang }: { lang: Lang; setLang: (l: Lang) => voi
 }
 
 // ==================== HELPERS ====================
-
 const NAV = [
   { label: "Consulting", slug: "consulting" },
   { label: "Audit sur site", slug: "audit-sur-site" },
@@ -301,7 +278,7 @@ export default function FormationsPage() {
     const user = localStorage.getItem("user");
     setIsLoggedIn(!!(token && user));
     loadFormations();
-    loadPodcasts();
+    loadPodcasts();   // ← nouvelle fonction pour les podcasts
   }, []);
 
   async function loadFormations() {
@@ -309,25 +286,25 @@ export default function FormationsPage() {
       const res = await fetch(`${BASE}/formations/public`);
       if (res.ok) {
         const data = await res.json();
-        const f = Array.isArray(data) ? data.filter((f: any) => f.statut === "publie" && (f.categorie !== "podcast" || !f.categorie)) : [];
-        setFormations(f);
-      }
+        setFormations(Array.isArray(data) ? data : []);
+      } else setFormations([]);
     } catch (error) {
       console.error("Erreur chargement formations", error);
+      setFormations([]);
     }
     setLoading(false);
   }
 
   async function loadPodcasts() {
     try {
-      const res = await fetch(`${BASE}/formations/public`);
+      const res = await fetch(`${BASE}/podcasts/public`);   // ← nouvelle API
       if (res.ok) {
         const data = await res.json();
-        const p = Array.isArray(data) ? data.filter((p: any) => p.statut === "publie" && p.categorie === "podcast") : [];
-        setPodcasts(p);
-      }
+        setPodcasts(Array.isArray(data) ? data : []);
+      } else setPodcasts([]);
     } catch (error) {
       console.error("Erreur chargement podcasts", error);
+      setPodcasts([]);
     }
   }
 
@@ -422,7 +399,7 @@ export default function FormationsPage() {
         .main-tab.on{color:#0A2540;border-bottom-color:#F7B500;}
       `}</style>
 
-      {/* ==================== HEADER AVEC TRADUCTIONS ==================== */}
+      {/* HEADER */}
       <header style={{ background: "#fff", position: "sticky", top: 0, zIndex: 100, boxShadow: "0 2px 12px rgba(0,0,0,.07)" }}>
         <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 24px", height: 72, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <Link href="/" style={{ display: "flex", alignItems: "center", gap: 11, textDecoration: "none" }}>
@@ -457,7 +434,7 @@ export default function FormationsPage() {
         </div>
       </header>
 
-      {/* ==================== HERO ==================== */}
+      {/* HERO */}
       <section style={{ background: "linear-gradient(135deg,#0A2540 0%,#0f3060 60%,#0A2540 100%)", padding: "72px 24px 80px", position: "relative", overflow: "hidden", color: "#fff" }}>
         {[{ w: 380, r: -60, d: "0s" }, { w: 220, r: 120, d: "1.8s" }].map((d, i) => (
           <div key={i} className="diamond-float" style={{ position: "absolute", width: d.w, height: d.w, right: d.r, top: "50%", transform: "translateY(-50%) rotate(45deg)", background: "rgba(247,181,0,.05)", border: "1px solid rgba(247,181,0,.1)", pointerEvents: "none", animationDelay: d.d }} />
@@ -580,7 +557,6 @@ export default function FormationsPage() {
 
       {/* MAIN CONTENT */}
       <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 24px 40px" }}>
-
         {/* FORMATIONS TAB */}
         {activeTab === "formations" && (
           <>
@@ -726,7 +702,7 @@ export default function FormationsPage() {
         )}
       </div>
 
-      {/* MODAL DETAIL FORMATION */}
+      {/* MODAL DETAIL FORMATION (identique à avant) */}
       {selectedFormation && (
         <div className="modal-overlay" onClick={() => setSelectedFormation(null)}>
           <div className="modal-box" onClick={e => e.stopPropagation()}>
@@ -850,7 +826,7 @@ export default function FormationsPage() {
   );
 }
 
-// ── Composant carte formation (avec traductions) ──
+// ==================== COMPOSANT CARTE FORMATION ====================
 function FormationCard({ f, tr, onSelect, onAcceder, isLoggedIn, getPrixLabel, placesRestantes, formatDate }: any) {
   const places = placesRestantes(f);
   const modeInfo = MODE_LABELS[f.mode] || { label: f.mode || "En ligne", icon: <FaLaptop />, color: "#22C55E" };
@@ -949,14 +925,14 @@ function FormationCard({ f, tr, onSelect, onAcceder, isLoggedIn, getPrixLabel, p
   );
 }
 
-// ── Composant carte podcast (avec traductions) ──
+// ==================== COMPOSANT CARTE PODCAST ====================
 function PodcastCard({ p, tr, onAcceder, isLoggedIn }: any) {
   return (
     <div className="podcast-card" onClick={() => onAcceder(p)}>
       <div style={{ display: "flex", gap: 0 }}>
         <div style={{ width: 160, flexShrink: 0, background: "linear-gradient(135deg,#2d1b5e,#4c1d95)", position: "relative", display: "flex", alignItems: "center", justifyContent: "center" }}>
           {p.image ? (
-            <img src={`${BASE}/uploads/formations/${p.image}`} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", opacity: .7 }} />
+            <img src={`${BASE}/uploads/podcasts-images/${p.image}`} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", opacity: .7 }} />
           ) : (
             <div style={{ width: 60, height: 60, borderRadius: "50%", background: "rgba(139,92,246,.35)", border: "2px solid rgba(139,92,246,.5)", display: "flex", alignItems: "center", justifyContent: "center" }}>
               <FaMicrophone style={{ color: "#C4B5FD", fontSize: 24 }} />
@@ -976,8 +952,7 @@ function PodcastCard({ p, tr, onAcceder, isLoggedIn }: any) {
           )}
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap", marginTop: 8 }}>
             <div style={{ display: "flex", gap: 10, fontSize: 12, color: "#8A9AB5" }}>
-              {p.formateur && <span><FaUsers style={{ fontSize: 10, marginRight: 3 }} />{p.formateur}</span>}
-              {p.duree_podcast && <span><FaClock style={{ fontSize: 10, marginRight: 3 }} />{p.duree_podcast}</span>}
+              {p.auteur && <span><FaUsers style={{ fontSize: 10, marginRight: 3 }} />{p.auteur}</span>}
             </div>
             <button
               onClick={(e) => { e.stopPropagation(); onAcceder(p); }}

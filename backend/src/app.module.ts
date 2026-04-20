@@ -18,9 +18,11 @@ import { FormationsModule } from './formations/formations.module';
 import { ContactModule } from './contact/contact.module';
 import { NewsletterModule } from './newsletter/newsletter.module';
 import { CommentsModule } from './comments/comments.module';
-import { BlogModule } from './blog/blog.module';          // Blog
-import { MediaModule } from './media/media.module';  
+import { BlogModule } from './blog/blog.module';
+import { MediaModule } from './media/media.module';
+import { PodcastModule } from './podcast/podcast.module';   // <- correct
 
+// Entities
 import { User } from './user/user.entity';
 import { Expert } from './user/expert.entity';
 import { Startup } from './user/startup.entity';
@@ -38,7 +40,7 @@ import { Formation } from './formations/formation.entity';
 import { Devis } from './devis/devis.entity';
 import { Blog } from './blog/blog.entity';
 import { Media } from './media/media.entity';
-        
+import { Podcast } from './podcast/podcast.entity';
 
 @Module({
   imports: [
@@ -55,7 +57,8 @@ import { Media } from './media/media.entity';
         ServicePlateforme, ContactMessage, ContactConfig, Newsletter, Comment,
         Formation, Devis,
         Blog,
-        Media,                                            
+        Media,
+        Podcast,
       ],
       synchronize: true,
       logging: true,
@@ -78,7 +81,8 @@ import { Media } from './media/media.entity';
     FormationsModule,
     DevisModule,
     BlogModule,
-    MediaModule,                                          // ← AJOUT
+    MediaModule,
+    PodcastModule,   // <- correct
   ],
 })
 export class AppModule {}

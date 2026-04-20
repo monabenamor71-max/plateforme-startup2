@@ -8,6 +8,7 @@ import { Startup } from '../user/startup.entity';
 import { Blog } from '../blog/blog.entity';
 import { MailService } from '../mail/mail.service';
 import { MediaService } from '../media/media.service';
+import { PodcastService, CreatePodcastDto, UpdatePodcastDto } from '../podcast/podcast.service';
 
 @Injectable()
 export class AdminService {
@@ -18,6 +19,7 @@ export class AdminService {
     @InjectRepository(Blog) private blogRepo: Repository<Blog>,
     private mailService: MailService,
     private mediaService: MediaService,
+    private podcastService: PodcastService,
   ) {}
 
   // ==================== USERS ====================
@@ -37,32 +39,21 @@ export class AdminService {
 
   // ==================== EXPERTS ====================
   getAllExperts() {
-    return this.expertRepo.find({
-      relations: ['user'],
-      order: { createdAt: 'DESC' },
-    });
+    return this.expertRepo.find({ relations: ['user'], order: { createdAt: 'DESC' } });
   }
 
   getExpertEnAttente() {
-    return this.expertRepo.find({
-      where: { statut: 'en_attente' },
-      relations: ['user'],
-    });
+    return this.expertRepo.find({ where: { statut: 'en_attente' }, relations: ['user'] });
   }
 
   async getExpertsModifications() {
-    return this.expertRepo.find({
-      where: { modification_demandee: true },
-      relations: ['user'],
-    });
+    return this.expertRepo.find({ where: { modification_demandee: true }, relations: ['user'] });
   }
 
   async validerModificationExpert(id: number) {
     const expert = await this.expertRepo.findOne({ where: { id }, relations: ['user'] });
     if (!expert) throw new NotFoundException('Expert non trouvé');
-    if (!expert.modifications_en_attente) {
-      throw new NotFoundException('Aucune modification en attente');
-    }
+    if (!expert.modifications_en_attente) throw new NotFoundException('Aucune modification en attente');
 
     let modifications: any;
     try {
@@ -82,7 +73,6 @@ export class AdminService {
 
     expert.modification_demandee = false;
     expert.modifications_en_attente = '';
-
     await this.expertRepo.save(expert);
     return { message: 'Modifications validées et appliquées' };
   }
@@ -90,10 +80,8 @@ export class AdminService {
   async refuserModificationExpert(id: number) {
     const expert = await this.expertRepo.findOne({ where: { id }, relations: ['user'] });
     if (!expert) throw new NotFoundException('Expert non trouvé');
-
     expert.modification_demandee = false;
     expert.modifications_en_attente = '';
-
     await this.expertRepo.save(expert);
     return { message: 'Modifications refusées' };
   }
@@ -105,9 +93,7 @@ export class AdminService {
     await this.userRepo.update(expert.user_id, { statut: 'actif' });
     try {
       await this.mailService.sendValidationEmail(expert.user.nom, expert.user.email);
-    } catch(e) {
-      console.log(e.message);
-    }
+    } catch(e) { console.log(e.message); }
     return { message: 'Expert validé' };
   }
 
@@ -118,9 +104,7 @@ export class AdminService {
     await this.userRepo.update(expert.user_id, { statut: 'inactif' });
     try {
       await this.mailService.sendRefusEmail(expert.user.nom, expert.user.email);
-    } catch(e) {
-      console.log(e.message);
-    }
+    } catch(e) { console.log(e.message); }
     return { message: 'Expert refusé' };
   }
 
@@ -130,10 +114,7 @@ export class AdminService {
   }
 
   getStartupEnAttente() {
-    return this.startupRepo.find({
-      where: { statut: 'en_attente' },
-      relations: ['user'],
-    });
+    return this.startupRepo.find({ where: { statut: 'en_attente' }, relations: ['user'] });
   }
 
   async validerStartup(id: number) {
@@ -143,9 +124,7 @@ export class AdminService {
     await this.userRepo.update(startup.user_id, { statut: 'actif' });
     try {
       await this.mailService.sendValidationEmail(startup.user.nom, startup.user.email);
-    } catch(e) {
-      console.log(e.message);
-    }
+    } catch(e) { console.log(e.message); }
     return { message: 'Startup validée' };
   }
 
@@ -156,24 +135,20 @@ export class AdminService {
     await this.userRepo.update(startup.user_id, { statut: 'inactif' });
     try {
       await this.mailService.sendRefusEmail(startup.user.nom, startup.user.email);
-    } catch(e) {
-      console.log(e.message);
-    }
+    } catch(e) { console.log(e.message); }
     return { message: 'Startup refusée' };
   }
 
   // ==================== STATS ====================
   async getStats() {
-    const experts  = await this.expertRepo.count();
+    const experts = await this.expertRepo.count();
     const startups = await this.startupRepo.count();
     return { experts, startups };
   }
 
   // ==================== BLOG ====================
   async getAllArticlesAdmin() {
-    return this.blogRepo.find({
-      order: { createdAt: 'DESC' },
-    });
+    return this.blogRepo.find({ order: { createdAt: 'DESC' } });
   }
 
   async findArticleById(id: number) {
@@ -235,5 +210,30 @@ export class AdminService {
 
   async deleteMedia(id: number) {
     return this.mediaService.delete(id);
+  }
+
+  // ==================== PODCASTS ====================
+  async getAllPodcastsAdmin() {
+    return this.podcastService.findAll();
+  }
+
+  async getPodcastById(id: number) {
+    return this.podcastService.findOne(id);
+  }
+
+  async createPodcast(dto: CreatePodcastDto, audioFile?: Express.Multer.File, imageFile?: Express.Multer.File) {
+    return this.podcastService.create(dto, audioFile, imageFile);
+  }
+
+  async updatePodcast(id: number, dto: UpdatePodcastDto, audioFile?: Express.Multer.File, imageFile?: Express.Multer.File) {
+    return this.podcastService.update(id, dto, audioFile, imageFile);
+  }
+
+  async updatePodcastStatut(id: number, statut: 'en_attente' | 'publie' | 'refuse') {
+    return this.podcastService.updateStatut(id, statut);
+  }
+
+  async deletePodcast(id: number) {
+    return this.podcastService.delete(id);
   }
 }

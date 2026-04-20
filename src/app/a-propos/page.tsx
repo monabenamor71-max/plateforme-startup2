@@ -90,7 +90,7 @@ const T: Record<Lang, Record<string, string>> = {
     timeline4_title: "Reconnaissance", timeline4_desc: "Obtention du label Meilleure plateforme d'accompagnement startup.",
     timeline5_title: "Scale-up", timeline5_desc: "Dépassement des 100 startups accompagnées.",
     timeline6_title: "Leader régional", timeline6_desc: "Consolidation de notre position de référence.",
-    videos_badge: "Médias",
+    videos_badge: "Nos apparitions médiatiques",
     videos_title: "BEH dans les",
     videos_title_highlight: "médias",
     videos_desc: "Nos experts et fondateurs prennent la parole dans les émissions radio, télévision et podcasts pour partager leur vision de l'écosystème startup.",
@@ -175,7 +175,7 @@ const T: Record<Lang, Record<string, string>> = {
     timeline4_title: "Recognition", timeline4_desc: "Obtaining the label Best startup support platform.",
     timeline5_title: "Scale-up", timeline5_desc: "Exceeding 100 startups supported.",
     timeline6_title: "Regional leader", timeline6_desc: "Consolidating our position as a reference.",
-    videos_badge: "Nos apparitions médiatiques ",
+    videos_badge: "Our media appearances",
     videos_title: "BEH in the",
     videos_title_highlight: "media",
     videos_desc: "Our experts and founders speak on radio programs, television and podcasts to share their vision of the startup ecosystem.",
@@ -518,7 +518,7 @@ function VideoCardFeatured({ video, onClick, tr }: { video: VideoMedia; onClick:
   );
 }
 
-// ==================== SECTION VIDÉOS PUBLIQUES (CORRIGÉE) ====================
+// ==================== SECTION VIDÉOS PUBLIQUES ====================
 function VideosSection({ tr, lang }: { tr: Record<string, string>; lang: Lang }) {
   const [videos, setVideos] = useState<VideoMedia[]>([]);
   const [loading, setLoading] = useState(true);
@@ -526,7 +526,7 @@ function VideosSection({ tr, lang }: { tr: Record<string, string>; lang: Lang })
   const [openVideo, setOpenVideo] = useState<VideoMedia | null>(null);
 
   useEffect(() => {
-    fetch(`${BASE}/medias/videos/public`)   // ← Route publique corrigée
+    fetch(`${BASE}/medias/videos/public`)
       .then(r => r.ok ? r.json() : [])
       .then((data: any) => {
         if (Array.isArray(data)) {
@@ -1051,7 +1051,7 @@ function MediasInTimeline({ tr, lang }: { tr: Record<string, string>; lang: Lang
   const [openVideo, setOpenVideo] = useState<VideoMedia | null>(null);
 
   useEffect(() => {
-    fetch(`${BASE}/medias/videos/public`)   // ← Route publique corrigée
+    fetch(`${BASE}/medias/videos/public`)
       .then(r => r.ok ? r.json() : [])
       .then((data: any) => {
         if (Array.isArray(data)) {

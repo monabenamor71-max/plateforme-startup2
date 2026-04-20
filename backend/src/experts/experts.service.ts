@@ -36,13 +36,13 @@ export class ExpertsService {
       order: { createdAt: 'DESC' },
     });
   }
- 
-async getAllForAdmin() {
-  return this.expertRepo.find({
-    relations: ['user'],
-    order: { createdAt: 'DESC' },
-  });
-}
+
+  async getAllForAdmin() {
+    return this.expertRepo.find({
+      relations: ['user'],
+      order: { createdAt: 'DESC' },
+    });
+  }
 
   async findByDomaines(domaines: string[]) {
     if (!domaines || domaines.length === 0) return [];
@@ -69,6 +69,7 @@ async getAllForAdmin() {
       localisation: body.localisation,
       experience: body.experience,
       telephone: body.telephone,
+      annee_debut_experience: body.annee_debut_experience,
     });
 
     await this.expertRepo.update({ user_id: userId }, {
@@ -102,6 +103,7 @@ async getAllForAdmin() {
       description: modifications.description,
       localisation: modifications.localisation,
       experience: modifications.experience,
+      annee_debut_experience: modifications.annee_debut_experience,
       modifications_en_attente: '',
       modification_demandee: false,
     });

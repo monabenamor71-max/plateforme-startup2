@@ -20,8 +20,9 @@ import { Roles } from '../auth/roles.decorator';
 import { FileFieldsInterceptor, FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
+import { CreatePodcastDto, UpdatePodcastDto } from '../podcast/podcast.service';
 
-// Configuration du stockage pour les articles (images + PDF)
+// Stockage pour les articles (images + PDF)
 const articleStorage = diskStorage({
   destination: (_req, file, cb) => {
     if (file.fieldname === 'image') {
@@ -40,7 +41,7 @@ const articleStorage = diskStorage({
   },
 });
 
-// Configuration du stockage pour les miniatures des médias
+// Stockage pour les miniatures des médias (vidéos)
 const mediaStorage = diskStorage({
   destination: (_req, file, cb) => {
     cb(null, './uploads/videos-miniatures');
@@ -51,11 +52,35 @@ const mediaStorage = diskStorage({
   },
 });
 
+// Stockage pour les podcasts (audio et image)
+const podcastStorage = diskStorage({
+  destination: (_req, file, cb) => {
+    const folder = file.fieldname === 'audio_file'
+      ? './uploads/podcasts-audio'
+      : './uploads/podcasts-images';
+    cb(null, folder);
+  },
+  filename: (_req, file, cb) => {
+    const unique = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+    cb(null, `podcast-${unique}${extname(file.originalname)}`);
+  },
+});
+
+const podcastFileFilter = (req, file, cb) => {
+  if (file.fieldname === 'audio_file' && file.mimetype !== 'audio/mpeg') {
+    cb(new Error('Seuls les fichiers MP3 sont autorisés'), false);
+  } else if (file.fieldname === 'image_file' && !file.mimetype.startsWith('image/')) {
+    cb(new Error('Seules les images sont autorisées'), false);
+  } else {
+    cb(null, true);
+  }
+};
+
 @Controller('admin')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('admin')
 export class AdminController {
-  constructor(private adminService: AdminService) {}
+  constructor(private readonly adminService: AdminService) {}
 
   // ==================== USERS ====================
   @Get('users')
@@ -221,5 +246,68 @@ export class AdminController {
   @Delete('medias/:id')
   async deleteMedia(@Param('id') id: number) {
     return this.adminService.deleteMedia(id);
+  }
+
+  // ==================== PODCASTS ====================
+  @Get('podcasts/all')
+  async getAllPodcasts() {
+    return this.adminService.getAllPodcastsAdmin();   // nom exact
+  }
+
+  @Get('podcasts/:id')
+  async getPodcastById(@Param('id') id: number) {
+    return this.adminService.getPodcastById(id);      // nom exact
+  }
+
+  @Post('podcasts/create')
+  @UseInterceptors(
+    FileFieldsInterceptor(
+      [
+        { name: 'audio_file', maxCount: 1 },
+        { name: 'image_file', maxCount: 1 },
+      ],
+      { storage: podcastStorage, fileFilter: podcastFileFilter, limits: { fileSize: 50 * 1024 * 1024 } },
+    ),
+  )
+  async createPodcast(
+    @Body() dto: CreatePodcastDto,
+    @UploadedFiles() files: { audio_file?: Express.Multer.File[]; image_file?: Express.Multer.File[] },
+  ) {
+    const audio = files?.audio_file?.[0];
+    const image = files?.image_file?.[0];
+    return this.adminService.createPodcast(dto, audio, image);  // nom exact
+  }
+
+  @Put('podcasts/:id')
+  @UseInterceptors(
+    FileFieldsInterceptor(
+      [
+        { name: 'audio_file', maxCount: 1 },
+        { name: 'image_file', maxCount: 1 },
+      ],
+      { storage: podcastStorage, fileFilter: podcastFileFilter, limits: { fileSize: 50 * 1024 * 1024 } },
+    ),
+  )
+  async updatePodcast(
+    @Param('id') id: number,
+    @Body() dto: UpdatePodcastDto,
+    @UploadedFiles() files: { audio_file?: Express.Multer.File[]; image_file?: Express.Multer.File[] },
+  ) {
+    const audio = files?.audio_file?.[0];
+    const image = files?.image_file?.[0];
+    return this.adminService.updatePodcast(id, dto, audio, image); // nom exact
+  }
+
+  @Patch('podcasts/:id/statut')
+  async updatePodcastStatut(
+    @Param('id') id: number,
+    @Body('statut') statut: 'en_attente' | 'publie' | 'refuse',
+  ) {
+    return this.adminService.updatePodcastStatut(id, statut);     // nom exact
+  }
+
+  @Delete('podcasts/:id')
+  async deletePodcast(@Param('id') id: number) {
+    return this.adminService.deletePodcast(id);                  // nom exact
   }
 }

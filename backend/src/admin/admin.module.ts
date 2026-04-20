@@ -8,13 +8,15 @@ import { Expert } from '../user/expert.entity';
 import { Startup } from '../user/startup.entity';
 import { Blog } from '../blog/blog.entity';
 import { MailModule } from '../mail/mail.module';
-import { MediaModule } from '../media/media.module';          // ← AJOUT
+import { MediaModule } from '../media/media.module';
+import { PodcastModule } from '../podcast/podcast.module';   // ← AJOUT
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([User, Expert, Startup, Blog]),
     MailModule,
-    MediaModule,                                              // ← AJOUT
+    MediaModule,
+    PodcastModule,                                            // ← AJOUT
   ],
   controllers: [AdminController],
   providers: [AdminService],
