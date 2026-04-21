@@ -388,7 +388,7 @@ function PodcastsAdmin({ podcasts, loadPodcasts, setToast }: any) {
                   </div>
                 </div>
                 <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 12 }}>
-                  {p.statut === "brouillon" && (
+                  {(p.statut === "brouillon" || p.statut === "en_attente") && (
                     <button className="btn btn-green" style={{ fontSize: 12 }} onClick={() => handlePublish(p.id, "publie")}>✅ Publier</button>
                   )}
                   {p.statut === "publie" && (
@@ -810,7 +810,7 @@ export default function DashboardAdmin() {
 
       {/* Toast */}
       {toast.text && (
-        <div style={{ position: "fixed", top: 20, right: 20, zIndex: 9999, background: toast.ok ? "#ECFDF5" : "#FEF2F2", border: `1px solid ${toast.ok ? "#A7F3D0" : "#FECACA"}`, borderLeft: `4px solid ${toast.ok ? "#059669" : "#DC2626"}`, color: toast.ok ? "#059669" : "#DC2626", borderRadius: 12, padding: "13px 20px", fontWeight: 700, fontSize: 13, boxShadow: "0 8px 32px rgba(0,0,0,.12)", display: "flex", alignItems: "center", gap: 8 }}>
+        <div style={{ position: "fixed", top: 20, right: 20, zIndex: 9999, background: toast.ok ? "#ECFDF5" : "#FEF2F2", border: `1px solid ${toast.ok ? "#A7F3D0" : "#FECACA"}`, borderLeft: `4px solid ${toast.ok ? "#059669" : "#DC2626"}`, color: toast.ok ? "#059669" : "#DC2626", borderRadius: 12, padding: "13px 20px", fontWeight: 700, fontSize: 13, boxShadow: "0 8px 28px rgba(0,0,0,.12)", display: "flex", alignItems: "center", gap: 8 }}>
           {toast.text}
         </div>
       )}
@@ -1081,17 +1081,44 @@ export default function DashboardAdmin() {
                   <div style={{ background: "#fff", border: "1.5px solid #EEF2F7", borderRadius: 16, overflow: "hidden" }}>
                     <div style={{ padding: "14px 20px", borderBottom: "1px solid #F1F5F9", background: "#FAFBFE" }}><span style={{ fontWeight: 700, fontSize: 14.5 }}>🎯 Experts ({experts.length}) · {enAttenteExperts.length} en attente</span></div>
                     <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                      <thead><tr><th>Expert</th><th>Email</th><th>Domaine</th><th>Localisation</th><th>Statut</th><th>Actions</th></tr></thead>
+                      <thead>
+                        <tr>
+                          <th>Expert</th><th>Email</th><th>Domaine</th><th>Localisation</th><th>Statut</th><th>Actions</th>
+                        </tr>
+                      </thead>
                       <tbody>
-                        {experts.length === 0 && <tr><td colSpan={6} style={{ textAlign: "center", padding: 40, color: "#94A3B8" }}>Aucun expert</td></tr>}
+                        {experts.length === 0 && (
+                          <tr>
+                            <td colSpan={6} style={{ textAlign: "center", padding: 40, color: "#94A3B8" }}>Aucun expert</td>
+                          </tr>
+                        )}
                         {experts.map((e: any) => (
                           <tr key={e.id}>
-                            <td><div style={{ display: "flex", alignItems: "center", gap: 8 }}><div style={{ width: 32, height: 32, borderRadius: "50%", background: "#0A2540", display: "flex", alignItems: "center", justifyContent: "center", color: "#F7B500", fontWeight: 700 }}>{e.user?.prenom?.[0]}{e.user?.nom?.[0]}</div><span style={{ fontWeight: 600 }}>{e.user?.prenom} {e.user?.nom}</span></div></td>
+                            <td>
+                              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                <div style={{ width: 32, height: 32, borderRadius: "50%", background: "#0A2540", display: "flex", alignItems: "center", justifyContent: "center", color: "#F7B500", fontWeight: 700 }}>
+                                  {e.user?.prenom?.[0]}{e.user?.nom?.[0]}
+                                </div>
+                                <span style={{ fontWeight: 600 }}>{e.user?.prenom} {e.user?.nom}</span>
+                              </div>
+                            </td>
                             <td style={{ color: "#64748B" }}>{e.user?.email}</td>
                             <td>{e.domaine || "—"}</td>
                             <td>{e.localisation || "—"}</td>
-                            <td>{e.statut === "valide" ? <span className="badge" style={{ background: "#ECFDF5", color: "#059669" }}>✅ Validé</span> : e.statut === "en_attente" ? <span className="badge" style={{ background: "#FFFBEB", color: "#B45309" }}>⏳ Attente</span> : <span className="badge" style={{ background: "#FEF2F2", color: "#DC2626" }}>❌ Refusé</span>}</td>
-                            <td><div style={{ display: "flex", gap: 6 }}><button className="btn btn-blue" style={{ fontSize: 12, padding: "5px 11px" }} onClick={() => setSelected({ type: "expert", data: e })}>👁 Voir</button>{e.statut === "en_attente" && <><button className="btn btn-green" style={{ fontSize: 12, padding: "5px 9px" }} onClick={() => valider("experts", e.id)}>✅</button><button className="btn btn-red" style={{ fontSize: 12, padding: "5px 9px" }} onClick={() => refuser("experts", e.id)}>❌</button></>}</div></td>
+                            <td>
+                              {e.statut === "valide" ? <span className="badge" style={{ background: "#ECFDF5", color: "#059669" }}>✅ Validé</span> : e.statut === "en_attente" ? <span className="badge" style={{ background: "#FFFBEB", color: "#B45309" }}>⏳ Attente</span> : <span className="badge" style={{ background: "#FEF2F2", color: "#DC2626" }}>❌ Refusé</span>}
+                            </td>
+                            <td>
+                              <div style={{ display: "flex", gap: 6 }}>
+                                <button className="btn btn-blue" style={{ fontSize: 12, padding: "5px 11px" }} onClick={() => setSelected({ type: "expert", data: e })}>👁 Voir</button>
+                                {e.statut === "en_attente" && (
+                                  <>
+                                    <button className="btn btn-green" style={{ fontSize: 12, padding: "5px 9px" }} onClick={() => valider("experts", e.id)}>✅</button>
+                                    <button className="btn btn-red" style={{ fontSize: 12, padding: "5px 9px" }} onClick={() => refuser("experts", e.id)}>❌</button>
+                                  </>
+                                )}
+                              </div>
+                            </td>
                           </tr>
                         ))}
                       </tbody>
@@ -1104,18 +1131,45 @@ export default function DashboardAdmin() {
                   <div style={{ background: "#fff", border: "1.5px solid #EEF2F7", borderRadius: 16, overflow: "hidden" }}>
                     <div style={{ padding: "14px 20px", borderBottom: "1px solid #F1F5F9", background: "#FAFBFE" }}><span style={{ fontWeight: 700, fontSize: 14.5 }}>🚀 Startups ({startups.length}) · {enAttenteStartups.length} en attente</span></div>
                     <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                      <thead><tr><th>Responsable</th><th>Email</th><th>Startup</th><th>Secteur</th><th>Taille</th><th>Statut</th><th>Actions</th></tr></thead>
+                      <thead>
+                        <tr>
+                          <th>Responsable</th><th>Email</th><th>Startup</th><th>Secteur</th><th>Taille</th><th>Statut</th><th>Actions</th>
+                        </tr>
+                      </thead>
                       <tbody>
-                        {startups.length === 0 && <tr><td colSpan={7} style={{ textAlign: "center", padding: 40, color: "#94A3B8" }}>Aucune startup</td></tr>}
+                        {startups.length === 0 && (
+                          <tr>
+                            <td colSpan={7} style={{ textAlign: "center", padding: 40, color: "#94A3B8" }}>Aucune startup</td>
+                          </tr>
+                        )}
                         {startups.map((s: any) => (
                           <tr key={s.id}>
-                            <td><div style={{ display: "flex", alignItems: "center", gap: 8 }}><div style={{ width: 32, height: 32, borderRadius: "50%", background: "#0A2540", display: "flex", alignItems: "center", justifyContent: "center", color: "#F7B500", fontWeight: 700 }}>{s.user?.prenom?.[0]}{s.user?.nom?.[0]}</div><span style={{ fontWeight: 600 }}>{s.user?.prenom} {s.user?.nom}</span></div></td>
+                            <td>
+                              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                <div style={{ width: 32, height: 32, borderRadius: "50%", background: "#0A2540", display: "flex", alignItems: "center", justifyContent: "center", color: "#F7B500", fontWeight: 700 }}>
+                                  {s.user?.prenom?.[0]}{s.user?.nom?.[0]}
+                                </div>
+                                <span style={{ fontWeight: 600 }}>{s.user?.prenom} {s.user?.nom}</span>
+                              </div>
+                            </td>
                             <td style={{ color: "#64748B" }}>{s.user?.email}</td>
                             <td style={{ fontWeight: 600 }}>{s.nom_startup || "—"}</td>
                             <td>{s.secteur || "—"}</td>
                             <td>{s.taille || "—"}</td>
-                            <td>{s.statut === "valide" ? <span className="badge" style={{ background: "#ECFDF5", color: "#059669" }}>✅ Validé</span> : s.statut === "en_attente" ? <span className="badge" style={{ background: "#FFFBEB", color: "#B45309" }}>⏳ Attente</span> : <span className="badge" style={{ background: "#FEF2F2", color: "#DC2626" }}>❌ Refusé</span>}</td>
-                            <td><div style={{ display: "flex", gap: 6 }}><button className="btn btn-blue" style={{ fontSize: 12, padding: "5px 11px" }} onClick={() => setSelected({ type: "startup", data: s })}>👁 Voir</button>{s.statut === "en_attente" && <><button className="btn btn-green" style={{ fontSize: 12, padding: "5px 9px" }} onClick={() => valider("startups", s.id)}>✅</button><button className="btn btn-red" style={{ fontSize: 12, padding: "5px 9px" }} onClick={() => refuser("startups", s.id)}>❌</button></>}</div></td>
+                            <td>
+                              {s.statut === "valide" ? <span className="badge" style={{ background: "#ECFDF5", color: "#059669" }}>✅ Validé</span> : s.statut === "en_attente" ? <span className="badge" style={{ background: "#FFFBEB", color: "#B45309" }}>⏳ Attente</span> : <span className="badge" style={{ background: "#FEF2F2", color: "#DC2626" }}>❌ Refusé</span>}
+                            </td>
+                            <td>
+                              <div style={{ display: "flex", gap: 6 }}>
+                                <button className="btn btn-blue" style={{ fontSize: 12, padding: "5px 11px" }} onClick={() => setSelected({ type: "startup", data: s })}>👁 Voir</button>
+                                {s.statut === "en_attente" && (
+                                  <>
+                                    <button className="btn btn-green" style={{ fontSize: 12, padding: "5px 9px" }} onClick={() => valider("startups", s.id)}>✅</button>
+                                    <button className="btn btn-red" style={{ fontSize: 12, padding: "5px 9px" }} onClick={() => refuser("startups", s.id)}>❌</button>
+                                  </>
+                                )}
+                              </div>
+                            </td>
                           </tr>
                         ))}
                       </tbody>
@@ -1130,13 +1184,11 @@ export default function DashboardAdmin() {
                     <div key={t.id} className="card" style={{ borderLeft: `4px solid ${t.statut === "en_attente" ? "#F7B500" : t.statut === "valide" ? "#10B981" : "#D1D5DB"}`, padding: "18px 20px", marginBottom: 12 }}>
                       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
                         <div style={{ flex: 1 }}>
-                          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}><div style={{ width: 38, height: 38, borderRadius: "50%", background: "#0A2540", display: "flex", alignItems: "center", justifyContent: "center", color: "#F7B500", fontWeight: 700 }}>{t.user?.prenom?.[0]}{t.user?.nom?.[0]}</div><div><div style={{ fontWeight: 700, fontSize: 14 }}>{t.user?.prenom} {t.user?.nom}</div><div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 2 }}>{[1, 2, 3, 4, 5].map(s => <span key={s} style={{ color: s <= (t.note || 5) ? "#F7B500" : "#D1D5DB", fontSize: 14 }}>★</span>)}<span style={{ fontSize: 11, color: "#94A3B8" }}>· {new Date(t.createdAt).toLocaleDateString("fr-FR")}</span></div></div></div>
+                          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}><div style={{ width: 38, height: 38, borderRadius: "50%", background: "#0A2540", display: "flex", alignItems: "center", justifyContent: "center", color: "#F7B500", fontWeight: 700 }}>{t.user?.prenom?.[0]}{t.user?.nom?.[0]}</div><div><div style={{ fontWeight: 700, fontSize: 14 }}>{t.user?.prenom} {t.user?.nom}</div><div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 2 }}>{[1,2,3,4,5].map(s => <span key={s} style={{ color: s <= (t.note || 5) ? "#F7B500" : "#D1D5DB", fontSize: 14 }}>★</span>)}<span style={{ fontSize: 11, color: "#94A3B8" }}>· {new Date(t.createdAt).toLocaleDateString("fr-FR")}</span></div></div></div>
                           <div style={{ background: "#F8FAFC", borderRadius: 10, padding: "12px 14px" }}><p style={{ fontSize: 13.5, color: "#334155", lineHeight: 1.72, fontStyle: "italic", margin: 0 }}>"{t.texte}"</p></div>
                         </div>
                         <div style={{ display: "flex", flexDirection: "column", gap: 7, alignItems: "flex-end", flexShrink: 0 }}>
-                          <span className="badge" style={{ background: t.statut === "en_attente" ? "#FFFBEB" : t.statut === "valide" ? "#ECFDF5" : "#FEF2F2", color: t.statut === "en_attente" ? "#B45309" : t.statut === "valide" ? "#059669" : "#DC2626" }}>
-                            {t.statut === "en_attente" ? "⏳ En attente" : t.statut === "valide" ? "✅ Publié" : "❌ Refusé"}
-                          </span>
+                          <span className="badge" style={{ background: t.statut === "en_attente" ? "#FFFBEB" : t.statut === "valide" ? "#ECFDF5" : "#FEF2F2", color: t.statut === "en_attente" ? "#B45309" : t.statut === "valide" ? "#059669" : "#DC2626" }}>{t.statut === "en_attente" ? "⏳ En attente" : t.statut === "valide" ? "✅ Publié" : "❌ Refusé"}</span>
                           <div style={{ display: "flex", gap: 6 }}>{t.statut === "en_attente" && <><button className="btn btn-green" style={{ fontSize: 12 }} onClick={() => validerTemo(t.id)}>✅ Publier</button><button className="btn btn-red" style={{ fontSize: 12 }} onClick={() => refuserTemo(t.id)}>❌</button></>}<button className="btn btn-gray" style={{ fontSize: 12, padding: "6px 10px" }} onClick={() => supprimerTemo(t.id)}>🗑</button></div>
                         </div>
                       </div>
@@ -1167,7 +1219,7 @@ export default function DashboardAdmin() {
                   <form onSubmit={saveHistoire} style={{ display: "flex", flexDirection: "column", gap: 0 }}>
                     {[
                       { title: "🏠 Section Héro", content: (<><div style={{ display: "grid", gridTemplateColumns: "200px 1fr", gap: 14 }}><HField label="Année de création" cle="annee_creation" hf={hf} setHF={setHF} placeholder="2019" /></div><HField label="Description héro" cle="description_hero" rows={3} hf={hf} setHF={setHF} /></>) },
-                      { title: "👁 Vision", content: (<><HField label="Description vision" cle="description_vision" rows={3} hf={hf} setHF={setHF} /><div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 8 }}>{[1, 2, 3, 4].map(n => <HField key={n} label={`Point ${n}`} cle={`vision_point${n}`} hf={hf} setHF={setHF} />)}</div></>) },
+                      { title: "👁 Vision", content: (<><HField label="Description vision" cle="description_vision" rows={3} hf={hf} setHF={setHF} /><div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 8 }}>{[1,2,3,4].map(n => <HField key={n} label={`Point ${n}`} cle={`vision_point${n}`} hf={hf} setHF={setHF} />)}</div></>) },
                       { title: "💬 Citation", content: (<><HField label="Texte de la citation" cle="citation" rows={2} hf={hf} setHF={setHF} /><div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}><HField label="Auteur" cle="citation_auteur" hf={hf} setHF={setHF} /><HField label="Rôle" cle="citation_role" hf={hf} setHF={setHF} /></div></>) },
                       { title: "🎯 Mission", content: (<><HField label="Titre" cle="mission_titre" hf={hf} setHF={setHF} /><HField label="Description" cle="mission_desc" rows={3} hf={hf} setHF={setHF} /></>) },
                     ].map(section => (
@@ -1178,11 +1230,11 @@ export default function DashboardAdmin() {
                     ))}
                     <div style={{ background: "#fff", border: "1.5px solid #EEF2F7", borderRadius: 18, overflow: "hidden", marginBottom: 20 }}>
                       <div style={{ padding: "14px 20px", borderBottom: "1px solid #F1F5F9", background: "#FAFBFE" }}><span style={{ fontWeight: 700, fontSize: 14, color: "#0A2540" }}>📅 Timeline — 6 étapes</span></div>
-                      <div style={{ padding: "16px 20px" }}><div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>{[1, 2, 3, 4, 5, 6].map(n => (<div key={n} style={{ background: "#F8FAFC", borderRadius: 12, padding: "14px 16px", border: "1px solid #EEF2F7" }}><div style={{ fontWeight: 700, color: "#F7B500", marginBottom: 10, fontSize: 12 }}>Étape {n}</div><div style={{ display: "grid", gridTemplateColumns: "90px 1fr", gap: 10, marginBottom: 10 }}><HField label="Année" cle={`timeline${n}_year`} hf={hf} setHF={setHF} /><HField label="Titre" cle={`timeline${n}_title`} hf={hf} setHF={setHF} /></div><HField label="Description" cle={`timeline${n}_desc`} rows={2} hf={hf} setHF={setHF} /></div>))}</div></div>
+                      <div style={{ padding: "16px 20px" }}><div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>{[1,2,3,4,5,6].map(n => (<div key={n} style={{ background: "#F8FAFC", borderRadius: 12, padding: "14px 16px", border: "1px solid #EEF2F7" }}><div style={{ fontWeight: 700, color: "#F7B500", marginBottom: 10, fontSize: 12 }}>Étape {n}</div><div style={{ display: "grid", gridTemplateColumns: "90px 1fr", gap: 10, marginBottom: 10 }}><HField label="Année" cle={`timeline${n}_year`} hf={hf} setHF={setHF} /><HField label="Titre" cle={`timeline${n}_title`} hf={hf} setHF={setHF} /></div><HField label="Description" cle={`timeline${n}_desc`} rows={2} hf={hf} setHF={setHF} /></div>))}</div></div>
                     </div>
                     <div style={{ background: "#fff", border: "1.5px solid #EEF2F7", borderRadius: 18, overflow: "hidden", marginBottom: 20 }}>
                       <div style={{ padding: "14px 20px", borderBottom: "1px solid #F1F5F9", background: "#FAFBFE" }}><span style={{ fontWeight: 700, fontSize: 14, color: "#0A2540" }}>⭐ Valeurs — 3 valeurs</span></div>
-                      <div style={{ padding: "16px 20px" }}><div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 14 }}>{[1, 2, 3].map(n => (<div key={n} style={{ background: "#F8FAFC", borderRadius: 12, padding: "14px 16px", border: "1px solid #EEF2F7" }}><div style={{ fontWeight: 700, color: "#F7B500", marginBottom: 10, fontSize: 12 }}>Valeur {n}</div><HField label="Titre" cle={`valeur${n}_titre`} hf={hf} setHF={setHF} /><HField label="Description" cle={`valeur${n}_desc`} rows={3} hf={hf} setHF={setHF} /><div style={{ marginBottom: 12 }}><label style={{ fontSize: 11, fontWeight: 700, color: "#7D8FAA", textTransform: "uppercase", letterSpacing: "1px", display: "block", marginBottom: 5 }}>Couleur</label><div style={{ display: "flex", gap: 8, alignItems: "center" }}><input className="inp" value={hf(`valeur${n}_color`)} onChange={e => setHF(`valeur${n}_color`, (e.target as any).value)} placeholder="#F7B500" style={{ flex: 1 }} /><input type="color" value={hf(`valeur${n}_color`) || "#F7B500"} onChange={e => setHF(`valeur${n}_color`, (e.target as any).value)} style={{ width: 38, height: 34, borderRadius: 8, border: "1.5px solid #E2E8F0", cursor: "pointer", padding: 2 }} /></div></div></div>))}</div></div>
+                      <div style={{ padding: "16px 20px" }}><div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 14 }}>{[1,2,3].map(n => (<div key={n} style={{ background: "#F8FAFC", borderRadius: 12, padding: "14px 16px", border: "1px solid #EEF2F7" }}><div style={{ fontWeight: 700, color: "#F7B500", marginBottom: 10, fontSize: 12 }}>Valeur {n}</div><HField label="Titre" cle={`valeur${n}_titre`} hf={hf} setHF={setHF} /><HField label="Description" cle={`valeur${n}_desc`} rows={3} hf={hf} setHF={setHF} /><div style={{ marginBottom: 12 }}><label style={{ fontSize: 11, fontWeight: 700, color: "#7D8FAA", textTransform: "uppercase", letterSpacing: "1px", display: "block", marginBottom: 5 }}>Couleur</label><div style={{ display: "flex", gap: 8, alignItems: "center" }}><input className="inp" value={hf(`valeur${n}_color`)} onChange={e => setHF(`valeur${n}_color`, (e.target as any).value)} placeholder="#F7B500" style={{ flex: 1 }} /><input type="color" value={hf(`valeur${n}_color`) || "#F7B500"} onChange={e => setHF(`valeur${n}_color`, (e.target as any).value)} style={{ width: 38, height: 34, borderRadius: 8, border: "1.5px solid #E2E8F0", cursor: "pointer", padding: 2 }} /></div></div></div>))}</div></div>
                     </div>
                     <div style={{ background: "#fff", border: "1.5px solid #EEF2F7", borderRadius: 18, overflow: "hidden", marginBottom: 20 }}>
                       <div style={{ padding: "14px 20px", borderBottom: "1px solid #F1F5F9", background: "#FAFBFE" }}><span style={{ fontWeight: 700, fontSize: 14, color: "#0A2540" }}>📞 Informations de contact</span></div>
@@ -1352,21 +1404,21 @@ function DashboardView({ experts, startups, temoignages, demandes, formations, p
   const enAttente      = [...experts, ...startups].filter((x: any) => x.statut === "en_attente").length;
   const temosPublies   = temoignages.filter((t: any) => t.statut === "valide");
   const avgNote        = temosPublies.length > 0 ? (temosPublies.reduce((s: number, t: any) => s + (t.note || 5), 0) / temosPublies.length).toFixed(1) : "—";
-  const repartitionEtoiles = [5, 4, 3, 2, 1].map(n => ({ n, count: temosPublies.filter((t: any) => t.note === n).length }));
+  const repartitionEtoiles = [5,4,3,2,1].map(n => ({ n, count: temosPublies.filter((t: any) => t.note === n).length }));
   const serviceMap: Record<string, number> = {};
   demandes.forEach((d: any) => { const k = d.service || "Autre"; serviceMap[k] = (serviceMap[k] || 0) + 1; });
-  const topServices = Object.entries(serviceMap).sort((a, b) => b[1] - a[1]).slice(0, 6);
+  const topServices = Object.entries(serviceMap).sort((a,b) => b[1] - a[1]).slice(0,6);
   const maxSvc = topServices.length ? topServices[0][1] : 1;
   const domaineMap: Record<string, number> = {};
   experts.forEach((e: any) => { const k = e.domaine || "Autre"; domaineMap[k] = (domaineMap[k] || 0) + 1; });
-  const topDomaines = Object.entries(domaineMap).sort((a, b) => b[1] - a[1]).slice(0, 5);
+  const topDomaines = Object.entries(domaineMap).sort((a,b) => b[1] - a[1]).slice(0,5);
   const secteurMap: Record<string, number> = {};
   startups.forEach((s: any) => { const k = s.secteur || "Autre"; secteurMap[k] = (secteurMap[k] || 0) + 1; });
-  const topSecteurs = Object.entries(secteurMap).sort((a, b) => b[1] - a[1]).slice(0, 5);
-  const demandeStatuts = ["en_attente", "acceptee", "en_cours", "terminee", "refusee"].map(s => ({
-    label: { en_attente: "En attente", acceptee: "Acceptée", en_cours: "En cours", terminee: "Terminée", refusee: "Refusée" }[s] || s,
+  const topSecteurs = Object.entries(secteurMap).sort((a,b) => b[1] - a[1]).slice(0,5);
+  const demandeStatuts = ["en_attente","acceptee","en_cours","terminee","refusee"].map(s => ({
+    label: { en_attente:"En attente", acceptee:"Acceptée", en_cours:"En cours", terminee:"Terminée", refusee:"Refusée" }[s] || s,
     count: demandes.filter((d: any) => d.statut === s).length,
-    color: { en_attente: "#F7B500", acceptee: "#22C55E", en_cours: "#3B82F6", terminee: "#10B981", refusee: "#EF4444" }[s] || "#94A3B8",
+    color: { en_attente:"#F7B500", acceptee:"#22C55E", en_cours:"#3B82F6", terminee:"#10B981", refusee:"#EF4444" }[s] || "#94A3B8",
   }));
   const totalDemandes = demandes.length;
   const totalFormations = formations.length;
@@ -1390,7 +1442,7 @@ function DashboardView({ experts, startups, temoignages, demandes, formations, p
               { label: "Experts validés",   count: expertValides,  total: experts.length,              color: "#8B5CF6", icon: "🎯" },
               { label: "Startups validées",  count: startupValides, total: startups.length,             color: "#F7B500", icon: "🚀" },
               { label: "En attente",         count: enAttente,      total: experts.length + startups.length, color: "#EF4444", icon: "⏳" },
-            ].map((row, i) => (
+            ].map((row,i) => (
               <div key={i} style={{ display: "flex", alignItems: "center", gap: 12 }}>
                 <span style={{ fontSize: 18, width: 28, textAlign: "center" }}>{row.icon}</span>
                 <div style={{ flex: 1 }}>
@@ -1406,7 +1458,7 @@ function DashboardView({ experts, startups, temoignages, demandes, formations, p
         </SectionCard>
         <SectionCard title="📋 Statuts des demandes" action={<button onClick={() => setTab("demandes")} style={{ fontSize: 12, color: "#8B5CF6", background: "none", border: "none", cursor: "pointer", fontWeight: 600 }}>Gérer →</button>}>
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            {demandeStatuts.map((s, i) => (
+            {demandeStatuts.map((s,i) => (
               <div key={i} style={{ display: "flex", alignItems: "center", gap: 12 }}>
                 <div style={{ width: 10, height: 10, borderRadius: "50%", background: s.color, flexShrink: 0 }} />
                 <div style={{ flex: 1 }}>
@@ -1430,7 +1482,7 @@ function DashboardView({ experts, startups, temoignages, demandes, formations, p
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                 {topServices.map(([svc, count], i) => (
                   <div key={i} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <span style={{ fontSize: 11, fontWeight: 700, color: "#94A3B8", width: 16, textAlign: "right" }}>#{i + 1}</span>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: "#94A3B8", width: 16, textAlign: "right" }}>#{i+1}</span>
                     <div style={{ flex: 1 }}>
                       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
                         <span style={{ fontSize: 13, fontWeight: 600, color: "#0A2540" }}>{svc}</span>
@@ -1447,7 +1499,7 @@ function DashboardView({ experts, startups, temoignages, demandes, formations, p
         <SectionCard title="⭐ Satisfaction clients">
           <div style={{ display: "flex", gap: 20, alignItems: "flex-start" }}>
             <div style={{ textAlign: "center", flexShrink: 0 }}>
-              <MiniDonut pct={avgNote !== "—" ? Math.round((parseFloat(avgNote) / 5) * 100) : 0} color="#F7B500" size={72} />
+              <MiniDonut pct={avgNote !== "—" ? Math.round((parseFloat(avgNote)/5)*100) : 0} color="#F7B500" size={72} />
               <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 6, fontWeight: 600 }}>Satisfaction</div>
             </div>
             <div style={{ flex: 1 }}>
@@ -1522,13 +1574,11 @@ function DashboardView({ experts, startups, temoignages, demandes, formations, p
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead>
                   <tr style={{ background: "#F8FAFC" }}>
-                    {["Client / Startup","Service","Formation","Date","Statut"].map(h => (
-                      <th key={h} style={{ padding: "10px 14px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#7D8FAA", textTransform: "uppercase", borderBottom: "1.5px solid #EEF2F7" }}>{h}</th>
-                    ))}
+                    {["Client / Startup","Service","Formation","Date","Statut"].map(h => <th key={h} style={{ padding: "10px 14px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#7D8FAA", textTransform: "uppercase", borderBottom: "1.5px solid #EEF2F7" }}>{h}</th>)}
                   </tr>
                 </thead>
                 <tbody>
-                  {demandes.slice(0, 8).map((d: any, i: number) => (
+                  {demandes.slice(0,8).map((d: any, i: number) => (
                     <tr key={i} style={{ borderBottom: "1px solid #F8FAFC" }}>
                       <td style={{ padding: "11px 14px", fontSize: 13, fontWeight: 600, color: "#0A2540" }}>
                         {d.user?.prenom} {d.user?.nom}
@@ -1596,7 +1646,7 @@ function ModalDemande({ demande, experts, commentaireAdmin, setCommentaireAdmin,
                 { label: "Startup",      val: demande.user?.startup?.nom_startup || "—" },
                 { label: "Secteur",      val: demande.user?.startup?.secteur || "—" },
                 { label: "Localisation", val: demande.user?.startup?.localisation || "—" },
-              ].map((row, i) => (
+              ].map((row,i) => (
                 <div key={i} style={{ background: "#fff", borderRadius: 10, padding: "10px 14px", border: "1px solid #E8EEF6" }}>
                   <div style={{ fontSize: 10, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "1px", marginBottom: 4 }}>{row.label}</div>
                   <div style={{ fontSize: 13, fontWeight: 600, color: "#0A2540" }}>{row.val}</div>
