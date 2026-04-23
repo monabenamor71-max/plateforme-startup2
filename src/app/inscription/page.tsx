@@ -3,8 +3,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { getCsrfToken } from "@/lib/csrf";
 
-// Listes prédéfinies
+// Listes (inchangées)
 const SECTEURS_STARTUP = [
   "Technologie",
   "Finance",
@@ -43,7 +44,6 @@ const FONCTIONS = [
 
 const TAILLES = ["1-5", "6-10", "11-50", "51-200", "200+"];
 
-// Générer les années de début d'expérience (de 1970 à l'année actuelle)
 const currentYear = new Date().getFullYear();
 const ANNEE_DEBUT_EXPERIENCE = Array.from(
   { length: currentYear - 1970 + 1 },
@@ -60,13 +60,11 @@ export default function Inscription() {
     password: "",
     confirmPassword: "",
     role: "startup",
-    // Startup
     nom_startup: "",
     secteur: "",
     secteur_precision: "",
     fonction: "",
     taille: "",
-    // Expert
     domaine: "",
     domaine_precision: "",
     annee_debut_experience: "",
@@ -75,33 +73,24 @@ export default function Inscription() {
   });
 
   const [experienceCalculee, setExperienceCalculee] = useState("");
-
-  // Fichiers (expert)
   const [cvFile, setCvFile] = useState<File | null>(null);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState("");
   const [portfolioFile, setPortfolioFile] = useState<File | null>(null);
-
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPass, setShowPass] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
-  // Recalcul de l'expérience quand l'année change
   const handleAnneeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const value = e.target.value;
     setFormData(prev => ({ ...prev, annee_debut_experience: value }));
     if (value) {
       const anneeDebut = parseInt(value, 10);
       const annees = currentYear - anneeDebut;
-      if (annees >= 0) {
-        setExperienceCalculee(`${annees} ${annees > 1 ? "ans" : "an"}`);
-      } else {
-        setExperienceCalculee("");
-      }
-    } else {
-      setExperienceCalculee("");
-    }
+      if (annees >= 0) setExperienceCalculee(`${annees} ${annees > 1 ? "ans" : "an"}`);
+      else setExperienceCalculee("");
+    } else setExperienceCalculee("");
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -116,6 +105,7 @@ export default function Inscription() {
       secteur: value,
       secteur_precision: value === "Autre" ? prev.secteur_precision : "",
     }));
+    if (value === "Autre") setFormData(prev => ({ ...prev, secteur_precision: "" }));
   };
 
   const handleDomaineChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -140,6 +130,8 @@ export default function Inscription() {
     setLoading(true);
     setError("");
 
+    const csrfToken = getCsrfToken();
+
     try {
       if (formData.password !== formData.confirmPassword)
         throw new Error("Les mots de passe ne correspondent pas");
@@ -150,63 +142,93 @@ export default function Inscription() {
       let options: RequestInit = { method: "POST" };
 
       if (formData.role === "startup") {
-        if (!formData.nom_startup) throw new Error("Le nom de la startup est requis");
+        // Startup validation (inchangée)
+        if (!formData.nom_startup.trim()) throw new Error("Le nom de la startup est requis");
         if (!formData.secteur) throw new Error("Le secteur est requis");
         if (formData.secteur === "Autre" && !formData.secteur_precision.trim())
           throw new Error("Veuillez préciser votre secteur");
         if (!formData.fonction) throw new Error("La fonction est requise");
 
-        const finalSecteur = formData.secteur === "Autre" ? formData.secteur_precision : formData.secteur;
+        const finalSecteur = formData.secteur === "Autre" ? formData.secteur_precision.trim() : formData.secteur;
 
         url = "http://localhost:3001/auth/register/startup";
-        options.headers = { "Content-Type": "application/json" };
+        options.headers = {
+          "Content-Type": "application/json",
+          "X-CSRF-Token": csrfToken || "",
+        };
         options.body = JSON.stringify({
-          email: formData.email,
+          email: formData.email.trim().toLowerCase(),
           password: formData.password,
-          nom: formData.nom,
-          prenom: formData.prenom,
-          telephone: formData.telephone,
-          nom_startup: formData.nom_startup,
+          nom: formData.nom.trim(),
+          prenom: formData.prenom.trim(),
+          telephone: formData.telephone.trim() || undefined,
+          nom_startup: formData.nom_startup.trim(),
           secteur: finalSecteur,
           fonction: formData.fonction,
-          taille: formData.taille,
+          taille: formData.taille || undefined,
         });
       } else {
-        if (!formData.domaine) throw new Error("Le domaine d'expertise est requis");
-        if (formData.domaine === "Autre" && !formData.domaine_precision.trim())
-          throw new Error("Veuillez préciser votre domaine");
-        if (!formData.annee_debut_experience) throw new Error("L'année de début d'expérience est requise");
-        if (!photoFile) throw new Error("La photo de profil est requise");
-        if (!cvFile) throw new Error("Le CV est requis");
-
-        const finalDomaine = formData.domaine === "Autre" ? formData.domaine_precision : formData.domaine;
+        // ===== EXPERT : construction explicite du FormData =====
+        // Récupération des valeurs
+        const emailVal = formData.email.trim().toLowerCase();
+        const passwordVal = formData.password;
+        const prenomVal = formData.prenom.trim();
+        const nomVal = formData.nom.trim();
+        let domaineVal = formData.domaine;
+        if (domaineVal === "Autre") domaineVal = formData.domaine_precision.trim();
+        const anneeVal = formData.annee_debut_experience;
+        
+        // Validation
+        if (!emailVal) throw new Error("L'email est requis");
+        if (!passwordVal) throw new Error("Mot de passe requis");
+        if (!prenomVal) throw new Error("Prénom requis");
+        if (!nomVal) throw new Error("Nom requis");
+        if (!domaineVal) throw new Error("Domaine requis");
+        if (!anneeVal) throw new Error("Année de début requise");
+        if (!photoFile) throw new Error("Photo requise");
+        if (!cvFile) throw new Error("CV requis");
 
         url = "http://localhost:3001/auth/register/expert";
         const fd = new FormData();
-        fd.append("email", formData.email);
-        fd.append("password", formData.password);
-        fd.append("nom", formData.nom);
-        fd.append("prenom", formData.prenom);
-        fd.append("telephone", formData.telephone);
-        fd.append("domaine", finalDomaine);
-        fd.append("annee_debut_experience", formData.annee_debut_experience);
-        fd.append("localisation", formData.localisation);
-        fd.append("description", formData.description);
+        fd.append("email", emailVal);
+        fd.append("password", passwordVal);
+        fd.append("prenom", prenomVal);
+        fd.append("nom", nomVal);
+        if (formData.telephone.trim()) fd.append("telephone", formData.telephone.trim());
+        fd.append("domaine", domaineVal);
+        fd.append("annee_debut_experience", parseInt(anneeVal, 10).toString());
+        if (formData.localisation.trim()) fd.append("localisation", formData.localisation.trim());
+        if (formData.description.trim()) fd.append("description", formData.description.trim());
         fd.append("photo", photoFile);
         fd.append("cv", cvFile);
         if (portfolioFile) fd.append("portfolio", portfolioFile);
-        options.body = fd;
+
+        // DEBUG : afficher le contenu
+        console.log("=== FORM DATA ENVOYÉ ===");
+        for (let [key, value] of fd.entries()) {
+          console.log(key, value instanceof File ? `[Fichier] ${value.name}` : value);
+        }
+
+        options = {
+          method: "POST",
+          headers: { "X-CSRF-Token": csrfToken || "" },
+          body: fd,
+        };
       }
 
       const res = await fetch(url, options);
       const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Erreur lors de l'inscription");
+      if (!res.ok) {
+        const errorMsg = Array.isArray(data.message) ? data.message.join(", ") : data.message || "Erreur lors de l'inscription";
+        throw new Error(errorMsg);
+      }
 
+      // Newsletter
       try {
         await fetch("http://localhost:3001/newsletter/subscribe", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email: formData.email, nom: `${formData.prenom} ${formData.nom}` }),
+          headers: { "Content-Type": "application/json", "X-CSRF-Token": csrfToken || "" },
+          body: JSON.stringify({ email: formData.email.trim(), nom: `${formData.prenom.trim()} ${formData.nom.trim()}` }),
         });
       } catch (e) {}
 
@@ -304,26 +326,30 @@ export default function Inscription() {
           )}
 
           <form onSubmit={handleSubmit}>
-            {/* Prénom + Nom */}
             <div className="grid2">
               <div className="fg"><label className="lbl">Prénom *</label><input className="inp" type="text" name="prenom" value={formData.prenom} onChange={handleChange} required /></div>
               <div className="fg"><label className="lbl">Nom *</label><input className="inp" type="text" name="nom" value={formData.nom} onChange={handleChange} required /></div>
             </div>
 
-            {/* Email */}
             <div className="fg"><label className="lbl">Email *</label><input className="inp" type="email" name="email" value={formData.email} onChange={handleChange} required /></div>
-
-            {/* Téléphone */}
             <div className="fg"><label className="lbl">Téléphone</label><input className="inp" type="tel" name="telephone" value={formData.telephone} onChange={handleChange} placeholder="+216 00 000 000" /></div>
 
-            {/* Mots de passe */}
             <div className="grid2">
               <div className="fg">
                 <label className="lbl">Mot de passe *</label>
                 <div className="inp-wrap">
                   <input className="inp" type={showPass ? "text" : "password"} name="password" value={formData.password} onChange={handleChange} required style={{ paddingRight: 44 }} />
                   <button type="button" className="eye-btn" onClick={() => setShowPass(!showPass)}>
-                    {showPass ? <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg> : <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>}
+                    {showPass ? (
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19M1 1l22 22"/>
+                      </svg>
+                    ) : (
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                        <circle cx="12" cy="12" r="3"/>
+                      </svg>
+                    )}
                   </button>
                 </div>
                 {passStrength > 0 && (
@@ -340,14 +366,22 @@ export default function Inscription() {
                 <div className="inp-wrap">
                   <input className="inp" type={showConfirm ? "text" : "password"} name="confirmPassword" value={formData.confirmPassword} onChange={handleChange} required style={{ paddingRight: 44, borderColor: formData.confirmPassword && formData.confirmPassword !== formData.password ? "#EF4444" : undefined }} />
                   <button type="button" className="eye-btn" onClick={() => setShowConfirm(!showConfirm)}>
-                    {showConfirm ? <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg> : <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>}
+                    {showConfirm ? (
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19M1 1l22 22"/>
+                      </svg>
+                    ) : (
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                        <circle cx="12" cy="12" r="3"/>
+                      </svg>
+                    )}
                   </button>
                 </div>
                 {formData.confirmPassword && formData.confirmPassword !== formData.password && <span style={{ fontSize: 11, color: "#EF4444", fontWeight: 600 }}>Ne correspondent pas</span>}
               </div>
             </div>
 
-            {/* Rôle */}
             <div className="fg">
               <label className="lbl" style={{ marginBottom: 10 }}>Vous êtes *</label>
               <div className="role-select">
@@ -362,7 +396,6 @@ export default function Inscription() {
               </div>
             </div>
 
-            {/* STARTUP */}
             {formData.role === "startup" && (
               <>
                 <div className="section-title">Informations startup</div>
@@ -397,7 +430,6 @@ export default function Inscription() {
               </>
             )}
 
-            {/* EXPERT */}
             {formData.role === "expert" && (
               <>
                 <div className="section-title">Photo de profil</div>
@@ -465,7 +497,6 @@ export default function Inscription() {
               </>
             )}
 
-            {/* Newsletter */}
             <div className="newsletter-check">
               <input type="checkbox" id="newsletter" defaultChecked />
               <label htmlFor="newsletter" style={{ fontSize: 13, cursor: "pointer", fontWeight: 500 }}>📧 M'abonner à la newsletter BEH</label>

@@ -1,43 +1,33 @@
-import { Controller, Post, Get, Body, Param, Patch, UseGuards, Req } from '@nestjs/common';
+import { Controller, Post, Get, Body, Param, Patch, UseGuards, Req, ValidationPipe, ParseIntPipe } from '@nestjs/common';
 import { DevisService } from './devis.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
+import { CreateDevisDto } from './dto/create-devis.dto';
+import { UpdateStatutDto } from './dto/update-statut.dto';
 
 @Controller('devis')
 export class DevisController {
   constructor(private readonly devisService: DevisService) {}
 
-  // Expert : créer un devis
   @UseGuards(JwtAuthGuard)
   @Post()
-  async create(@Req() req: any, @Body() body: { demande_id: number; montant: number; description: string; delai?: string }) {
-    const userId = req.user.id;
-    return this.devisService.create(userId, {
-      demande_id: body.demande_id,
-      montant: body.montant,
-      description: body.description,
-      delai: body.delai,
-    });
+  async create(@Req() req: any, @Body(ValidationPipe) dto: CreateDevisDto) {
+    return this.devisService.create(req.user.id, dto);
   }
 
-  // Expert : voir ses devis
   @UseGuards(JwtAuthGuard)
   @Get('expert/mes-devis')
   async getMesDevis(@Req() req: any) {
-    const userId = req.user.id;
-    return this.devisService.findByExpert(userId);
+    return this.devisService.findByExpert(req.user.id);
   }
 
-  // Client : voir ses devis reçus
   @UseGuards(JwtAuthGuard)
   @Get('client/mes-devis')
   async getMesDevisClient(@Req() req: any) {
-    const userId = req.user.id;
-    return this.devisService.findByClient(userId);
+    return this.devisService.findByClient(req.user.id);
   }
 
-  // Admin : voir tous les devis
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
   @Get('all')
@@ -45,19 +35,23 @@ export class DevisController {
     return this.devisService.findAll();
   }
 
-  // Client : accepter/refuser un devis
   @UseGuards(JwtAuthGuard)
   @Patch(':id/client-statut')
-  async updateStatutClient(@Param('id') id: string, @Req() req: any, @Body() body: { statut: string }) {
-    const userId = req.user.id;
-    return this.devisService.updateStatutByClient(+id, userId, body.statut);
+  async updateStatutClient(
+    @Param('id', ParseIntPipe) id: number,
+    @Req() req: any,
+    @Body(ValidationPipe) dto: UpdateStatutDto,
+  ) {
+    return this.devisService.updateStatutByClient(id, req.user.id, dto);
   }
 
-  // Admin : changer statut (optionnel)
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
   @Patch(':id/statut')
-  async updateStatut(@Param('id') id: string, @Body() body: { statut: string }) {
-    return this.devisService.updateStatut(+id, body.statut);
+  async updateStatut(
+    @Param('id', ParseIntPipe) id: number,
+    @Body(ValidationPipe) dto: UpdateStatutDto,
+  ) {
+    return this.devisService.updateStatut(id, dto);
   }
 }

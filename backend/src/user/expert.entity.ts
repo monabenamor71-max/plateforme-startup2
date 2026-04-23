@@ -32,7 +32,7 @@ export class Expert {
   experience: string;
 
   @Column({ type: 'int', nullable: true })
-  annee_debut_experience: number | null;   // ← année de début (nullable)
+  annee_debut_experience: number | null;
 
   @Column({ nullable: true })
   localisation: string;

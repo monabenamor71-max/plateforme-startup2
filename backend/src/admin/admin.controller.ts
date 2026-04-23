@@ -1,4 +1,3 @@
-// src/admin/admin.controller.ts
 import {
   Controller,
   Get,
@@ -251,12 +250,12 @@ export class AdminController {
   // ==================== PODCASTS ====================
   @Get('podcasts/all')
   async getAllPodcasts() {
-    return this.adminService.getAllPodcastsAdmin();   // nom exact
+    return this.adminService.getAllPodcastsAdmin();
   }
 
   @Get('podcasts/:id')
   async getPodcastById(@Param('id') id: number) {
-    return this.adminService.getPodcastById(id);      // nom exact
+    return this.adminService.getPodcastById(id);
   }
 
   @Post('podcasts/create')
@@ -275,7 +274,7 @@ export class AdminController {
   ) {
     const audio = files?.audio_file?.[0];
     const image = files?.image_file?.[0];
-    return this.adminService.createPodcast(dto, audio, image);  // nom exact
+    return this.adminService.createPodcast(dto, audio, image);
   }
 
   @Put('podcasts/:id')
@@ -295,7 +294,7 @@ export class AdminController {
   ) {
     const audio = files?.audio_file?.[0];
     const image = files?.image_file?.[0];
-    return this.adminService.updatePodcast(id, dto, audio, image); // nom exact
+    return this.adminService.updatePodcast(id, dto, audio, image);
   }
 
   @Patch('podcasts/:id/statut')
@@ -303,11 +302,11 @@ export class AdminController {
     @Param('id') id: number,
     @Body('statut') statut: 'en_attente' | 'publie' | 'refuse',
   ) {
-    return this.adminService.updatePodcastStatut(id, statut);     // nom exact
+    return this.adminService.updatePodcastStatut(id, statut);
   }
 
   @Delete('podcasts/:id')
   async deletePodcast(@Param('id') id: number) {
-    return this.adminService.deletePodcast(id);                  // nom exact
+    return this.adminService.deletePodcast(id);
   }
 }

@@ -1,12 +1,15 @@
-// src/auth/auth.service.ts
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
+import { randomBytes } from 'crypto';   // ✅ ajouté
 import { User } from '../user/user.entity';
 import { Expert } from '../user/expert.entity';
 import { Startup } from '../user/startup.entity';
+import { RegisterExpertDto } from './dto/register-expert.dto';
+import { RegisterStartupDto } from './dto/register-startup.dto';
+import { LoginDto } from './dto/login.dto';
 import { MailService } from '../mail/mail.service';
 
 @Injectable()
@@ -19,14 +22,19 @@ export class AuthService {
     private mailService: MailService,
   ) {}
 
-  async registerExpert(body: any, files: { cv: Express.Multer.File; photo: Express.Multer.File; portfolio?: Express.Multer.File }) {
-    const { email, password, nom, prenom, telephone, domaine, annee_debut_experience, localisation, description } = body;
+  // ==================== INSCRIPTION EXPERT (inchangé) ====================
+  async registerExpert(
+    dto: RegisterExpertDto,
+    photoPath?: string,
+    cvPath?: string,
+    portfolioPath?: string,
+  ) {
+    const { email, password, nom, prenom, telephone, domaine, annee_debut_experience, localisation, description } = dto;
 
-    const existingUser = await this.userRepo.findOne({ where: { email } });
-    if (existingUser) throw new BadRequestException('Email déjà utilisé');
+    const existing = await this.userRepo.findOne({ where: { email } });
+    if (existing) throw new BadRequestException('Email déjà utilisé');
 
     const hashedPassword = await bcrypt.hash(password, 10);
-
     const user = this.userRepo.create({
       email,
       password: hashedPassword,
@@ -35,43 +43,49 @@ export class AuthService {
       telephone: telephone || '',
       role: 'expert',
       statut: 'en_attente',
+      photo: photoPath,
     });
-    await this.userRepo.save(user);
+    const savedUser = await this.userRepo.save(user);
 
     let anneeDebut: number | null = null;
-    if (annee_debut_experience) {
-      const parsed = parseInt(annee_debut_experience, 10);
-      if (!isNaN(parsed)) anneeDebut = parsed;
+    if (annee_debut_experience !== undefined && annee_debut_experience !== null) {
+      anneeDebut = Number(annee_debut_experience);
+      if (isNaN(anneeDebut)) anneeDebut = null;
     }
 
     const expert = this.expertRepo.create({
-      user_id: user.id,
-      domaine,
-      annee_debut_experience: anneeDebut,   // ✅ null autorisé
+      user_id: savedUser.id,
+      domaine: domaine || '',
+      annee_debut_experience: anneeDebut,
       localisation: localisation || '',
       description: description || '',
-      photo: files.photo?.filename,
-      cv: files.cv?.filename,
-      portfolio: files.portfolio?.filename,
       statut: 'en_attente',
+      cv: cvPath,
+      portfolio: portfolioPath,
     });
     await this.expertRepo.save(expert);
 
-    try {
-      console.log(`[Mail] Inscription expert: ${email}`);
-    } catch(e) {}
+    const confirmationToken = this.jwtService.sign(
+      { id: savedUser.id, email },
+      { expiresIn: '24h' }
+    );
+    savedUser.reset_code = confirmationToken;
+    savedUser.email_verified = false;
+    await this.userRepo.save(savedUser);
 
-    return { message: 'Inscription réussie, en attente de validation' };
+    await this.mailService.sendConfirmationEmail(email, confirmationToken);
+    await this.mailService.sendAdminNotification(`${prenom} ${nom}`, 'expert', email);
+
+    return { message: 'Inscription réussie. Un email de confirmation vous a été envoyé.' };
   }
 
-  async registerStartup(body: any) {
-    const { email, password, nom, prenom, telephone, nom_startup, secteur, fonction, taille } = body;
-
-    const existingUser = await this.userRepo.findOne({ where: { email } });
-    if (existingUser) throw new BadRequestException('Email déjà utilisé');
+  // ==================== INSCRIPTION STARTUP (inchangé) ====================
+  async registerStartup(dto: RegisterStartupDto) {
+    const { email, password, nom, prenom, telephone, nom_startup, secteur, fonction, taille, site_web, localisation, description } = dto;
+    const existing = await this.userRepo.findOne({ where: { email } });
+    if (existing) throw new BadRequestException('Email déjà utilisé');
 
     const hashedPassword = await bcrypt.hash(password, 10);
-
     const user = this.userRepo.create({
       email,
       password: hashedPassword,
@@ -81,56 +95,106 @@ export class AuthService {
       role: 'startup',
       statut: 'en_attente',
     });
-    await this.userRepo.save(user);
+    const savedUser = await this.userRepo.save(user);
 
     const startup = this.startupRepo.create({
-      user_id: user.id,
+      user_id: savedUser.id,
       nom_startup,
       secteur,
       fonction,
       taille,
+      site_web,
+      localisation,
+      description,
       statut: 'en_attente',
     });
     await this.startupRepo.save(startup);
 
-    try {
-      console.log(`[Mail] Inscription startup: ${email}`);
-    } catch(e) {}
+    const confirmationToken = this.jwtService.sign(
+      { id: savedUser.id, email },
+      { expiresIn: '24h' }
+    );
+    savedUser.reset_code = confirmationToken;
+    savedUser.email_verified = false;
+    await this.userRepo.save(savedUser);
 
-    return { message: 'Inscription réussie, en attente de validation' };
+    await this.mailService.sendConfirmationEmail(email, confirmationToken);
+    await this.mailService.sendAdminNotification(`${prenom} ${nom} (${nom_startup})`, 'startup', email);
+
+    return { message: 'Inscription réussie. Un email de confirmation vous a été envoyé.' };
   }
 
-  async login(email: string, password: string) {
+  // ==================== CONNEXION ====================
+  async login(dto: LoginDto) {
+    const { email, password } = dto;
     const user = await this.userRepo.findOne({ where: { email } });
     if (!user) throw new BadRequestException('Identifiants incorrects');
-    if (!user.password) throw new BadRequestException('Identifiants incorrects');
     if (!await bcrypt.compare(password, user.password)) throw new BadRequestException('Identifiants incorrects');
-    if (user.statut !== 'actif') throw new BadRequestException('Votre compte n\'est pas encore activé');
-
-    const payload = { id: user.id, email: user.email, role: user.role };
-    const token = this.jwtService.sign(payload);
+    if (user.statut !== 'actif') throw new BadRequestException('Compte non activé par l’administrateur');
+    if (!user.email_verified) throw new BadRequestException('Veuillez confirmer votre adresse email avant de vous connecter');
+    const token = this.jwtService.sign({ id: user.id, email: user.email, role: user.role });
     return { access_token: token, user: { id: user.id, email: user.email, role: user.role, prenom: user.prenom, nom: user.nom } };
   }
 
-  async forgotPassword(email: string) {
-    const user = await this.userRepo.findOne({ where: { email } });
-    if (!user) throw new NotFoundException('Aucun compte associé à cet email');
-    const token = this.jwtService.sign({ id: user.id }, { expiresIn: '1h' });
-    // À implémenter dans MailService si nécessaire
-    console.log(`[Mail] Reset password pour ${email}, token: ${token}`);
-    return { message: 'Email de réinitialisation envoyé' };
-  }
-
-  async resetPassword(token: string, newPassword: string) {
+  // ==================== CONFIRMATION EMAIL ====================
+  async confirmEmail(token: string) {
     try {
       const payload = this.jwtService.verify(token);
       const user = await this.userRepo.findOne({ where: { id: payload.id } });
-      if (!user) throw new BadRequestException('Token invalide');
-      user.password = await bcrypt.hash(newPassword, 10);
+      if (!user) throw new BadRequestException('Utilisateur non trouvé');
+      if (user.email_verified) throw new BadRequestException('Email déjà confirmé');
+      user.email_verified = true;
+      // Au lieu de null, on met une chaîne vide (si la colonne n'accepte pas null)
+      user.reset_code = '';
       await this.userRepo.save(user);
-      return { message: 'Mot de passe réinitialisé' };
-    } catch {
-      throw new BadRequestException('Token invalide ou expiré');
+      return { message: 'Email confirmé avec succès. Vous pouvez maintenant vous connecter.' };
+    } catch (err) {
+      throw new BadRequestException('Lien de confirmation invalide ou expiré');
     }
+  }
+
+  // ==================== MOT DE PASSE OUBLIÉ (code à 6 chiffres) ====================
+  async forgotPassword(email: string) {
+    const user = await this.userRepo.findOne({ where: { email } });
+    if (!user) throw new BadRequestException('Aucun compte associé à cet email');
+
+    const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const expires = new Date();
+    expires.setMinutes(expires.getMinutes() + 15);
+
+    user.reset_code = resetCode;
+    user.reset_code_expires = expires;
+    await this.userRepo.save(user);
+
+    await this.mailService.sendResetCodeEmail(email, resetCode);
+
+    return { message: 'Un code de réinitialisation a été envoyé à votre adresse email.' };
+  }
+
+  // ==================== VÉRIFICATION DU CODE ET RÉINITIALISATION ====================
+  async resetPasswordWithCode(email: string, code: string, newPassword: string) {
+    const user = await this.userRepo.findOne({ where: { email } });
+    if (!user) throw new BadRequestException('Email invalide');
+
+    if (user.reset_code !== code) throw new BadRequestException('Code incorrect.');
+    if (!user.reset_code_expires || user.reset_code_expires < new Date()) {
+      throw new BadRequestException('Code expiré, veuillez refaire une demande.');
+    }
+
+    if (newPassword.length < 6) throw new BadRequestException('Le mot de passe doit contenir au moins 6 caractères');
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    user.password = hashedPassword;
+    // On vide les champs (chaîne vide et date très ancienne pour éviter null)
+    user.reset_code = '';
+    user.reset_code_expires = new Date(0); // 1970-01-01
+    await this.userRepo.save(user);
+
+    return { message: 'Mot de passe réinitialisé avec succès.' };
+  }
+
+  // ==================== RÉINITIALISATION PAR TOKEN (ancienne méthode) ====================
+  async resetPassword(token: string, newPassword: string) {
+    throw new BadRequestException('Utilisez la méthode avec code à 6 chiffres');
   }
 }

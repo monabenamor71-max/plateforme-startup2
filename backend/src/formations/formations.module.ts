@@ -1,4 +1,3 @@
-// src/formations/formations.module.ts
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Formation } from './formation.entity';
@@ -9,6 +8,6 @@ import { FormationsController } from './formations.controller';
   imports: [TypeOrmModule.forFeature([Formation])],
   controllers: [FormationsController],
   providers: [FormationsService],
-  exports: [FormationsService], // ← ajouter cette ligne
+  exports: [FormationsService],
 })
 export class FormationsModule {}

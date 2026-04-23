@@ -4,7 +4,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
-import { JwtStrategy } from './jwt.strategy';
+import { JwtStrategy } from './jwt.strategy';   // ← fichier dans le même dossier
 import { User } from '../user/user.entity';
 import { Expert } from '../user/expert.entity';
 import { Startup } from '../user/startup.entity';
@@ -12,8 +12,8 @@ import { MailModule } from '../mail/mail.module';
 
 @Module({
   imports: [
+    PassportModule.register({ defaultStrategy: 'jwt' }),
     TypeOrmModule.forFeature([User, Expert, Startup]),
-    PassportModule,
     JwtModule.register({
       secret: 'secret123',
       signOptions: { expiresIn: '7d' },
@@ -22,6 +22,5 @@ import { MailModule } from '../mail/mail.module';
   ],
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy],
-  exports: [AuthService],
 })
 export class AuthModule {}

@@ -1,4 +1,3 @@
-// src/demandes-service/demande-service.entity.ts
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
 import { User } from '../user/user.entity';
 import { Expert } from '../user/expert.entity';
@@ -38,9 +37,11 @@ export class DemandeService {
   @Column({ nullable: true })
   telephone: string;
 
-  // ⭐ NOUVEAU CHAMP : type d'application (mobile, web, desktop)
   @Column({ name: 'type_application', nullable: true })
   type_application: string;
+
+ @Column({ nullable: true })
+  domaine: string;
 
   @Column({ default: 'en_attente' })
   statut: string;

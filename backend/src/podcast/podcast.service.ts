@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Podcast } from './podcast.entity';
@@ -123,6 +123,32 @@ export class PodcastService {
       where: { expert_id: expertId },
       order: { date_creation: 'DESC' },
     });
+  }
+
+  /** Modification par l'expert (vérifie l'appartenance) */
+  async updateByExpert(
+    podcastId: number,
+    expertId: number,
+    dto: UpdatePodcastDto,
+    audioFile?: Express.Multer.File,
+    imageFile?: Express.Multer.File,
+  ): Promise<Podcast> {
+    const podcast = await this.findOne(podcastId);
+    if (podcast.expert_id !== expertId) {
+      throw new ForbiddenException('Vous ne pouvez pas modifier ce podcast');
+    }
+    // Seul l'admin peut changer le statut, on le bloque pour l'expert
+    if (dto.statut !== undefined) delete dto.statut;
+    return this.update(podcastId, dto, audioFile, imageFile);
+  }
+
+  /** Suppression par l'expert (vérifie l'appartenance) */
+  async deleteByExpert(podcastId: number, expertId: number): Promise<void> {
+    const podcast = await this.findOne(podcastId);
+    if (podcast.expert_id !== expertId) {
+      throw new ForbiddenException('Vous ne pouvez pas supprimer ce podcast');
+    }
+    return this.delete(podcastId);
   }
 
   // ==================== PUBLIQUES ====================

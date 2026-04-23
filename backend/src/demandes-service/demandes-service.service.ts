@@ -1,6 +1,8 @@
-// src/demandes-service/demandes-service.service.ts
 import {
-  Injectable, NotFoundException, BadRequestException, Logger,
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
@@ -8,6 +10,41 @@ import { DemandeService } from './demande-service.entity';
 import { Formation } from '../formations/formation.entity';
 import { Expert } from '../user/expert.entity';
 import { FormationsService } from '../formations/formations.service';
+
+// DTO internes
+export class CreateDemandeDto {
+  service?: string;
+  description: string;
+  delai?: string;
+  objectif?: string;
+  telephone?: string;
+  type_application?: string;
+  domaine?: string;
+}
+
+export class UpdateDemandeDto {
+  service?: string;
+  description?: string;
+  delai?: string;
+  objectif?: string;
+  telephone?: string;
+  type_application?: string;
+  domaine?: string;
+}
+
+export class UpdateStatutDto {
+  statut: string;
+  commentaire?: string;
+}
+
+export class NotifierExpertsDto {
+  expert_ids: number[];
+}
+
+export class AssignerExpertDto {
+  expert_id: number;
+  commentaire?: string;
+}
 
 @Injectable()
 export class DemandesServiceService {
@@ -27,7 +64,7 @@ export class DemandesServiceService {
 
   async getAll() {
     const demandes = await this.repo.find({
-      relations: ['user', 'formation', 'expert_assigne', 'expert_assigne.user'], // user.startup supprimé
+      relations: ['user', 'formation', 'expert_assigne', 'expert_assigne.user'],
       order: { createdAt: 'DESC' },
     });
     return demandes.map(d => ({
@@ -37,26 +74,30 @@ export class DemandesServiceService {
     }));
   }
 
-  async updateStatut(id: number, statut: string, commentaire?: string) {
+  async updateStatut(id: number, dto: UpdateStatutDto) {
     const demande = await this.repo.findOne({ where: { id } });
-    if (!demande) throw new NotFoundException('Demande non trouvée');
-    demande.statut = statut;
-    if (commentaire) demande.commentaire_admin = commentaire;
-    return this.repo.save(demande);
+    if (!demande) throw new NotFoundException(`Demande ${id} non trouvée`);
+    demande.statut = dto.statut;
+    if (dto.commentaire) demande.commentaire_admin = dto.commentaire;
+    await this.repo.save(demande);
+    this.logger.log(`Demande ${id} : statut changé à ${dto.statut}`);
+    return { message: 'Statut mis à jour' };
   }
 
   async supprimer(id: number) {
     const demande = await this.repo.findOne({ where: { id } });
-    if (!demande) throw new NotFoundException('Demande non trouvée');
-    return this.repo.remove(demande);
+    if (!demande) throw new NotFoundException(`Demande ${id} non trouvée`);
+    await this.repo.remove(demande);
+    this.logger.log(`Demande ${id} supprimée`);
+    return { message: 'Demande supprimée' };
   }
 
-  async notifierExperts(demandeId: number, expertIds: number[]) {
+  async notifierExperts(demandeId: number, dto: NotifierExpertsDto) {
     const demande = await this.repo.findOne({ where: { id: demandeId } });
-    if (!demande) throw new NotFoundException('Demande non trouvée');
+    if (!demande) throw new NotFoundException(`Demande ${demandeId} non trouvée`);
 
     const actuels = Array.isArray(demande.experts_notifies) ? demande.experts_notifies : [];
-    const nouveaux = expertIds.filter(id => !actuels.includes(id));
+    const nouveaux = dto.expert_ids.filter(id => !actuels.includes(id));
     if (nouveaux.length === 0) return { message: 'Aucun nouvel expert à notifier' };
 
     demande.experts_notifies = [...actuels, ...nouveaux];
@@ -67,7 +108,7 @@ export class DemandesServiceService {
 
   async getExpertsAcceptes(demandeId: number) {
     const demande = await this.repo.findOne({ where: { id: demandeId } });
-    if (!demande) throw new NotFoundException('Demande non trouvée');
+    if (!demande) throw new NotFoundException(`Demande ${demandeId} non trouvée`);
 
     const acceptesIds = demande.experts_acceptes || [];
     if (acceptesIds.length === 0) return [];
@@ -75,30 +116,30 @@ export class DemandesServiceService {
     return this.expertRepo.find({ where: { id: In(acceptesIds) }, relations: ['user'] });
   }
 
-  async assignerExpert(demandeId: number, expertId: number, commentaire?: string) {
+  async assignerExpert(demandeId: number, dto: AssignerExpertDto) {
     const demande = await this.repo.findOne({ where: { id: demandeId } });
-    if (!demande) throw new NotFoundException('Demande non trouvée');
+    if (!demande) throw new NotFoundException(`Demande ${demandeId} non trouvée`);
 
     const acceptes = Array.isArray(demande.experts_acceptes) ? demande.experts_acceptes : [];
-    if (!acceptes.includes(expertId))
-      throw new BadRequestException(`L'expert ${expertId} n'a pas accepté la mission`);
+    if (!acceptes.includes(dto.expert_id))
+      throw new BadRequestException(`L'expert ${dto.expert_id} n'a pas accepté la mission`);
     if (demande.expert_assigne_id)
       throw new BadRequestException('Un expert est déjà assigné');
 
-    demande.expert_assigne_id = expertId;
+    demande.expert_assigne_id = dto.expert_id;
     demande.statut = 'acceptee';
-    if (commentaire) demande.commentaire_admin = commentaire;
+    if (dto.commentaire) demande.commentaire_admin = dto.commentaire;
     await this.repo.save(demande);
+    this.logger.log(`Expert ${dto.expert_id} assigné à la demande ${demandeId}`);
     return { message: 'Expert assigné avec succès' };
   }
 
-  // ─── Acceptation d'une demande de formation ─────────────────────────────
   async acceptFormationDemande(demandeId: number) {
     const demande = await this.repo.findOne({
       where: { id: demandeId, service: 'formation' },
       relations: ['formation'],
     });
-    if (!demande) throw new NotFoundException('Demande non trouvée');
+    if (!demande) throw new NotFoundException(`Demande ${demandeId} non trouvée`);
     if (demande.statut !== 'en_attente')
       throw new BadRequestException('Cette demande a déjà été traitée');
 
@@ -133,7 +174,7 @@ export class DemandesServiceService {
       where: { id: demandeId, service: 'formation' },
       relations: ['formation'],
     });
-    if (!demande) throw new NotFoundException('Demande non trouvée');
+    if (!demande) throw new NotFoundException(`Demande ${demandeId} non trouvée`);
 
     const wasAccepted = demande.statut === 'acceptee';
     if (!['en_attente', 'acceptee'].includes(demande.statut))
@@ -148,6 +189,7 @@ export class DemandesServiceService {
 
     demande.statut = 'refusee';
     await this.repo.save(demande);
+    this.logger.log(`Demande ${demandeId} refusée`);
     return { message: 'Demande refusée' };
   }
 
@@ -161,9 +203,12 @@ export class DemandesServiceService {
     });
   }
 
-  async create(data: Partial<DemandeService>) {
+  async create(userId: number, dto: CreateDemandeDto) {
+    const data = { user_id: userId, ...dto };
     const demande = this.repo.create(data);
-    return this.repo.save(demande);
+    const saved = await this.repo.save(demande);
+    this.logger.log(`Demande créée par user ${userId}`);
+    return saved;
   }
 
   async createFormationDemande(userId: number, formationId: number) {
@@ -190,27 +235,26 @@ export class DemandesServiceService {
     }
 
     const demande = this.repo.create({
-      user_id:      userId,
-      service:      'formation',
-      description:  `Demande de participation : ${formation.titre}`,
+      user_id: userId,
+      service: 'formation',
+      description: `Demande de participation : ${formation.titre}`,
       formation_id: formation.id,
-      statut:       'en_attente',
+      statut: 'en_attente',
     });
 
-    return this.repo.save(demande);
+    const saved = await this.repo.save(demande);
+    this.logger.log(`Demande de formation créée par user ${userId} pour formation ${formationId}`);
+    return saved;
   }
 
-  async updateDemande(
-    id: number,
-    userId: number,
-    data: { description?: string; delai?: string; objectif?: string; telephone?: string },
-  ) {
+  async updateDemande(id: number, userId: number, dto: UpdateDemandeDto) {
     const demande = await this.repo.findOne({ where: { id, user_id: userId } });
     if (!demande) throw new NotFoundException('Demande non trouvée ou accès non autorisé');
     if (demande.statut !== 'en_attente')
       throw new BadRequestException('Seules les demandes en attente peuvent être modifiées');
 
-    await this.repo.update(id, data);
+    await this.repo.update(id, dto);
+    this.logger.log(`Demande ${id} mise à jour par user ${userId}`);
     return this.repo.findOne({ where: { id } });
   }
 
@@ -221,6 +265,7 @@ export class DemandesServiceService {
       throw new BadRequestException('Seules les demandes en attente peuvent être supprimées');
 
     await this.repo.delete(id);
+    this.logger.log(`Demande ${id} supprimée par user ${userId}`);
     return { success: true };
   }
 
@@ -242,22 +287,37 @@ export class DemandesServiceService {
   }
 
   async getNotificationsForExpert(userId: number) {
-    const expert = await this.getExpertByUserId(userId);
+    const expert = await this.expertRepo.findOne({ where: { user_id: userId } });
+    if (!expert) {
+      this.logger.warn(`Aucun expert trouvé pour l'utilisateur ${userId}`);
+      return [];
+    }
+    this.logger.log(`Expert trouvé : id=${expert.id}`);
+
     const demandes = await this.repo.find({
       where: { statut: 'en_attente' },
       relations: ['user', 'formation'],
-      order: { createdAt: 'DESC' },
     });
-    return demandes.filter(d => {
-      const notifies = Array.isArray(d.experts_notifies) ? d.experts_notifies : [];
+    this.logger.log(`Nombre de demandes en attente : ${demandes.length}`);
+
+    const notifications = demandes.filter(d => {
+      if (!d.experts_notifies) return false;
+      let notifies = d.experts_notifies;
+      if (typeof notifies === 'string') {
+        try { notifies = JSON.parse(notifies); } catch { notifies = []; }
+      }
+      if (!Array.isArray(notifies)) notifies = [];
       return notifies.includes(expert.id);
     });
+
+    this.logger.log(`Notifications trouvées : ${notifications.length}`);
+    return notifications;
   }
 
   async accepterMission(demandeId: number, userId: number) {
     const expert = await this.getExpertByUserId(userId);
     const demande = await this.repo.findOne({ where: { id: demandeId } });
-    if (!demande) throw new NotFoundException('Demande non trouvée');
+    if (!demande) throw new NotFoundException(`Demande ${demandeId} non trouvée`);
     if (!demande.experts_notifies?.includes(expert.id))
       throw new BadRequestException("Vous n'avez pas été notifié pour cette mission");
     if (demande.expert_assigne_id)
@@ -268,13 +328,14 @@ export class DemandesServiceService {
 
     demande.experts_acceptes = [...acceptes, expert.id];
     await this.repo.save(demande);
+    this.logger.log(`Expert ${expert.id} a accepté la mission ${demandeId}`);
     return { message: 'Acceptation enregistrée, en attente de validation admin' };
   }
 
   async refuserMission(demandeId: number, userId: number) {
     const expert = await this.getExpertByUserId(userId);
     const demande = await this.repo.findOne({ where: { id: demandeId } });
-    if (!demande) throw new NotFoundException('Demande non trouvée');
+    if (!demande) throw new NotFoundException(`Demande ${demandeId} non trouvée`);
     this.logger.log(`Expert ${expert.id} a refusé la mission ${demandeId}`);
     return { message: 'Refus enregistré' };
   }

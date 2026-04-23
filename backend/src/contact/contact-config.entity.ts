@@ -15,18 +15,6 @@ export class ContactConfig {
   adresse: string;
 
   @Column({ nullable: true })
-  facebook: string;
-
-  @Column({ nullable: true })
-  linkedin: string;
-
-  @Column({ nullable: true })
-  instagram: string;
-
-  @Column({ nullable: true })
-  whatsapp: string;
-
-  @Column({ nullable: true })
   horaires: string;
 
   @Column({ type: 'text', nullable: true })

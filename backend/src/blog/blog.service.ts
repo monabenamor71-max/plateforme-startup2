@@ -1,30 +1,65 @@
-// src/blog/blog.service.ts
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Blog } from './blog.entity';
 
+// DTO internes
+export class CreateArticleDto {
+  titre: string;
+  description?: string;
+  contenu?: string;
+  type?: string;
+  categorie?: string;
+  duree_lecture?: string;
+  statut?: string;
+}
+
+export class UpdateArticleDto {
+  titre?: string;
+  description?: string;
+  contenu?: string;
+  type?: string;
+  categorie?: string;
+  duree_lecture?: string;
+  statut?: string;
+}
+
+export class UpdateStatutDto {
+  statut: string;
+}
+
 @Injectable()
 export class BlogService {
+  private readonly logger = new Logger(BlogService.name);
+
   constructor(
     @InjectRepository(Blog)
     private blogRepo: Repository<Blog>,
   ) {}
 
+  private async findOneOrFail(id: number): Promise<Blog> {
+    const article = await this.blogRepo.findOne({ where: { id } });
+    if (!article) throw new NotFoundException(`Article ${id} non trouvé`);
+    return article;
+  }
+
   // ADMIN
-  async create(data: any, imageFile: any, pdfFile: any): Promise<Blog> {
-    const article = this.blogRepo.create({
-      titre: data.titre,
-      description: data.description,
-      contenu: data.contenu,
-      type: data.type || 'article',
-      categorie: data.categorie,
-      duree_lecture: data.duree_lecture,
-      statut: data.statut || 'brouillon',
-      image: imageFile?.filename || null,
-      pdf: pdfFile?.filename || null,
-    });
-    return await this.blogRepo.save(article);
+  async create(dto: CreateArticleDto, imageFile?: Express.Multer.File, pdfFile?: Express.Multer.File): Promise<Blog> {
+    const articleData: Partial<Blog> = {
+      titre: dto.titre,
+      description: dto.description,
+      contenu: dto.contenu,
+      type: dto.type || 'article',
+      categorie: dto.categorie,
+      duree_lecture: dto.duree_lecture,
+      statut: dto.statut || 'brouillon',
+    };
+    if (imageFile) articleData.image = imageFile.filename;
+    if (pdfFile) articleData.pdf = pdfFile.filename;
+    const article = this.blogRepo.create(articleData);
+    const saved = await this.blogRepo.save(article);
+    this.logger.log(`Article créé : ${saved.id} - ${saved.titre}`);
+    return saved;
   }
 
   async findAllAdmin(): Promise<Blog[]> {
@@ -32,28 +67,37 @@ export class BlogService {
   }
 
   async findOne(id: number): Promise<Blog> {
-    const article = await this.blogRepo.findOne({ where: { id } });
-    if (!article) throw new NotFoundException('Article non trouvé');
-    return article;
+    return this.findOneOrFail(id);
   }
 
-  async update(id: number, data: any, imageFile: any, pdfFile: any): Promise<Blog> {
-    const article = await this.findOne(id);
-    if (imageFile) data.image = imageFile.filename;
-    if (pdfFile) data.pdf = pdfFile.filename;
-    Object.assign(article, data);
-    return await this.blogRepo.save(article);
+  async update(id: number, dto: UpdateArticleDto, imageFile?: Express.Multer.File, pdfFile?: Express.Multer.File): Promise<Blog> {
+    const article = await this.findOneOrFail(id);
+    if (imageFile) article.image = imageFile.filename;
+    if (pdfFile) article.pdf = pdfFile.filename;
+    if (dto.titre !== undefined) article.titre = dto.titre;
+    if (dto.description !== undefined) article.description = dto.description;
+    if (dto.contenu !== undefined) article.contenu = dto.contenu;
+    if (dto.type !== undefined) article.type = dto.type;
+    if (dto.categorie !== undefined) article.categorie = dto.categorie;
+    if (dto.duree_lecture !== undefined) article.duree_lecture = dto.duree_lecture;
+    if (dto.statut !== undefined) article.statut = dto.statut;
+    const updated = await this.blogRepo.save(article);
+    this.logger.log(`Article ${id} mis à jour`);
+    return updated;
   }
 
-  async updateStatut(id: number, statut: string): Promise<Blog> {
-    const article = await this.findOne(id);
-    article.statut = statut;
-    return await this.blogRepo.save(article);
+  async updateStatut(id: number, dto: UpdateStatutDto): Promise<Blog> {
+    const article = await this.findOneOrFail(id);
+    article.statut = dto.statut;
+    const updated = await this.blogRepo.save(article);
+    this.logger.log(`Article ${id} : statut changé à ${dto.statut}`);
+    return updated;
   }
 
   async delete(id: number): Promise<void> {
-    const article = await this.findOne(id);
+    const article = await this.findOneOrFail(id);
     await this.blogRepo.remove(article);
+    this.logger.log(`Article ${id} supprimé`);
   }
 
   // PUBLIQUES

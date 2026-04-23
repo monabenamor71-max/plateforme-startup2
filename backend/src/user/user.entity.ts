@@ -1,6 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 
-@Entity('user')  // Utilise la table 'users' (celle qui contient vos comptes récents)
+@Entity('user')
 export class User {
   @PrimaryGeneratedColumn()
   id: number;
@@ -28,6 +28,15 @@ export class User {
 
   @Column({ nullable: true })
   photo: string;
+
+  @Column({ default: false })
+  email_verified: boolean;
+
+  @Column({ nullable: true })
+reset_code: string;
+
+@Column({ nullable: true, type: 'datetime' })
+reset_code_expires: Date;
 
   @CreateDateColumn()
   createdAt: Date;

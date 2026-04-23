@@ -1,4 +1,3 @@
-// src/blog/blog.entity.ts
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -31,7 +30,7 @@ export class Blog {
   type: string;
 
   @Column({ nullable: true })
-  categorie: string;        // ← modifié
+  categorie: string;
 
   @Column({ nullable: true })
   duree_lecture: string;

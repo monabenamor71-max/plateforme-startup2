@@ -1,9 +1,22 @@
-import { Controller, Get, Put, Post, Body, Request, UseGuards, UseInterceptors, UploadedFile } from '@nestjs/common';
-import { StartupsService } from './startups.service';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import {
+  Controller,
+  Get,
+  Put,
+  Post,
+  Body,
+  Request,
+  UseGuards,
+  UseInterceptors,
+  UploadedFile,
+  BadRequestException,
+  ValidationPipe,
+} from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import * as path from 'path';
+import { StartupsService } from './startups.service';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { UpdateStartupDto } from './dto/update-startup.dto';
 
 @Controller('startups')
 export class StartupsController {
@@ -25,9 +38,9 @@ export class StartupsController {
 
   @Put('profil')
   @UseGuards(JwtAuthGuard)
-  updateProfil(@Request() req: any, @Body() body: any) {
+  updateProfil(@Request() req: any, @Body(ValidationPipe) updateDto: UpdateStartupDto) {
     console.log(`✏️ Mise à jour profil pour user ID: ${req.user.id}`);
-    return this.startupsService.updateProfil(req.user.id, body);
+    return this.startupsService.updateProfil(req.user.id, updateDto);
   }
 
   @Post('photo')
@@ -37,18 +50,21 @@ export class StartupsController {
       destination: path.join(process.cwd(), 'uploads', 'photos'),
       filename: (req, file, cb) => cb(null, Date.now() + '-' + file.originalname),
     }),
+    fileFilter: (req, file, cb) => {
+      if (!file.mimetype.match(/\/(jpg|jpeg|png|gif|webp)$/)) {
+        return cb(new BadRequestException('Le fichier doit être une image (jpg, jpeg, png, gif, webp)'), false);
+      }
+      cb(null, true);
+    },
   }))
-  uploadPhoto(@Request() req: any, @UploadedFile() file: any) {
+  uploadPhoto(@Request() req: any, @UploadedFile() file: Express.Multer.File) {
+    if (!file) {
+      throw new BadRequestException('Aucun fichier reçu');
+    }
     console.log(`📸 Upload photo pour user ID: ${req.user.id}, fichier: ${file.filename}`);
     return this.startupsService.updatePhoto(req.user.id, file.filename);
   }
 
-  /**
-   * Retourne la liste des experts triés :
-   * - ceux recommandés (selon le secteur de la startup) en premier,
-   * - puis tous les autres experts.
-   * Route protégée par JWT.
-   */
   @Get('experts-recommandes')
   @UseGuards(JwtAuthGuard)
   async getRecommendedExperts(@Request() req: any) {

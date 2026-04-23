@@ -1,4 +1,3 @@
-// src/media/media.entity.ts
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -26,10 +25,6 @@ export class Media {
 
   @Column({ nullable: true })
   miniature: string;
-
-  // La colonne "duree" a été supprimée
-  // @Column({ nullable: true })
-  // duree: string;
 
   @Column({ nullable: true })
   emission: string;

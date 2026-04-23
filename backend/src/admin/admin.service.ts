@@ -1,7 +1,6 @@
-// src/admin/admin.service.ts
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, DataSource } from 'typeorm';
 import { User } from '../user/user.entity';
 import { Expert } from '../user/expert.entity';
 import { Startup } from '../user/startup.entity';
@@ -12,6 +11,8 @@ import { PodcastService, CreatePodcastDto, UpdatePodcastDto } from '../podcast/p
 
 @Injectable()
 export class AdminService {
+  private readonly logger = new Logger(AdminService.name);
+
   constructor(
     @InjectRepository(User) private userRepo: Repository<User>,
     @InjectRepository(Expert) private expertRepo: Repository<Expert>,
@@ -20,6 +21,7 @@ export class AdminService {
     private mailService: MailService,
     private mediaService: MediaService,
     private podcastService: PodcastService,
+    private dataSource: DataSource,
   ) {}
 
   // ==================== USERS ====================
@@ -28,11 +30,15 @@ export class AdminService {
   }
 
   async deleteUser(id: number) {
+    const user = await this.userRepo.findOne({ where: { id } });
+    if (!user) throw new NotFoundException(`Utilisateur ${id} introuvable`);
     await this.userRepo.delete(id);
     return { message: 'Utilisateur supprimé' };
   }
 
   async toggleUserStatut(id: number, statut: string) {
+    const user = await this.userRepo.findOne({ where: { id } });
+    if (!user) throw new NotFoundException(`Utilisateur ${id} introuvable`);
     await this.userRepo.update(id, { statut });
     return { message: 'Statut mis à jour' };
   }
@@ -59,7 +65,7 @@ export class AdminService {
     try {
       modifications = JSON.parse(expert.modifications_en_attente);
     } catch {
-      throw new Error('Format des modifications invalide');
+      throw new BadRequestException('Format des modifications invalide');
     }
 
     if (modifications.domaine !== undefined) expert.domaine = modifications.domaine;
@@ -86,26 +92,62 @@ export class AdminService {
     return { message: 'Modifications refusées' };
   }
 
+  // Version avec transaction pour validation expert + email
   async validerExpert(id: number) {
-    const expert = await this.expertRepo.findOne({ where: { id }, relations: ['user'] });
-    if (!expert) throw new NotFoundException('Expert non trouvé');
-    await this.expertRepo.update(id, { statut: 'valide' });
-    await this.userRepo.update(expert.user_id, { statut: 'actif' });
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
     try {
+      const expert = await queryRunner.manager.findOne(Expert, { where: { id }, relations: ['user'] });
+      if (!expert) throw new NotFoundException('Expert non trouvé');
+
+      expert.statut = 'valide';
+      await queryRunner.manager.save(expert);
+
+      await queryRunner.manager.update(User, expert.user_id, { statut: 'actif' });
+
+      // Envoi d'email (peut échouer)
       await this.mailService.sendValidationEmail(expert.user.nom, expert.user.email);
-    } catch(e) { console.log(e.message); }
-    return { message: 'Expert validé' };
+
+      await queryRunner.commitTransaction();
+      this.logger.log(`Expert ${id} validé avec succès`);
+      return { message: 'Expert validé' };
+    } catch (err) {
+      await queryRunner.rollbackTransaction();
+      this.logger.error(`Erreur lors de la validation de l'expert ${id}: ${err.message}`);
+      throw new BadRequestException(err.message || 'Erreur lors de la validation');
+    } finally {
+      await queryRunner.release();
+    }
   }
 
   async refuserExpert(id: number) {
-    const expert = await this.expertRepo.findOne({ where: { id }, relations: ['user'] });
-    if (!expert) throw new NotFoundException('Expert non trouvé');
-    await this.expertRepo.update(id, { statut: 'refuse' });
-    await this.userRepo.update(expert.user_id, { statut: 'inactif' });
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
     try {
+      const expert = await queryRunner.manager.findOne(Expert, { where: { id }, relations: ['user'] });
+      if (!expert) throw new NotFoundException('Expert non trouvé');
+
+      expert.statut = 'refuse';
+      await queryRunner.manager.save(expert);
+
+      await queryRunner.manager.update(User, expert.user_id, { statut: 'inactif' });
+
       await this.mailService.sendRefusEmail(expert.user.nom, expert.user.email);
-    } catch(e) { console.log(e.message); }
-    return { message: 'Expert refusé' };
+
+      await queryRunner.commitTransaction();
+      this.logger.log(`Expert ${id} refusé`);
+      return { message: 'Expert refusé' };
+    } catch (err) {
+      await queryRunner.rollbackTransaction();
+      this.logger.error(`Erreur lors du refus de l'expert ${id}: ${err.message}`);
+      throw new BadRequestException(err.message || 'Erreur lors du refus');
+    } finally {
+      await queryRunner.release();
+    }
   }
 
   // ==================== STARTUPS ====================
@@ -118,25 +160,59 @@ export class AdminService {
   }
 
   async validerStartup(id: number) {
-    const startup = await this.startupRepo.findOne({ where: { id }, relations: ['user'] });
-    if (!startup) throw new NotFoundException('Startup non trouvée');
-    await this.startupRepo.update(id, { statut: 'valide' });
-    await this.userRepo.update(startup.user_id, { statut: 'actif' });
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
     try {
+      const startup = await queryRunner.manager.findOne(Startup, { where: { id }, relations: ['user'] });
+      if (!startup) throw new NotFoundException('Startup non trouvée');
+
+      startup.statut = 'valide';
+      await queryRunner.manager.save(startup);
+
+      await queryRunner.manager.update(User, startup.user_id, { statut: 'actif' });
+
       await this.mailService.sendValidationEmail(startup.user.nom, startup.user.email);
-    } catch(e) { console.log(e.message); }
-    return { message: 'Startup validée' };
+
+      await queryRunner.commitTransaction();
+      this.logger.log(`Startup ${id} validée`);
+      return { message: 'Startup validée' };
+    } catch (err) {
+      await queryRunner.rollbackTransaction();
+      this.logger.error(`Erreur lors de la validation de la startup ${id}: ${err.message}`);
+      throw new BadRequestException(err.message || 'Erreur lors de la validation');
+    } finally {
+      await queryRunner.release();
+    }
   }
 
   async refuserStartup(id: number) {
-    const startup = await this.startupRepo.findOne({ where: { id }, relations: ['user'] });
-    if (!startup) throw new NotFoundException('Startup non trouvée');
-    await this.startupRepo.update(id, { statut: 'refuse' });
-    await this.userRepo.update(startup.user_id, { statut: 'inactif' });
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
     try {
+      const startup = await queryRunner.manager.findOne(Startup, { where: { id }, relations: ['user'] });
+      if (!startup) throw new NotFoundException('Startup non trouvée');
+
+      startup.statut = 'refuse';
+      await queryRunner.manager.save(startup);
+
+      await queryRunner.manager.update(User, startup.user_id, { statut: 'inactif' });
+
       await this.mailService.sendRefusEmail(startup.user.nom, startup.user.email);
-    } catch(e) { console.log(e.message); }
-    return { message: 'Startup refusée' };
+
+      await queryRunner.commitTransaction();
+      this.logger.log(`Startup ${id} refusée`);
+      return { message: 'Startup refusée' };
+    } catch (err) {
+      await queryRunner.rollbackTransaction();
+      this.logger.error(`Erreur lors du refus de la startup ${id}: ${err.message}`);
+      throw new BadRequestException(err.message || 'Erreur lors du refus');
+    } finally {
+      await queryRunner.release();
+    }
   }
 
   // ==================== STATS ====================

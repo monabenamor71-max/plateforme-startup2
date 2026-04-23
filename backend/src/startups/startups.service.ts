@@ -1,9 +1,10 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In, IsNull } from 'typeorm';
 import { Startup } from '../user/startup.entity';
 import { User } from '../user/user.entity';
 import { Expert } from '../user/expert.entity';
+import { UpdateStartupDto } from './dto/update-startup.dto';
 
 // Mapping secteur startup -> domaines d'expertise pertinents
 const SECTEUR_TO_DOMAINES: Record<string, string[]> = {
@@ -12,7 +13,7 @@ const SECTEUR_TO_DOMAINES: Record<string, string[]> = {
   'Santé': ['Marketing Digital', 'Data Santé', 'Juridique / Fiscal'],
   'E-commerce': ['Marketing Digital', 'Logistique / Supply Chain', 'Design UI/UX', 'Développement Web / Mobile'],
   'Éducation': ['Marketing Digital', 'Développement Web / Mobile', 'Design UI/UX'],
-  'Transport': ['Logistique / Supply Chain', 'Développement Web / Mobile', 'Data Analyse'],
+  'Transport': ['Logistique / Supply Chain', 'Data Analyse'],
   'Agroalimentaire': ['Marketing Digital', 'Logistique / Supply Chain', 'Juridique / Fiscal'],
 };
 
@@ -79,17 +80,21 @@ export class StartupsService {
     });
   }
 
-  async updateProfil(userId: number, body: any) {
+  async updateProfil(userId: number, updateDto: UpdateStartupDto) {
+    const startup = await this.startupRepo.findOne({ where: { user_id: userId } });
+    if (!startup) {
+      throw new NotFoundException(`Startup pour l'utilisateur ${userId} introuvable`);
+    }
     const result = await this.startupRepo.update(
       { user_id: userId },
       {
-        nom_startup: body.nom_startup,
-        secteur: body.secteur,
-        taille: body.taille,
-        site_web: body.site_web,
-        description: body.description,
-        fonction: body.fonction,
-        localisation: body.localisation,
+        nom_startup: updateDto.nom_startup,
+        secteur: updateDto.secteur,
+        taille: updateDto.taille,
+        site_web: updateDto.site_web,
+        description: updateDto.description,
+        fonction: updateDto.fonction,
+        localisation: updateDto.localisation,
       }
     );
     console.log(`📝 Mise à jour profil : ${result.affected} ligne(s) modifiée(s) pour user_id ${userId}`);
@@ -97,6 +102,10 @@ export class StartupsService {
   }
 
   async updatePhoto(userId: number, filename: string) {
+    const startup = await this.startupRepo.findOne({ where: { user_id: userId } });
+    if (!startup) {
+      throw new NotFoundException(`Startup pour l'utilisateur ${userId} introuvable`);
+    }
     await this.startupRepo.update({ user_id: userId }, { photo: filename });
     return { message: 'Photo mise à jour' };
   }
@@ -110,6 +119,10 @@ export class StartupsService {
   }
 
   async updateStartupUserId(startupId: number, userId: number) {
+    const startup = await this.startupRepo.findOne({ where: { id: startupId } });
+    if (!startup) {
+      throw new NotFoundException(`Startup avec l'ID ${startupId} introuvable`);
+    }
     return this.startupRepo.update(startupId, { user_id: userId });
   }
 
@@ -119,32 +132,26 @@ export class StartupsService {
    * - Puis tous les autres experts.
    */
   async getRecommendedExperts(userId: number) {
-    // 1. Récupérer la startup de l'utilisateur
     const startup = await this.startupRepo.findOne({ where: { user_id: userId } });
     if (!startup || !startup.secteur) {
-      // Si pas de startup ou pas de secteur, retourner tous les experts sans tri
       return this.expertRepo.find({
         where: { statut: 'valide' },
         relations: ['user'],
       });
     }
 
-    // 2. Récupérer la liste des domaines recommandés pour ce secteur
     const domainesRecommandes = SECTEUR_TO_DOMAINES[startup.secteur] || [];
 
-    // 3. Récupérer TOUS les experts validés
     const tousLesExperts = await this.expertRepo.find({
       where: { statut: 'valide' },
       relations: ['user'],
     });
 
-    // 4. Trier : recommandés en premier, puis les autres (ordre de création décroissant)
     const expertsTries = tousLesExperts.sort((a, b) => {
       const aMatch = domainesRecommandes.includes(a.domaine);
       const bMatch = domainesRecommandes.includes(b.domaine);
-      if (aMatch && !bMatch) return -1; // a recommandé, b non → a avant b
-      if (!aMatch && bMatch) return 1;  // b recommandé, a non → b avant a
-      // Si tous deux recommandés ou tous deux non recommandés, tri par date décroissante
+      if (aMatch && !bMatch) return -1;
+      if (!aMatch && bMatch) return 1;
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     });
 

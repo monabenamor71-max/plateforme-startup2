@@ -1,34 +1,49 @@
-import { Controller, Get, Post, Delete, Body, Param, UseGuards } from '@nestjs/common';
-import { NewsletterService } from './newsletter.service';
+import {
+  Controller,
+  Get,
+  Post,
+  Delete,
+  Body,
+  Param,
+  UseGuards,
+  ValidationPipe,
+  BadRequestException,
+} from '@nestjs/common';
+import { NewsletterService, SubscribeDto, UnsubscribeDto, SendNewsletterDto } from './newsletter.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 @Controller('newsletter')
 export class NewsletterController {
-  constructor(private svc: NewsletterService) {}
+  constructor(private readonly svc: NewsletterService) {}
 
   @Post('subscribe')
-  subscribe(@Body() body: any) {
-    return this.svc.subscribe(body.email, body.nom);
+  subscribe(@Body(ValidationPipe) dto: SubscribeDto) {
+    return this.svc.subscribe(dto);
   }
 
   @Post('unsubscribe')
-  unsubscribe(@Body() body: any) {
-    return this.svc.unsubscribe(body.email);
+  unsubscribe(@Body(ValidationPipe) dto: UnsubscribeDto) {
+    return this.svc.unsubscribe(dto);
   }
 
   @UseGuards(JwtAuthGuard)
   @Get('admin/all')
-  getAll() { return this.svc.getAll(); }
+  getAll() {
+    return this.svc.getAll();
+  }
 
   @UseGuards(JwtAuthGuard)
   @Post('admin/send')
-  send(@Body() body: any) {
-    return this.svc.sendNewsletter(body.sujet, body.contenu);
+  sendNewsletter(@Body(ValidationPipe) dto: SendNewsletterDto) {
+    return this.svc.sendNewsletter(dto);
   }
 
   @UseGuards(JwtAuthGuard)
   @Delete('admin/:email')
-  remove(@Param('email') email: string) {
-    return this.svc.unsubscribe(email);
+  async remove(@Param('email') email: string) {
+    if (!email || !email.includes('@')) {
+      throw new BadRequestException('Email invalide');
+    }
+    return this.svc.removeByEmail(email);
   }
 }

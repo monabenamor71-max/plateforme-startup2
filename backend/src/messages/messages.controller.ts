@@ -1,6 +1,18 @@
-import { Controller, Get, Post, Delete, Body, Param, Request, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Delete,
+  Body,
+  Param,
+  Request,
+  UseGuards,
+  ValidationPipe,
+  ParseIntPipe,
+} from '@nestjs/common';
 import { MessagesService } from './messages.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { SendMessageDto } from './dto/message.dto';
 
 @Controller('messages')
 export class MessagesController {
@@ -8,8 +20,8 @@ export class MessagesController {
 
   @Post()
   @UseGuards(JwtAuthGuard)
-  send(@Body() body: any, @Request() req: any) {
-    return this.messagesService.send(req.user.id, body.receiver_id, body.contenu);
+  send(@Body(ValidationPipe) dto: SendMessageDto, @Request() req: any) {
+    return this.messagesService.send(req.user.id, dto);
   }
 
   @Get('mes-messages')
@@ -26,8 +38,8 @@ export class MessagesController {
 
   @Get('conversation/:userId')
   @UseGuards(JwtAuthGuard)
-  getConversation(@Request() req: any, @Param('userId') userId: number) {
-    return this.messagesService.getConversation(req.user.id, Number(userId));
+  getConversation(@Request() req: any, @Param('userId', ParseIntPipe) userId: number) {
+    return this.messagesService.getConversation(req.user.id, userId);
   }
 
   @Get('non-lus')
@@ -38,16 +50,15 @@ export class MessagesController {
 
   @Post('lire/:senderId')
   @UseGuards(JwtAuthGuard)
-  markAsRead(@Request() req: any, @Param('senderId') senderId: number) {
-    return this.messagesService.markAsRead(req.user.id, Number(senderId));
+  markAsRead(@Request() req: any, @Param('senderId', ParseIntPipe) senderId: number) {
+    return this.messagesService.markAsRead(req.user.id, senderId);
   }
 
-  // ✅ AJOUT : Supprimer un message (seulement si l'utilisateur est l'expéditeur)
   @Delete(':id')
   @UseGuards(JwtAuthGuard)
-  async deleteMessage(@Param('id') id: string, @Request() req: any) {
+  async deleteMessage(@Param('id', ParseIntPipe) id: number, @Request() req: any) {
     const userId = req.user.id;
     const isAdmin = req.user.role === 'admin';
-    return this.messagesService.deleteMessage(+id, userId, isAdmin);
+    return this.messagesService.deleteMessage(id, userId, isAdmin);
   }
 }

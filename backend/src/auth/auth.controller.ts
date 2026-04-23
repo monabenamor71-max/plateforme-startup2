@@ -1,18 +1,22 @@
-// src/auth/auth.controller.ts
-import { Controller, Post, Body, UseInterceptors, UploadedFiles, BadRequestException } from '@nestjs/common';
+import { Controller, Post, Body, Get, Query, UseInterceptors, UploadedFiles, BadRequestException, Req } from '@nestjs/common';
+import { AuthService } from './auth.service';
+import { RegisterExpertDto } from './dto/register-expert.dto';
+import { RegisterStartupDto } from './dto/register-startup.dto';
+import { LoginDto } from './dto/login.dto';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
-import { extname } from 'path';
-import { AuthService } from './auth.service';
+import { v4 as uuidv4 } from 'uuid';
+import * as path from 'path';
+import type { Request } from 'express';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private authService: AuthService) {}
+  constructor(private readonly authService: AuthService) {}
 
   @Post('register/expert')
   @UseInterceptors(FileFieldsInterceptor([
-    { name: 'cv', maxCount: 1 },
     { name: 'photo', maxCount: 1 },
+    { name: 'cv', maxCount: 1 },
     { name: 'portfolio', maxCount: 1 },
   ], {
     storage: diskStorage({
@@ -24,66 +28,72 @@ export class AuthController {
         cb(null, folder);
       },
       filename: (req, file, cb) => {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-        cb(null, `${file.fieldname}-${uniqueSuffix}${extname(file.originalname)}`);
+        const ext = path.extname(file.originalname);
+        const filename = `${uuidv4()}${ext}`;
+        cb(null, filename);
       },
     }),
-    fileFilter: (req, file, cb) => {
-      if (file.fieldname === 'photo') {
-        const allowedImageExt = /\.(jpg|jpeg|png|gif|webp)$/i;
-        if (!allowedImageExt.test(file.originalname)) {
-          return cb(new BadRequestException('La photo doit être au format JPG, JPEG, PNG, GIF ou WEBP'), false);
-        }
-      } 
-      else if (file.fieldname === 'cv') {
-        const allowedCvExt = /\.(pdf|doc|docx)$/i;
-        if (!allowedCvExt.test(file.originalname)) {
-          return cb(new BadRequestException('Le CV doit être au format PDF, DOC ou DOCX'), false);
-        }
-      }
-      else if (file.fieldname === 'portfolio') {
-        const allowedPortfolioExt = /\.(pdf|doc|docx|ppt|pptx|zip)$/i;
-        if (!allowedPortfolioExt.test(file.originalname)) {
-          return cb(new BadRequestException('Le portfolio doit être au format PDF, DOC, DOCX, PPT, PPTX ou ZIP'), false);
-        }
-      }
-      cb(null, true);
-    },
-    limits: { fileSize: 10 * 1024 * 1024 },
   }))
   async registerExpert(
-    @Body() body: any,
-    @UploadedFiles() files: { cv?: Express.Multer.File[]; photo?: Express.Multer.File[]; portfolio?: Express.Multer.File[] },
+    @Req() req: Request,
+    @UploadedFiles() files: { photo?: Express.Multer.File[]; cv?: Express.Multer.File[]; portfolio?: Express.Multer.File[] },
   ) {
-    if (!files.photo || files.photo.length === 0) throw new BadRequestException('La photo est requise');
-    if (!files.cv || files.cv.length === 0) throw new BadRequestException('Le CV est requis');
+    const body = req.body;
+    if (!body.email) throw new BadRequestException('Email requis');
+    if (!body.password) throw new BadRequestException('Mot de passe requis');
+    if (body.password.length < 6) throw new BadRequestException('Mot de passe trop court');
+    if (!body.prenom) throw new BadRequestException('Prénom requis');
+    if (!body.nom) throw new BadRequestException('Nom requis');
+    if (!body.domaine) throw new BadRequestException('Domaine requis');
 
-    const cvFile = files.cv[0];
-    const photoFile = files.photo[0];
-    const portfolioFile = files.portfolio?.[0];
-    return this.authService.registerExpert(body, { cv: cvFile, photo: photoFile, portfolio: portfolioFile });
+    const dto = new RegisterExpertDto();
+    dto.email = body.email;
+    dto.password = body.password;
+    dto.prenom = body.prenom;
+    dto.nom = body.nom;
+    dto.telephone = body.telephone;
+    dto.domaine = body.domaine;
+    dto.annee_debut_experience = body.annee_debut_experience ? parseInt(body.annee_debut_experience, 10) : undefined;
+    dto.localisation = body.localisation;
+    dto.description = body.description;
+
+    const photoPath = files.photo?.[0]?.path;
+    const cvPath = files.cv?.[0]?.path;
+    const portfolioPath = files.portfolio?.[0]?.path;
+
+    return this.authService.registerExpert(dto, photoPath, cvPath, portfolioPath);
   }
 
   @Post('register/startup')
-  registerStartup(@Body() body: any) {
+  async registerStartup(@Body() body: RegisterStartupDto) {
     return this.authService.registerStartup(body);
   }
 
   @Post('login')
-  login(@Body() body: any) {
-    return this.authService.login(body.email, body.password);
+  async login(@Body() body: LoginDto) {
+    return this.authService.login(body);
   }
 
   @Post('forgot-password')
   async forgotPassword(@Body('email') email: string) {
+    if (!email) throw new Error('Email requis');
     return this.authService.forgotPassword(email);
   }
 
+  @Post('verify-reset-code')
+  async verifyResetCode(@Body() body: any) {
+    const { email, code, newPassword } = body;
+    return this.authService.resetPasswordWithCode(email, code, newPassword);
+  }
+
   @Post('reset-password')
-  async resetPassword(
-    @Body('token') token: string,
-    @Body('newPassword') newPassword: string
-  ) {
+  async resetPassword(@Body() body: any) {
+    const { token, newPassword } = body;
     return this.authService.resetPassword(token, newPassword);
+  }
+
+  @Get('confirm')
+  async confirmEmail(@Query('token') token: string) {
+    return this.authService.confirmEmail(token);
   }
 }

@@ -1,3 +1,4 @@
+// src/contact/contact-message.entity.ts
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn } from 'typeorm';
 
 @Entity('contact_messages')
@@ -15,22 +16,25 @@ export class ContactMessage {
   email: string;
 
   @Column({ nullable: true })
-  telephone: string;
+  phone: string;
 
   @Column()
-  sujet: string;
+  subject: string;
 
   @Column({ type: 'text' })
   message: string;
 
-  @Column({ default: 'non_lu' })
-  statut: string;
+  @Column({ nullable: true })
+  name: string;
+
+  @Column({ default: false })
+  is_read: boolean;
 
   @Column({ type: 'text', nullable: true })
-  reponse_admin: string;
+  admin_reply: string;      // ← nouvelle colonne
 
-  @Column({ nullable: true, type: 'datetime' })
-  repondu_le: Date;
+  @Column({ nullable: true })
+  replied_at: Date;         // ← nouvelle colonne
 
   @CreateDateColumn()
   createdAt: Date;

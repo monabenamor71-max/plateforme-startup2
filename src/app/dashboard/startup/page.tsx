@@ -72,10 +72,17 @@ const S_LABEL: Record<string, string> = {
   en_cours: "🔄 En cours", terminee: "✅ Terminée", refusee: "❌ Refusée",
 };
 
+// Liste des domaines d'expertise (identique à celle des experts)
 const DOMAINES_LIST = [
-  "Stratégie & Croissance", "Finance & Gestion", "Marketing & Commercial",
-  "Ressources Humaines", "Transformation Digitale", "Innovation & R&D",
-  "Droit & Conformité", "Supply Chain & Logistique",
+  "Marketing Digital",
+  "Finance / Comptabilité",
+  "Ressources Humaines",
+  "Développement Web / Mobile",
+  "Design UI/UX",
+  "Stratégie Commerciale",
+  "Logistique / Supply Chain",
+  "Intelligence Artificielle / Data",
+  "Autre",  // ← option pour domaine personnalisé
 ];
 
 type Tab = "accueil" | "services" | "profil" | "experts" | "rdv" | "messages" | "temoignages" | "mes-demandes" | "mes-devis";
@@ -203,41 +210,62 @@ function FormationModal({ formation, onClose, demanderFormation, demandeExiste, 
   );
 }
 
-// ─── MODAL PODCAST (lecteur audio) ───────────────────────────────────────────
+// ─── MODAL PODCAST ───────────────────────────────────────────────────────────
 
-function PodcastModal({ podcast, onClose }: { podcast: any; onClose: () => void }) {
-  const audioRef = useRef<HTMLAudioElement>(null);
-
-  useEffect(() => {
-    if (audioRef.current) audioRef.current.load();
-  }, [podcast]);
-
+function PodcastModal({ podcast, onClose, navigateToFormationsTab }: { podcast: any; onClose: () => void; navigateToFormationsTab: () => void }) {
+  const modeInfo = MODE_LABELS[podcast.mode] || { label: "En ligne", color: "#22C55E" };
   return (
     <div className="modal-bg" onClick={onClose}>
-      <div className="modal-box" style={{ maxWidth: 550 }} onClick={e => e.stopPropagation()}>
-        <div style={{ background: "linear-gradient(135deg,#2d1b5e,#4c1d95)", padding: "20px 24px", borderRadius: "20px 20px 0 0", position: "relative" }}>
-          <button onClick={onClose} style={{ position: "absolute", top: 16, right: 16, width: 32, height: 32, borderRadius: "50%", background: "rgba(255,255,255,.15)", border: "none", cursor: "pointer", color: "#fff", fontSize: 14 }}>✕</button>
-          <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
-            {podcast.image ? (
-              <img src={`${BASE}/uploads/podcasts-images/${podcast.image}`} alt="" style={{ width: 70, height: 70, borderRadius: 12, objectFit: "cover" }} />
-            ) : (
-              <div style={{ width: 70, height: 70, borderRadius: 12, background: "rgba(139,92,246,.3)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <FaMicrophone style={{ fontSize: 32, color: "#C4B5FD" }} />
-              </div>
-            )}
+      <div className="modal-box" onClick={e => e.stopPropagation()}>
+        <div style={{ position: "relative", height: 190, background: "linear-gradient(135deg,#2d1b5e,#4c1d95)", overflow: "hidden", borderRadius: "24px 24px 0 0" }}>
+          {podcast.image && (
+            <img src={`${BASE}/uploads/podcasts-images/${podcast.image}`} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", opacity: .45 }} />
+          )}
+          <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top,rgba(45,27,94,.92),transparent)" }} />
+          <button onClick={onClose} style={{ position: "absolute", top: 16, right: 16, width: 36, height: 36, borderRadius: "50%", background: "rgba(255,255,255,.15)", border: "1px solid rgba(255,255,255,.25)", color: "#fff", fontSize: 16, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <FaTimes />
+          </button>
+          <div style={{ position: "absolute", bottom: 20, left: 20, right: 60, display: "flex", alignItems: "flex-end", gap: 14 }}>
+            <div style={{ width: 52, height: 52, borderRadius: 14, background: "rgba(139,92,246,.35)", border: "1.5px solid rgba(139,92,246,.55)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              <FaMicrophone style={{ color: "#C4B5FD", fontSize: 22 }} />
+            </div>
             <div>
-              <div style={{ color: "rgba(255,255,255,.7)", fontSize: 11, fontWeight: 700, textTransform: "uppercase" }}>Podcast</div>
-              <div style={{ color: "#fff", fontWeight: 800, fontSize: 18 }}>{podcast.titre}</div>
-              {podcast.auteur && <div style={{ color: "rgba(255,255,255,.6)", fontSize: 13, marginTop: 4 }}>🎙️ {podcast.auteur}</div>}
+              <div style={{ display: "flex", gap: 6, marginBottom: 6 }}>
+                <span style={{ background: "#7C3AED", color: "#fff", borderRadius: 99, padding: "3px 10px", fontSize: 11, fontWeight: 700 }}>🎙️ Podcast</span>
+                {podcast.domaine && <span style={{ background: "rgba(255,255,255,.15)", color: "rgba(255,255,255,.85)", borderRadius: 99, padding: "3px 10px", fontSize: 11, fontWeight: 600 }}>{podcast.domaine}</span>}
+              </div>
+              <div style={{ color: "#fff", fontWeight: 900, fontSize: 18, lineHeight: 1.25 }}>{podcast.titre}</div>
             </div>
           </div>
         </div>
         <div style={{ padding: "24px 28px" }}>
-          {podcast.description && <p style={{ fontSize: 14, color: "#475569", lineHeight: 1.8, marginBottom: 20 }}>{podcast.description}</p>}
-          <audio ref={audioRef} src={`${BASE}/uploads/podcasts-audio/${podcast.url_audio}`} preload="metadata" style={{ width: "100%", marginBottom: 16 }} controls />
-          <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
-            <button className="btn btn-gray" onClick={onClose}>Fermer</button>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 20 }}>
+            {[
+              { label: "Animateur", val: podcast.auteur || "BEH Expert", color: "#8B5CF6" },
+              { label: "Durée", val: podcast.duree || "Non précisée", color: "#F7B500" },
+              { label: "Mode", val: modeInfo.label, color: modeInfo.color },
+              { label: "Prix", val: podcast.prix ? `${podcast.prix} DT` : "Gratuit", color: podcast.prix ? "#0A2540" : "#22C55E" },
+            ].map((row, i) => (
+              <div key={i} style={{ background: "#F8FAFC", borderRadius: 12, padding: "12px 14px", display: "flex", alignItems: "center", gap: 10 }}>
+                <div style={{ width: 28, height: 28, borderRadius: 8, background: `${row.color}18`, color: row.color, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: 10, fontWeight: 700 }}>●</div>
+                <div>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "1px" }}>{row.label}</div>
+                  <div style={{ fontSize: 13.5, fontWeight: 600, color: "#0A2540" }}>{row.val}</div>
+                </div>
+              </div>
+            ))}
           </div>
+          {podcast.description && (
+            <p style={{ fontSize: 14, color: "#475569", lineHeight: 1.8, margin: "0 0 20px" }}>{podcast.description}</p>
+          )}
+          <div style={{ background: "#F5F3FF", border: "1px solid #DDD6FE", borderRadius: 12, padding: "12px 16px", marginBottom: 20, fontSize: 13, color: "#5B21B6" }}>
+            🎧 Accédez à l'intégralité des épisodes en faisant une demande. Notre équipe vous donnera accès sous 24h.
+          </div>
+          <button
+            onClick={() => { onClose(); navigateToFormationsTab(); }}
+            style={{ width: "100%", background: "linear-gradient(135deg,#7C3AED,#6D28D9)", color: "#fff", border: "none", borderRadius: 14, padding: "16px", fontWeight: 900, fontSize: 15, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 10 }}>
+            <FaPlay /> Demander l'accès
+          </button>
         </div>
       </div>
     </div>
@@ -323,7 +351,7 @@ function FormationCard({ f, onSelect, demanderFormation, demandeExiste, annulerD
   );
 }
 
-// ─── CARTE PODCAST (avec écoute) ───────────────────────────────────────────
+// ─── CARTE PODCAST ───────────────────────────────────────────────────────────
 
 function PodcastCard({ p, onSelect }: { p: any; onSelect: (p: any) => void }) {
   return (
@@ -349,12 +377,13 @@ function PodcastCard({ p, onSelect }: { p: any; onSelect: (p: any) => void }) {
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
             <div style={{ display: "flex", gap: 8, fontSize: 11.5, color: "#8A9AB5" }}>
               {p.auteur && <span><FaUsers style={{ fontSize: 10, marginRight: 3 }} />{p.auteur}</span>}
+              {p.duree && <span><FaClock style={{ fontSize: 10, marginRight: 3 }} />{p.duree}</span>}
             </div>
             <button
               className="btn btn-purple"
               style={{ fontSize: 11.5, padding: "7px 14px" }}
               onClick={e => { e.stopPropagation(); onSelect(p); }}>
-              <FaHeadphones style={{ fontSize: 11 }} /> Écouter
+              <FaPlay style={{ fontSize: 10 }} /> Voir détails
             </button>
           </div>
         </div>
@@ -610,7 +639,7 @@ function PlateformesModal({ onClose, startup, demandeForm, setDemandeForm, envoy
   );
 }
 
-// ─── MODAL SERVICE GÉNÉRIQUE ──────────────────────────────────────────────────
+// ─── MODAL SERVICE GÉNÉRIQUE (avec domaine personnalisé via "Autre") ───────────
 
 function GenericServiceModal({ serviceSlug, onClose, demandeForm, setDemandeForm, envoyerDemande, sendingDemande }: {
   serviceSlug: string;
@@ -623,14 +652,28 @@ function GenericServiceModal({ serviceSlug, onClose, demandeForm, setDemandeForm
   const svc = SERVICES_INFO[serviceSlug];
   const needDomaine = serviceSlug === "consulting" || serviceSlug === "audit-sur-site";
   const [localDomaine, setLocalDomaine] = useState("");
+  const [domaineAutre, setDomaineAutre] = useState("");
+
+  const handleDomaineChange = (value: string) => {
+    setLocalDomaine(value);
+    if (value !== "Autre") setDomaineAutre("");
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    let description = demandeForm.description;
-    if (needDomaine && localDomaine) {
-      description = `[Domaine: ${localDomaine}]\n${description}`;
+    let finalDomaine = localDomaine;
+    if (localDomaine === "Autre") {
+      if (!domaineAutre.trim()) {
+        alert("Veuillez préciser le domaine");
+        return;
+      }
+      finalDomaine = domaineAutre.trim();
     }
-    setDemandeForm({ ...demandeForm, description });
+    if (needDomaine && !finalDomaine) {
+      alert("Veuillez sélectionner un domaine d'intervention");
+      return;
+    }
+    setDemandeForm({ ...demandeForm, domaine: finalDomaine });
     envoyerDemande(e);
   };
 
@@ -666,10 +709,21 @@ function GenericServiceModal({ serviceSlug, onClose, demandeForm, setDemandeForm
           {needDomaine && (
             <div style={{ marginBottom: 16 }}>
               <label className="lbl">Domaine d'intervention *</label>
-              <select className="inp" required value={localDomaine} onChange={e => setLocalDomaine(e.target.value)}>
+              <select className="inp" required value={localDomaine} onChange={e => handleDomaineChange(e.target.value)}>
                 <option value="">Sélectionnez un domaine</option>
                 {DOMAINES_LIST.map(d => <option key={d} value={d}>{d}</option>)}
               </select>
+              {localDomaine === "Autre" && (
+                <input
+                  type="text"
+                  className="inp"
+                  style={{ marginTop: 8 }}
+                  placeholder="Précisez votre domaine"
+                  value={domaineAutre}
+                  onChange={e => setDomaineAutre(e.target.value)}
+                  required
+                />
+              )}
             </div>
           )}
           <div style={{ marginBottom: 16 }}>
@@ -884,8 +938,9 @@ export default function DashboardStartup() {
   const [formationsLoading, setFormationsLoading] = useState(false);
   const [domaineFilter, setDomaineFilter] = useState("Tous");
   const [formSearch, setFormSearch] = useState("");
-  const [demandeForm, setDemandeForm] = useState({ service: "", description: "", delai: "", objectif: "", telephone: "", type_application: "" });
+  const [demandeForm, setDemandeForm] = useState({ service: "", description: "", delai: "", objectif: "", telephone: "", type_application: "", domaine: "" });
 
+  // Nouveaux états pour la demande personnalisée
   const [customService, setCustomService] = useState("");
   const [showCustomInput, setShowCustomInput] = useState(false);
 
@@ -920,6 +975,7 @@ export default function DashboardStartup() {
     setTimeout(() => { setTIdx(i); setTAnim(false); }, 280);
   }
 
+  // Navigation vers l'onglet Services avec sous-onglet spécifique
   const navigateToServicesTab = useCallback((subTab: "catalogue" | "formations" | "podcasts" | "personnalise") => {
     setTab("services");
     setServiceTab(subTab);
@@ -991,14 +1047,12 @@ export default function DashboardStartup() {
   const loadFormationsData = useCallback(async () => {
     setFormationsLoading(true);
     try {
-      // Formations
       const formationsRes = await fetch(`${BASE}/formations/public?_=${Date.now()}`);
       if (formationsRes.ok) {
         const data = await formationsRes.json();
         setFormations(Array.isArray(data) ? data : []);
       } else setFormations([]);
 
-      // Podcasts
       const podcastsRes = await fetch(`${BASE}/podcasts/public?_=${Date.now()}`);
       if (podcastsRes.ok) {
         const data = await podcastsRes.json();
@@ -1022,7 +1076,7 @@ export default function DashboardStartup() {
   }, [hdr]);
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
+const token = localStorage.getItem("access_token");
     const userStr = localStorage.getItem("user");
     if (!token || !userStr) { router.push("/connexion"); return; }
     let parsed: any;
@@ -1145,12 +1199,24 @@ export default function DashboardStartup() {
     }
     setSendingDemande(true);
     try {
-      const r = await fetch(`${BASE}/demandes-service`, { method: "POST", headers: hdrJ(), body: JSON.stringify({ ...demandeForm, service: finalService }) });
+     const r = await fetch(`${BASE}/demandes-service`, {
+  method: "POST",
+  headers: hdrJ(),
+  body: JSON.stringify({
+    service: finalService,
+    description: demandeForm.description,
+    delai: demandeForm.delai,
+    objectif: demandeForm.objectif,
+    telephone: demandeForm.telephone,
+    type_application: demandeForm.type_application,
+    domaine: demandeForm.domaine,   // ← crucial
+  }),
+});
       if (r.ok) {
         notify("✅ Demande envoyée ! Notre équipe vous contacte sous 24h.");
         setServiceModal(null);
         setShowPlateformesModal(false);
-        setDemandeForm({ service: "", description: "", delai: "", objectif: "", telephone: "", type_application: "" });
+        setDemandeForm({ service: "", description: "", delai: "", objectif: "", telephone: "", type_application: "", domaine: "" });
         setCustomService("");
         setShowCustomInput(false);
         await reloadDemandes();
@@ -1218,12 +1284,12 @@ export default function DashboardStartup() {
   function openService(slug: string) {
     const tel = startup?.user?.telephone || "";
     if (slug === "nos-plateformes") {
-      setDemandeForm({ ...demandeForm, service: "nos-plateformes", telephone: tel, type_application: "" });
+      setDemandeForm({ ...demandeForm, service: "nos-plateformes", telephone: tel, type_application: "", domaine: "" });
       setShowPlateformesModal(true);
     } else if (slug === "formations") {
       navigateToServicesTab("formations");
     } else {
-      setDemandeForm({ ...demandeForm, service: slug, telephone: tel, type_application: "" });
+      setDemandeForm({ ...demandeForm, service: slug, telephone: tel, type_application: "", domaine: "" });
       setServiceModal(slug);
     }
   }
@@ -1400,6 +1466,7 @@ export default function DashboardStartup() {
         <PodcastModal
           podcast={selectedPodcast}
           onClose={() => setSelectedPodcast(null)}
+          navigateToFormationsTab={() => navigateToServicesTab("formations")}
         />
       )}
 
@@ -1740,17 +1807,6 @@ export default function DashboardStartup() {
                   <button className="btn btn-purple" onClick={() => openService("formations")} style={{ padding: "10px 20px", fontSize: 13 }}>
                     <FaPaperPlane size={11} /> Demander l'accès
                   </button>
-                </div>
-                <div style={{ background: "#F8FAFC", border: "1px solid #E8EEF6", borderRadius: 14, padding: "16px 18px", marginBottom: 20 }}>
-                  <div style={{ position: "relative", marginBottom: 12 }}>
-                    <FaSearch style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#94A3B8", fontSize: 13 }} />
-                    <input className="inp" placeholder="Rechercher un podcast..." style={{ paddingLeft: 36 }} value={formSearch} onChange={e => setFormSearch(e.target.value)} />
-                  </div>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 7 }}>
-                    {podcastDomaines.map(d => (
-                      <button key={d} className={`pill${domaineFilter === d ? " active" : ""}`} onClick={() => setDomaineFilter(d)}>{d}</button>
-                    ))}
-                  </div>
                 </div>
                 {filteredPodcasts.length === 0 ? (
                   <div style={{ textAlign: "center", padding: "60px 0" }}>
@@ -2188,6 +2244,11 @@ export default function DashboardStartup() {
                       <div style={{ flex: 1 }}>
                         <div style={{ fontWeight: 700, fontSize: 15, color: "#0A2540", marginBottom: 3 }}>{SERVICES_INFO[d.service]?.label || d.service}</div>
                         <div style={{ fontSize: 12, color: "#64748B", marginBottom: 8 }}>{new Date(d.createdAt).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}</div>
+                        {d.domaine && (
+                          <div style={{ marginBottom: 4 }}>
+                            <span className="badge" style={{ background: "#EFF6FF", color: "#1D4ED8" }}>🎯 Domaine : {d.domaine}</span>
+                          </div>
+                        )}
                         <p style={{ fontSize: 13.5, color: "#334155", lineHeight: 1.7 }}>{d.description}</p>
                       </div>
                       <div style={{ display: "flex", flexDirection: "column", gap: 6, alignItems: "flex-end" }}>

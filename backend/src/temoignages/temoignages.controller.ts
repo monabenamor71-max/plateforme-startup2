@@ -1,45 +1,46 @@
-import { Controller, Get, Post, Patch, Delete, Body, Param, Request, UseGuards } from "@nestjs/common";
-import { TemoignagesService } from "./temoignages.service";
-import { JwtAuthGuard } from "../auth/jwt-auth.guard";
+import { Controller, Post, Get, Patch, Delete, Body, Param, Request, UseGuards, ParseIntPipe } from '@nestjs/common';
+import { TemoignagesService } from './temoignages.service';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
-@Controller("temoignages")
+@Controller('temoignages')
 export class TemoignagesController {
-  constructor(private temoService: TemoignagesService) {}
+  constructor(private readonly temoignagesService: TemoignagesService) {}
 
   @Post()
   @UseGuards(JwtAuthGuard)
-  create(@Body() body: any, @Request() req: any) {
-    return this.temoService.create(req.user.id, body.texte);
+  async create(@Body() body: { texte: string }, @Request() req: any) {
+    const dto = { user_id: req.user.id, texte: body.texte };
+    return this.temoignagesService.create(dto);
   }
 
-  @Get("publics")
-  getPublics() {
-    return this.temoService.getPublics();
+  @Get('publics')
+  async getPublics() {
+    return this.temoignagesService.getPublics();
   }
 
-  @Get("mes-temoignages")
+  @Get('mes-temoignages')
   @UseGuards(JwtAuthGuard)
-  getMes(@Request() req: any) {
-    return this.temoService.getMesTemoignages(req.user.id);
+  async getMesTemoignages(@Request() req: any) {
+    return this.temoignagesService.getMesTemoignages(req.user.id);
   }
 
-  @Get("all")
-  getAll() {
-    return this.temoService.getAll();
+  @Get('all')
+  async getAll() {
+    return this.temoignagesService.getAll();
   }
 
-  @Patch(":id/valider")
-  valider(@Param("id") id: number) {
-    return this.temoService.valider(id);
+  @Patch(':id/valider')
+  async valider(@Param('id', ParseIntPipe) id: number) {
+    return this.temoignagesService.valider(id);
   }
 
-  @Patch(":id/refuser")
-  refuser(@Param("id") id: number) {
-    return this.temoService.refuser(id);
+  @Patch(':id/refuser')
+  async refuser(@Param('id', ParseIntPipe) id: number) {
+    return this.temoignagesService.refuser(id);
   }
 
-  @Delete(":id")
-  supprimer(@Param("id") id: number) {
-    return this.temoService.supprimer(id);
+  @Delete(':id')
+  async supprimer(@Param('id', ParseIntPipe) id: number) {
+    return this.temoignagesService.supprimer(id);
   }
 }

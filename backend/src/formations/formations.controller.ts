@@ -1,53 +1,52 @@
-// src/formations/formations.controller.ts
-import { Controller, Get, Post, Put, Patch, Delete, Body, Param, UseInterceptors, UploadedFile, UseGuards, Request } from '@nestjs/common';
+import {
+  Controller, Get, Post, Put, Patch, Delete,
+  Body, Param, UseInterceptors, UploadedFile,
+  UseGuards, Request, ValidationPipe, ParseIntPipe,
+} from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
-import { FormationsService } from './formations.service';
+import { FormationsService, CreateFormationDto, UpdateFormationDto, UpdateStatutDto } from './formations.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+
+const imageStorage = diskStorage({
+  destination: './uploads/formations',
+  filename: (_req, file, cb) => {
+    const unique = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+    cb(null, `formation-${unique}${extname(file.originalname)}`);
+  },
+});
 
 @Controller('formations')
 export class FormationsController {
-  constructor(private formationsService: FormationsService) {}
+  constructor(private readonly formationsService: FormationsService) {}
 
-  // Routes experts
+  // ─── EXPERTS ─────────────────────────────────────────────────────────────
+
   @Post('expert/proposer')
   @UseGuards(JwtAuthGuard)
-  @UseInterceptors(FileInterceptor('image', {
-    storage: diskStorage({
-      destination: './uploads/formations',
-      filename: (req, file, cb) => {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-        cb(null, `formation-${uniqueSuffix}${extname(file.originalname)}`);
-      },
-    }),
-  }))
-  async proposerParExpert(@Body() body: any, @UploadedFile() file: any, @Request() req: any) {
+  @UseInterceptors(FileInterceptor('image', { storage: imageStorage }))
+  async proposerParExpert(
+    @Body(ValidationPipe) dto: CreateFormationDto,
+    @UploadedFile() file: Express.Multer.File,
+    @Request() req: any,
+  ) {
     const expertId = req.user.id;
-    if (!expertId) throw new Error('Expert non authentifié');
-    return this.formationsService.createFromExpert(body, file, expertId);
+    return this.formationsService.createFromExpert(dto, file, expertId);
   }
 
   @Get('expert/mes-formations')
   @UseGuards(JwtAuthGuard)
   async getMesFormations(@Request() req: any) {
-    const expertId = req.user.id;
-    return this.formationsService.findByExpert(expertId);
+    return this.formationsService.findByExpert(req.user.id);
   }
 
-  // Routes admin
+  // ─── ADMIN ────────────────────────────────────────────────────────────────
+
   @Post('admin/create')
-  @UseInterceptors(FileInterceptor('image', {
-    storage: diskStorage({
-      destination: './uploads/formations',
-      filename: (req, file, cb) => {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-        cb(null, `formation-${uniqueSuffix}${extname(file.originalname)}`);
-      },
-    }),
-  }))
-  async create(@Body() body: any, @UploadedFile() file: any) {
-    return this.formationsService.create(body, file);
+  @UseInterceptors(FileInterceptor('image', { storage: imageStorage }))
+  async create(@Body(ValidationPipe) dto: CreateFormationDto, @UploadedFile() file: Express.Multer.File) {
+    return this.formationsService.create(dto, file);
   }
 
   @Get('admin/all')
@@ -56,37 +55,37 @@ export class FormationsController {
   }
 
   @Put('admin/:id')
-  @UseInterceptors(FileInterceptor('image', {
-    storage: diskStorage({
-      destination: './uploads/formations',
-      filename: (req, file, cb) => {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-        cb(null, `formation-${uniqueSuffix}${extname(file.originalname)}`);
-      },
-    }),
-  }))
-  async update(@Param('id') id: number, @Body() body: any, @UploadedFile() file: any) {
-    return this.formationsService.update(id, body, file);
+  @UseInterceptors(FileInterceptor('image', { storage: imageStorage }))
+  async update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body(ValidationPipe) dto: UpdateFormationDto,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    return this.formationsService.update(id, dto, file);
   }
 
   @Patch('admin/:id/statut')
-  async updateStatut(@Param('id') id: number, @Body() body: { statut: string; commentaire?: string }) {
-    return this.formationsService.updateStatut(id, body.statut, body.commentaire);
+  async updateStatut(
+    @Param('id', ParseIntPipe) id: number,
+    @Body(ValidationPipe) dto: UpdateStatutDto,
+  ) {
+    return this.formationsService.updateStatut(id, dto);
   }
 
   @Delete('admin/:id')
-  async delete(@Param('id') id: number) {
+  async delete(@Param('id', ParseIntPipe) id: number) {
     return this.formationsService.delete(id);
   }
 
-  // Routes publiques
+  // ─── PUBLIQUES ────────────────────────────────────────────────────────────
+
   @Get('public')
   async findPublished() {
     return this.formationsService.findPublished();
   }
 
   @Get('public/:id')
-  async findOne(@Param('id') id: number) {
+  async findOne(@Param('id', ParseIntPipe) id: number) {
     return this.formationsService.findOne(id);
   }
 }

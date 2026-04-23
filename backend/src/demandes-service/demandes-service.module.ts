@@ -5,12 +5,12 @@ import { DemandesServiceController } from './demandes-service.controller';
 import { DemandeService } from './demande-service.entity';
 import { Formation } from '../formations/formation.entity';
 import { Expert } from '../user/expert.entity';
-import { FormationsModule } from '../formations/formations.module'; // Ajout
+import { FormationsModule } from '../formations/formations.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([DemandeService, Formation, Expert]),
-    FormationsModule, // Import du module qui exporte FormationsService
+    FormationsModule,
   ],
   controllers: [DemandesServiceController],
   providers: [DemandesServiceService],

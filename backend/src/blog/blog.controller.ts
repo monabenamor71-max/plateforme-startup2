@@ -1,13 +1,12 @@
-// src/blog/blog.controller.ts
 import {
   Controller, Get, Post, Put, Patch, Delete,
   Body, Param, UseInterceptors, UploadedFiles,
-  UseGuards, Query,
+  UseGuards, Query, ValidationPipe, ParseIntPipe,
 } from '@nestjs/common';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
-import { BlogService } from './blog.service';
+import { BlogService, CreateArticleDto, UpdateArticleDto, UpdateStatutDto } from './blog.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 const storage = diskStorage({
@@ -39,12 +38,12 @@ export class BlogController {
     { name: 'pdf', maxCount: 1 },
   ], { storage }))
   async create(
-    @Body() body: any,
+    @Body(ValidationPipe) dto: CreateArticleDto,
     @UploadedFiles() files: { image?: Express.Multer.File[]; pdf?: Express.Multer.File[] },
   ) {
     const imageFile = files?.image?.[0];
     const pdfFile = files?.pdf?.[0];
-    return this.blogService.create(body, imageFile, pdfFile);
+    return this.blogService.create(dto, imageFile, pdfFile);
   }
 
   @Get('admin/all')
@@ -55,7 +54,7 @@ export class BlogController {
 
   @Get('admin/:id')
   @UseGuards(JwtAuthGuard)
-  async findOneAdmin(@Param('id') id: number) {
+  async findOneAdmin(@Param('id', ParseIntPipe) id: number) {
     return this.blogService.findOne(id);
   }
 
@@ -66,24 +65,27 @@ export class BlogController {
     { name: 'pdf', maxCount: 1 },
   ], { storage }))
   async update(
-    @Param('id') id: number,
-    @Body() body: any,
+    @Param('id', ParseIntPipe) id: number,
+    @Body(ValidationPipe) dto: UpdateArticleDto,
     @UploadedFiles() files: { image?: Express.Multer.File[]; pdf?: Express.Multer.File[] },
   ) {
     const imageFile = files?.image?.[0];
     const pdfFile = files?.pdf?.[0];
-    return this.blogService.update(id, body, imageFile, pdfFile);
+    return this.blogService.update(id, dto, imageFile, pdfFile);
   }
 
   @Patch('admin/:id/statut')
   @UseGuards(JwtAuthGuard)
-  async updateStatut(@Param('id') id: number, @Body('statut') statut: string) {
-    return this.blogService.updateStatut(id, statut);
+  async updateStatut(
+    @Param('id', ParseIntPipe) id: number,
+    @Body(ValidationPipe) dto: UpdateStatutDto,
+  ) {
+    return this.blogService.updateStatut(id, dto);
   }
 
   @Delete('admin/:id')
   @UseGuards(JwtAuthGuard)
-  async delete(@Param('id') id: number) {
+  async delete(@Param('id', ParseIntPipe) id: number) {
     return this.blogService.delete(id);
   }
 
@@ -94,7 +96,7 @@ export class BlogController {
   }
 
   @Get('public/:id')
-  async findOnePublic(@Param('id') id: number) {
+  async findOnePublic(@Param('id', ParseIntPipe) id: number) {
     return this.blogService.findOnePublic(id);
   }
 

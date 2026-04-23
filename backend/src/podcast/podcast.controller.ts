@@ -11,12 +11,16 @@ import {
   UploadedFiles,
   UseGuards,
   Request,
+  ValidationPipe,
+  ParseIntPipe,
+  BadRequestException,
 } from '@nestjs/common';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
 import * as fs from 'fs';
-import { PodcastService, CreatePodcastDto, UpdatePodcastDto } from './podcast.service';
+import { PodcastService } from './podcast.service';
+import { CreatePodcastDto, UpdatePodcastDto } from './dto/podcast.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -38,9 +42,9 @@ const podcastStorage = diskStorage({
 
 const fileFilter = (req, file, cb) => {
   if (file.fieldname === 'audio_file' && file.mimetype !== 'audio/mpeg') {
-    cb(new Error('Seuls les fichiers MP3 sont autorisés'), false);
+    cb(new BadRequestException('Seuls les fichiers MP3 sont autorisés'), false);
   } else if (file.fieldname === 'image_file' && !file.mimetype.startsWith('image/')) {
-    cb(new Error('Seules les images sont autorisées'), false);
+    cb(new BadRequestException('Seules les images sont autorisées'), false);
   } else {
     cb(null, true);
   }
@@ -54,6 +58,12 @@ export class PodcastController {
     private expertRepo: Repository<Expert>,
   ) {}
 
+  private async getExpertIdFromUser(userId: number): Promise<number> {
+    const expert = await this.expertRepo.findOne({ where: { user_id: userId } });
+    if (!expert) throw new BadRequestException('Expert non trouvé');
+    return expert.id;
+  }
+
   // ==================== ADMIN ====================
   @Get('admin/all')
   @UseGuards(JwtAuthGuard)
@@ -63,7 +73,7 @@ export class PodcastController {
 
   @Get('admin/:id')
   @UseGuards(JwtAuthGuard)
-  async findOne(@Param('id') id: number) {
+  async findOne(@Param('id', ParseIntPipe) id: number) {
     return this.podcastService.findOne(id);
   }
 
@@ -79,7 +89,7 @@ export class PodcastController {
     ),
   )
   async create(
-    @Body() dto: CreatePodcastDto,
+    @Body(ValidationPipe) dto: CreatePodcastDto,
     @UploadedFiles() files: { audio_file?: Express.Multer.File[]; image_file?: Express.Multer.File[] },
   ) {
     const audio = files?.audio_file?.[0];
@@ -99,8 +109,8 @@ export class PodcastController {
     ),
   )
   async update(
-    @Param('id') id: number,
-    @Body() dto: UpdatePodcastDto,
+    @Param('id', ParseIntPipe) id: number,
+    @Body(ValidationPipe) dto: UpdatePodcastDto,
     @UploadedFiles() files: { audio_file?: Express.Multer.File[]; image_file?: Express.Multer.File[] },
   ) {
     const audio = files?.audio_file?.[0];
@@ -111,15 +121,16 @@ export class PodcastController {
   @Patch('admin/:id/statut')
   @UseGuards(JwtAuthGuard)
   async updateStatut(
-    @Param('id') id: number,
+    @Param('id', ParseIntPipe) id: number,
     @Body('statut') statut: 'en_attente' | 'publie' | 'refuse',
   ) {
+    if (!statut) throw new BadRequestException('Statut requis');
     return this.podcastService.updateStatut(id, statut);
   }
 
   @Delete('admin/:id')
   @UseGuards(JwtAuthGuard)
-  async delete(@Param('id') id: number) {
+  async delete(@Param('id', ParseIntPipe) id: number) {
     return this.podcastService.delete(id);
   }
 
@@ -136,32 +147,51 @@ export class PodcastController {
     ),
   )
   async proposerParExpert(
-    @Body() dto: CreatePodcastDto,
+    @Body(ValidationPipe) dto: CreatePodcastDto,
     @UploadedFiles() files: { audio_file?: Express.Multer.File[]; image_file?: Express.Multer.File[] },
     @Request() req: any,
   ) {
-    // Récupérer l'expert associé à l'utilisateur connecté
-    const expert = await this.expertRepo.findOne({
-      where: { user_id: req.user.id },
-    });
-    if (!expert) {
-      throw new Error('Expert non trouvé pour cet utilisateur');
-    }
+    const expertId = await this.getExpertIdFromUser(req.user.id);
     const audio = files?.audio_file?.[0];
     const image = files?.image_file?.[0];
-    return this.podcastService.createByExpert(dto, expert.id, audio, image);
+    return this.podcastService.createByExpert(dto, expertId, audio, image);
   }
 
   @Get('expert/mes-podcasts')
   @UseGuards(JwtAuthGuard)
   async getMesPodcasts(@Request() req: any) {
-    const expert = await this.expertRepo.findOne({
-      where: { user_id: req.user.id },
-    });
-    if (!expert) {
-      throw new Error('Expert non trouvé');
-    }
-    return this.podcastService.findByExpert(expert.id);
+    const expertId = await this.getExpertIdFromUser(req.user.id);
+    return this.podcastService.findByExpert(expertId);
+  }
+
+  @Put('expert/modifier/:id')
+  @UseGuards(JwtAuthGuard)
+  @UseInterceptors(
+    FileFieldsInterceptor(
+      [
+        { name: 'audio_file', maxCount: 1 },
+        { name: 'image_file', maxCount: 1 },
+      ],
+      { storage: podcastStorage, fileFilter, limits: { fileSize: 50 * 1024 * 1024 } },
+    ),
+  )
+  async modifierParExpert(
+    @Param('id', ParseIntPipe) id: number,
+    @Body(ValidationPipe) dto: UpdatePodcastDto,
+    @UploadedFiles() files: { audio_file?: Express.Multer.File[]; image_file?: Express.Multer.File[] },
+    @Request() req: any,
+  ) {
+    const expertId = await this.getExpertIdFromUser(req.user.id);
+    const audio = files?.audio_file?.[0];
+    const image = files?.image_file?.[0];
+    return this.podcastService.updateByExpert(id, expertId, dto, audio, image);
+  }
+
+  @Delete('expert/supprimer/:id')
+  @UseGuards(JwtAuthGuard)
+  async supprimerParExpert(@Param('id', ParseIntPipe) id: number, @Request() req: any) {
+    const expertId = await this.getExpertIdFromUser(req.user.id);
+    return this.podcastService.deleteByExpert(id, expertId);
   }
 
   // ==================== PUBLIQUES ====================
@@ -171,7 +201,7 @@ export class PodcastController {
   }
 
   @Get('public/:id')
-  async findOnePublic(@Param('id') id: number) {
+  async findOnePublic(@Param('id', ParseIntPipe) id: number) {
     return this.podcastService.findOne(id);
   }
 }

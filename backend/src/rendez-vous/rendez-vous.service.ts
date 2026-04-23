@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Rendezvous } from './rendezvous.entity';
 import { Expert } from '../user/expert.entity';
+import { CreateRendezVousDto, UpdateRendezVousDto } from './dto/rendez-vous.dto';
 
 @Injectable()
 export class RendezVousService {
@@ -13,7 +14,11 @@ export class RendezVousService {
     private expertRepo: Repository<Expert>,
   ) {}
 
-  async createRdv(expert_id: number, client_id: number, date_rdv: string, sujet: string) {
+  async createRdv(createDto: CreateRendezVousDto, client_id: number) {
+    const { expert_id, date_rdv, sujet } = createDto;
+    const expert = await this.expertRepo.findOne({ where: { id: expert_id } });
+    if (!expert) throw new NotFoundException(`Expert ${expert_id} introuvable`);
+
     const rdv = this.rdvRepo.create({
       expert_id,
       client_id,
@@ -23,20 +28,32 @@ export class RendezVousService {
     });
     return this.rdvRepo.save(rdv);
   }
-async deleteRdv(id: number) {
-  const result = await this.rdvRepo.delete(id);
-  if (result.affected === 0) throw new NotFoundException('Rendez-vous non trouvé');
-  return { success: true };
-}
-  async getById(id: number) {
+
+  async deleteRdv(id: number, client_id: number) {
+    const rdv = await this.rdvRepo.findOne({ where: { id } });
+    if (!rdv) throw new NotFoundException(`Rendez-vous ${id} introuvable`);
+    if (rdv.client_id !== client_id) throw new ForbiddenException('Vous ne pouvez supprimer que vos propres rendez-vous');
+    if (rdv.statut !== 'en_attente') throw new BadRequestException('Seuls les rendez-vous en attente peuvent être supprimés');
+
+    const result = await this.rdvRepo.delete(id);
+    if (result.affected === 0) throw new NotFoundException('Rendez-vous non trouvé');
+    return { success: true };
+  }
+
+  async getById(id: number): Promise<Rendezvous | null> {
     return this.rdvRepo.findOne({ where: { id } });
   }
 
-  async updateRdv(id: number, date_rdv: string, sujet: string) {
+  async updateRdv(id: number, updateDto: UpdateRendezVousDto, client_id: number) {
+    const rdv = await this.rdvRepo.findOne({ where: { id } });
+    if (!rdv) throw new NotFoundException(`Rendez-vous ${id} introuvable`);
+    if (rdv.client_id !== client_id) throw new ForbiddenException('Vous ne pouvez modifier que vos propres rendez-vous');
+    if (rdv.statut !== 'en_attente') throw new BadRequestException('Seuls les rendez-vous en attente peuvent être modifiés');
+
     await this.rdvRepo.update(id, {
-      date_rdv: new Date(date_rdv),
-      sujet,
-      statut: 'en_attente' // on remet en attente après modification
+      date_rdv: new Date(updateDto.date_rdv),
+      sujet: updateDto.sujet,
+      statut: 'en_attente',
     });
     return this.rdvRepo.findOne({ where: { id } });
   }
@@ -58,11 +75,15 @@ async deleteRdv(id: number) {
   }
 
   async confirmer(id: number) {
+    const rdv = await this.rdvRepo.findOne({ where: { id } });
+    if (!rdv) throw new NotFoundException(`Rendez-vous ${id} introuvable`);
     await this.rdvRepo.update(id, { statut: 'confirme' });
     return { message: 'Confirmé' };
   }
 
   async annuler(id: number) {
+    const rdv = await this.rdvRepo.findOne({ where: { id } });
+    if (!rdv) throw new NotFoundException(`Rendez-vous ${id} introuvable`);
     await this.rdvRepo.update(id, { statut: 'annule' });
     return { message: 'Annulé' };
   }

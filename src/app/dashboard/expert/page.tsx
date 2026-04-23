@@ -132,7 +132,7 @@ function PodcastDetailModal({ podcast, onClose }: { podcast: any; onClose: () =>
   );
 }
 
-// ─── MODAL CRÉATION PODCAST (avec pré-remplissage automatique) ─────────────────
+// ─── MODAL CRÉATION PODCAST ───────────────────────────────────────────────────
 
 function CreatePodcastModal({ onClose, onSuccess, expertData }: { onClose: () => void; onSuccess: () => void; expertData: any }) {
   const [titre, setTitre] = useState("");
@@ -145,7 +145,6 @@ function CreatePodcastModal({ onClose, onSuccess, expertData }: { onClose: () =>
   const [imagePreview, setImagePreview] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // Pré-remplir les champs auteur et domaine avec les données de l'expert connecté
   useEffect(() => {
     if (expertData) {
       const fullName = `${expertData.user?.prenom || ""} ${expertData.user?.nom || ""}`.trim();
@@ -168,7 +167,7 @@ function CreatePodcastModal({ onClose, onSuccess, expertData }: { onClose: () =>
     try {
       const res = await fetch(`${BASE}/podcasts/expert/proposer`, {
         method: "POST",
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+        headers: { Authorization: `Bearer ${localStorage.getItem("access_token")}` },
         body: fd,
       });
       if (res.ok) { onSuccess(); onClose(); } else alert("Erreur lors de la proposition");
@@ -193,6 +192,68 @@ function CreatePodcastModal({ onClose, onSuccess, expertData }: { onClose: () =>
           <div style={{ marginBottom: 16 }}><label className="lbl">Fichier audio (MP3) *</label><label className="upload-zone" style={{ minHeight: 80 }}><input type="file" accept="audio/mpeg" onChange={e => { const f = e.target.files?.[0]; if (f) { setAudioFile(f); setAudioPreview(f.name); } }} style={{ display: "none" }} />{audioPreview ? <span>✅ {audioPreview}</span> : <><FaFileAudio /> Cliquer pour uploader un MP3</>}</label></div>
           <div style={{ marginBottom: 16 }}><label className="lbl">Image de couverture</label><label className="upload-zone" style={{ minHeight: 80 }}><input type="file" accept="image/*" onChange={e => { const f = e.target.files?.[0]; if (f) { setImageFile(f); setImagePreview(URL.createObjectURL(f)); } }} style={{ display: "none" }} />{imagePreview ? <img src={imagePreview} style={{ maxHeight: 60, borderRadius: 6 }} /> : <><FaImage /> Cliquer pour uploader une image</>}</label></div>
           <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 20 }}><button type="button" className="btn btn-gray" onClick={onClose}>Annuler</button><button type="submit" className="btn btn-green" disabled={loading}>{loading ? "⏳ Envoi..." : "✅ Proposer"}</button></div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// ─── MODAL MODIFICATION PODCAST ──────────────────────────────────────────────
+
+function EditPodcastModal({ podcast, onClose, onSuccess, expertData }: { podcast: any; onClose: () => void; onSuccess: () => void; expertData: any }) {
+  const [titre, setTitre] = useState(podcast.titre || "");
+  const [description, setDescription] = useState(podcast.description || "");
+  const [auteur, setAuteur] = useState(podcast.auteur || "");
+  const [domaine, setDomaine] = useState(podcast.domaine || "");
+  const [audioFile, setAudioFile] = useState<File | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [audioPreview, setAudioPreview] = useState("");
+  const [imagePreview, setImagePreview] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (podcast.image) setImagePreview(`${BASE}/uploads/podcasts-images/${podcast.image}`);
+  }, [podcast]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!titre) { alert("Le titre est requis"); return; }
+    setLoading(true);
+    const fd = new FormData();
+    fd.append("titre", titre);
+    fd.append("description", description);
+    fd.append("auteur", auteur);
+    fd.append("domaine", domaine);
+    if (audioFile) fd.append("audio_file", audioFile);
+    if (imageFile) fd.append("image_file", imageFile);
+    try {
+      const res = await fetch(`${BASE}/podcasts/expert/modifier/${podcast.id}`, {
+        method: "PUT",
+        headers: { Authorization: `Bearer ${localStorage.getItem("access_token")}` },
+        body: fd,
+      });
+      if (res.ok) { onSuccess(); onClose(); } else alert("Erreur lors de la modification");
+    } catch { alert("Erreur réseau"); }
+    setLoading(false);
+  };
+
+  return (
+    <div className="modal-bg" onClick={onClose}>
+      <div className="modal-box" style={{ maxWidth: 650 }} onClick={e => e.stopPropagation()}>
+        <div style={{ background: "linear-gradient(135deg,#2d1b5e,#4c1d95)", padding: "18px 24px", borderRadius: "20px 20px 0 0", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}><div style={{ width: 40, height: 40, borderRadius: 10, background: "rgba(139,92,246,.2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }}><FaMicrophone /></div><div><div style={{ color: "rgba(255,255,255,.6)", fontSize: 11, textTransform: "uppercase" }}>Modifier le podcast</div><div style={{ color: "#fff", fontWeight: 800, fontSize: 17 }}>{podcast.titre}</div></div></div>
+          <button className="btn btn-gray" style={{ padding: "5px 10px", background: "rgba(255,255,255,.12)", color: "#fff" }} onClick={onClose}>✕</button>
+        </div>
+        <form onSubmit={handleSubmit} style={{ padding: "24px 28px" }}>
+          <div style={{ marginBottom: 16 }}><label className="lbl">Titre *</label><input className="inp" required value={titre} onChange={e => setTitre(e.target.value)} /></div>
+          <div style={{ marginBottom: 16 }}><label className="lbl">Description</label><textarea className="inp" rows={3} value={description} onChange={e => setDescription(e.target.value)} /></div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 16 }}>
+            <div><label className="lbl">Auteur / Animateur</label><input className="inp" value={auteur} onChange={e => setAuteur(e.target.value)} placeholder="Votre nom ou invité" /></div>
+            <div><label className="lbl">Domaine</label><input className="inp" value={domaine} onChange={e => setDomaine(e.target.value)} placeholder="Ex: Marketing Digital" /></div>
+          </div>
+          <div style={{ marginBottom: 16 }}><label className="lbl">Fichier audio (MP3) (laisser vide pour conserver l'actuel)</label><label className="upload-zone" style={{ minHeight: 80 }}><input type="file" accept="audio/mpeg" onChange={e => { const f = e.target.files?.[0]; if (f) { setAudioFile(f); setAudioPreview(f.name); } }} style={{ display: "none" }} />{audioPreview ? <span>✅ {audioPreview}</span> : (podcast.url_audio ? <span>🔊 Fichier actuel : {podcast.url_audio}</span> : <><FaFileAudio /> Cliquer pour uploader</>)}</label></div>
+          <div style={{ marginBottom: 16 }}><label className="lbl">Image de couverture (laisser vide pour conserver l'actuelle)</label><label className="upload-zone" style={{ minHeight: 80 }}><input type="file" accept="image/*" onChange={e => { const f = e.target.files?.[0]; if (f) { setImageFile(f); setImagePreview(URL.createObjectURL(f)); } }} style={{ display: "none" }} />{imagePreview ? <img src={imagePreview} style={{ maxHeight: 60, borderRadius: 6 }} /> : (podcast.image ? <span>🖼️ Image actuelle</span> : <span>📸 Cliquer pour uploader</span>)}</label></div>
+          <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 20 }}><button type="button" className="btn btn-gray" onClick={onClose}>Annuler</button><button type="submit" className="btn btn-green" disabled={loading}>{loading ? "⏳ Envoi..." : "💾 Enregistrer"}</button></div>
         </form>
       </div>
     </div>
@@ -225,6 +286,8 @@ export default function DashboardExpert() {
   const [selectedFormation, setSelectedFormation] = useState<any>(null);
   const [selectedPodcast, setSelectedPodcast] = useState<any>(null);
   const [showCreatePodcastModal, setShowCreatePodcastModal] = useState(false);
+  const [showEditPodcastModal, setShowEditPodcastModal] = useState(false);
+  const [editingPodcast, setEditingPodcast] = useState<any>(null);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState("");
   const [editProfil, setEditProfil] = useState({ domaine: "", description: "", localisation: "", telephone: "", annee_debut_experience: "" });
@@ -235,7 +298,7 @@ export default function DashboardExpert() {
   const [newTemoNote, setNewTemoNote] = useState(5);
   const msgEndRef = useRef<HTMLDivElement>(null);
 
-  const tk = useCallback(() => localStorage.getItem("token") || "", []);
+  const tk = useCallback(() => localStorage.getItem("access_token") || "", []);
   const hdr = useCallback(() => ({ Authorization: `Bearer ${tk()}` }), [tk]);
   const hdrJ = useCallback(() => ({ Authorization: `Bearer ${tk()}`, "Content-Type": "application/json" }), [tk]);
 
@@ -282,7 +345,7 @@ export default function DashboardExpert() {
   }
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem("access_token");
     const userStr = localStorage.getItem("user");
     if (!token || !userStr) { router.push("/connexion"); return; }
     let parsed: any;
@@ -345,6 +408,24 @@ export default function DashboardExpert() {
     const r = await fetch(`${BASE}/temoignages`, { method: "POST", headers: hdrJ(), body: JSON.stringify({ texte: newTemo, note: newTemoNote }) });
     if (r.ok) { notify("✅ Témoignage envoyé !"); setNewTemo(""); setNewTemoNote(5); await loadExpertData(); }
     else notify("Erreur", false);
+  }
+
+  async function handleDeletePodcast(id: number) {
+    if (!confirm("Supprimer définitivement ce podcast ?")) return;
+    try {
+      const res = await fetch(`${BASE}/podcasts/expert/supprimer/${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${tk()}` },
+      });
+      if (res.ok) {
+        notify("✅ Podcast supprimé !");
+        await loadExpertData();
+      } else {
+        notify("Erreur lors de la suppression", false);
+      }
+    } catch {
+      notify("Erreur réseau", false);
+    }
   }
 
   const photoUrl = expert?.photo ? `${BASE}/uploads/photos/${expert.photo}` : null;
@@ -425,6 +506,14 @@ export default function DashboardExpert() {
       {showCreatePodcastModal && expert && (
         <CreatePodcastModal
           onClose={() => setShowCreatePodcastModal(false)}
+          onSuccess={loadExpertData}
+          expertData={expert}
+        />
+      )}
+      {showEditPodcastModal && editingPodcast && expert && (
+        <EditPodcastModal
+          podcast={editingPodcast}
+          onClose={() => { setShowEditPodcastModal(false); setEditingPodcast(null); }}
           onSuccess={loadExpertData}
           expertData={expert}
         />
@@ -581,7 +670,7 @@ export default function DashboardExpert() {
           </div>
         )}
 
-        {/* MES PODCASTS */}
+        {/* MES PODCASTS (avec modification et suppression) */}
         {tab === "podcasts" && (
           <div>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
@@ -593,8 +682,28 @@ export default function DashboardExpert() {
             ) : podcasts.map(p => (
               <div key={p.id} className="card" style={{ marginBottom: 14, padding: "18px 22px", borderLeft: `4px solid ${p.statut === "publie" ? "#10B981" : p.statut === "refuse" ? "#EF4444" : "#F7B500"}` }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 12 }}>
-                  <div><div style={{ fontWeight: 700, fontSize: 15, color: "#0A2540" }}>{p.titre}</div><div style={{ fontSize: 12, color: "#64748B", marginTop: 3 }}>🎙️ {p.auteur || "Animateur inconnu"} · 📁 {p.domaine || "Non spécifié"}</div><div style={{ fontSize: 13, color: "#475569", marginTop: 6, maxWidth: 600 }}>{p.description?.slice(0, 120)}...</div><div style={{ fontSize: 11, color: "#8A9AB5", marginTop: 8 }}>Soumis le {new Date(p.createdAt).toLocaleDateString("fr-FR")}</div></div>
-                  <div><span className={`${p.statut === "publie" ? "bo" : p.statut === "refuse" ? "bn" : "bw"}`}>{p.statut === "publie" ? "✅ Publié" : p.statut === "refuse" ? "❌ Refusé" : "⏳ En attente"}</span><button className="btn btn-gray" style={{ marginTop: 8, width: "100%" }} onClick={() => setSelectedPodcast(p)}>🎧 Écouter</button></div>
+                  <div>
+                    <div style={{ fontWeight: 700, fontSize: 15, color: "#0A2540" }}>{p.titre}</div>
+                    <div style={{ fontSize: 12, color: "#64748B", marginTop: 3 }}>🎙️ {p.auteur || "Animateur inconnu"} · 📁 {p.domaine || "Non spécifié"}</div>
+                    <div style={{ fontSize: 13, color: "#475569", marginTop: 6, maxWidth: 600 }}>{p.description?.slice(0, 120)}...</div>
+                    <div style={{ fontSize: 11, color: "#8A9AB5", marginTop: 8 }}>Soumis le {new Date(p.createdAt).toLocaleDateString("fr-FR")}</div>
+                  </div>
+                  <div style={{ display: "flex", gap: 8, alignItems: "center", flexDirection: "column" }}>
+                    <span className={`${p.statut === "publie" ? "bo" : p.statut === "refuse" ? "bn" : "bw"}`}>
+                      {p.statut === "publie" ? "✅ Publié" : p.statut === "refuse" ? "❌ Refusé" : "⏳ En attente"}
+                    </span>
+                    <div style={{ display: "flex", gap: 6 }}>
+                      <button className="btn btn-blue" style={{ fontSize: 12, padding: "5px 10px" }} onClick={() => { setEditingPodcast(p); setShowEditPodcastModal(true); }}>
+                        <FaEdit /> Modifier
+                      </button>
+                      <button className="btn btn-red" style={{ fontSize: 12, padding: "5px 10px" }} onClick={() => handleDeletePodcast(p.id)}>
+                        <FaTrash /> Supprimer
+                      </button>
+                      <button className="btn btn-gray" style={{ fontSize: 12, padding: "5px 10px" }} onClick={() => setSelectedPodcast(p)}>
+                        <FaHeadphones /> Écouter
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
             ))}

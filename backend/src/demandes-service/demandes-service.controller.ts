@@ -1,9 +1,8 @@
-// src/demandes-service/demandes-service.controller.ts
 import {
   Controller, Get, Post, Patch, Put, Delete,
-  Body, Param, UseGuards, Req,
+  Body, Param, UseGuards, Req, ValidationPipe, ParseIntPipe, BadRequestException,
 } from '@nestjs/common';
-import { DemandesServiceService } from './demandes-service.service';
+import { DemandesServiceService, CreateDemandeDto, UpdateDemandeDto, UpdateStatutDto, NotifierExpertsDto, AssignerExpertDto } from './demandes-service.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
@@ -25,58 +24,67 @@ export class DemandesServiceController {
   @Roles('admin')
   @Patch(':id/statut')
   updateStatut(
-    @Param('id') id: string,
-    @Body() body: { statut: string; commentaire?: string },
+    @Param('id', ParseIntPipe) id: number,
+    @Body(ValidationPipe) dto: UpdateStatutDto,
   ) {
-    return this.service.updateStatut(+id, body.statut, body.commentaire);
+    return this.service.updateStatut(id, dto);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
   @Delete(':id')
-  supprimer(@Param('id') id: string) {
-    return this.service.supprimer(+id);
+  supprimer(@Param('id', ParseIntPipe) id: number) {
+    return this.service.supprimer(id);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
   @Post(':id/notifier-experts')
-  notifierExperts(
-    @Param('id') id: string,
-    @Body() body: { expert_ids: number[] },
+  async notifierExperts(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: any,
   ) {
-    return this.service.notifierExperts(+id, body.expert_ids);
+    let expertIds: number[];
+    if (Array.isArray(body)) {
+      expertIds = body;
+    } else if (body && body.expert_ids && Array.isArray(body.expert_ids)) {
+      expertIds = body.expert_ids;
+    } else {
+      throw new BadRequestException('Le tableau d\'IDs des experts est requis');
+    }
+    const dto: NotifierExpertsDto = { expert_ids: expertIds };
+    return this.service.notifierExperts(id, dto);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
   @Get(':id/experts-acceptes')
-  getExpertsAcceptes(@Param('id') id: string) {
-    return this.service.getExpertsAcceptes(+id);
+  getExpertsAcceptes(@Param('id', ParseIntPipe) id: number) {
+    return this.service.getExpertsAcceptes(id);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
   @Patch(':id/assigner')
   assignerExpert(
-    @Param('id') id: string,
-    @Body() body: { expert_id: number; commentaire?: string },
+    @Param('id', ParseIntPipe) id: number,
+    @Body(ValidationPipe) dto: AssignerExpertDto,
   ) {
-    return this.service.assignerExpert(+id, body.expert_id, body.commentaire);
+    return this.service.assignerExpert(id, dto);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
   @Patch('formation/:demandeId/accept')
-  acceptFormationDemande(@Param('demandeId') demandeId: string) {
-    return this.service.acceptFormationDemande(+demandeId);
+  acceptFormationDemande(@Param('demandeId', ParseIntPipe) demandeId: number) {
+    return this.service.acceptFormationDemande(demandeId);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
   @Patch('formation/:demandeId/reject')
-  rejectFormationDemande(@Param('demandeId') demandeId: string) {
-    return this.service.rejectFormationDemande(+demandeId);
+  rejectFormationDemande(@Param('demandeId', ParseIntPipe) demandeId: number) {
+    return this.service.rejectFormationDemande(demandeId);
   }
 
   // ==================== STARTUPS ====================
@@ -89,34 +97,42 @@ export class DemandesServiceController {
 
   @UseGuards(JwtAuthGuard)
   @Post()
-  create(@Body() data: any, @Req() req: any) {
-    data.user_id = req.user.id;
-    return this.service.create(data);
+  async create(@Body() body: any, @Req() req: any) {
+    const dto: CreateDemandeDto = {
+      service: body.service,
+      description: body.description,
+      delai: body.delai,
+      objectif: body.objectif,
+      telephone: body.telephone,
+      type_application: body.type_application,
+      domaine: body.domaine,
+    };
+    return this.service.create(req.user.id, dto);
   }
 
   @UseGuards(JwtAuthGuard)
   @Post('formation/:formationId')
   createFormationDemande(
-    @Param('formationId') formationId: string,
+    @Param('formationId', ParseIntPipe) formationId: number,
     @Req() req: any,
   ) {
-    return this.service.createFormationDemande(req.user.id, +formationId);
+    return this.service.createFormationDemande(req.user.id, formationId);
   }
 
   @UseGuards(JwtAuthGuard)
   @Put(':id')
   updateDemande(
-    @Param('id') id: string,
-    @Body() body: { description?: string; delai?: string; objectif?: string; telephone?: string },
+    @Param('id', ParseIntPipe) id: number,
+    @Body(ValidationPipe) dto: UpdateDemandeDto,
     @Req() req: any,
   ) {
-    return this.service.updateDemande(+id, req.user.id, body);
+    return this.service.updateDemande(id, req.user.id, dto);
   }
 
   @UseGuards(JwtAuthGuard)
   @Delete('client/:id')
-  deleteDemande(@Param('id') id: string, @Req() req: any) {
-    return this.service.deleteDemande(+id, req.user.id);
+  deleteDemande(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
+    return this.service.deleteDemande(id, req.user.id);
   }
 
   // ==================== EXPERTS ====================
@@ -135,13 +151,13 @@ export class DemandesServiceController {
 
   @UseGuards(JwtAuthGuard)
   @Patch(':id/accepter-mission')
-  accepterMission(@Param('id') id: string, @Req() req: any) {
-    return this.service.accepterMission(+id, req.user.id);
+  accepterMission(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
+    return this.service.accepterMission(id, req.user.id);
   }
 
   @UseGuards(JwtAuthGuard)
   @Patch(':id/refuser-mission')
-  refuserMission(@Param('id') id: string, @Req() req: any) {
-    return this.service.refuserMission(+id, req.user.id);
+  refuserMission(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
+    return this.service.refuserMission(id, req.user.id);
   }
 }

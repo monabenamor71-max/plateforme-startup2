@@ -5,17 +5,15 @@ import Link from "next/link";
 import {
   FaEnvelope, FaPhone, FaMapMarkerAlt, FaClock,
   FaChevronDown, FaGlobe, FaCheck, FaPaperPlane,
-  FaCheckCircle, FaUser, FaBuilding, FaComment,
-  FaArrowRight, // ← AJOUTÉ (manquant)
+  FaCheckCircle, FaArrowRight,
 } from "react-icons/fa";
 
 // ==================== TRADUCTIONS ====================
 
 type Lang = "fr" | "en";
 
-const T: Record<Lang, Record<string, string>> = {
+const T: Record<Lang, Record<string, any>> = {
   fr: {
-    // Header
     nav_home: "Accueil",
     nav_about: "À propos",
     nav_services: "Services",
@@ -24,43 +22,39 @@ const T: Record<Lang, Record<string, string>> = {
     nav_contact: "Contact",
     btn_login: "Connexion",
     btn_signup: "S'inscrire",
-    // Hero
     hero_title: "Contactez-nous",
     hero_desc: "Une question ? Un projet ? Notre équipe est à votre écoute pour vous accompagner.",
-    // Contact form
     form_title: "Envoyez-nous un message",
-    form_name: "Nom complet",
-    form_name_placeholder: "Jean Dupont",
+    form_nom: "Nom",
+    form_prenom: "Prénom",
     form_email: "Adresse e-mail",
-    form_email_placeholder: "jean.dupont@exemple.com",
-    form_company: "Entreprise / Startup",
-    form_company_placeholder: "Nom de votre structure",
+    form_phone: "Numéro de téléphone",
+    form_subject: "Sujet de votre demande",
     form_message: "Message",
     form_message_placeholder: "Décrivez votre projet ou votre demande...",
-    form_subject: "Sujet",
-    subject_options: [
-      "Demande d'information",
-      "Devenir expert",
-      "Accompagnement startup",
-      "Partenariat",
-      "Autre",
-    ],
     form_btn_send: "Envoyer le message",
     form_sending: "Envoi en cours...",
     form_success: "Message envoyé avec succès ! Nous vous répondrons dans les plus brefs délais.",
     form_error: "Une erreur est survenue. Veuillez réessayer.",
-    // Contact info
+    subject_options: [
+      { value: "", label: "— Sélectionnez un sujet —" },
+      { value: "diagnostic_gratuit", label: "🔍 Diagnostic gratuit" },
+      { value: "audit_sur_site", label: "📋 Audit sur site" },
+      { value: "demo_plateforme", label: "💻 Démo plateforme" },
+      { value: "conseil", label: "💡 Conseil" },
+      { value: "reclamation", label: "⚠️ Réclamation" },
+      { value: "formation", label: "🎓 Formation" },
+      { value: "contact_expert", label: "⭐ Contact avec un expert" },
+    ],
     info_title: "Informations de contact",
     info_email: "contact@beh.com",
     info_phone: "+216 00 000 000",
     info_address: "Tunis, Tunisie",
     info_hours: "Lun - Ven : 9h00 - 18h00",
-    // CTA
     cta_title: "Vous êtes expert ou startup ?",
     cta_desc: "Rejoignez notre écosystème et bénéficiez d'un accompagnement sur mesure.",
     cta_btn_expert: "Devenir expert",
     cta_btn_startup: "Inscrire ma startup",
-    // Footer
     footer_desc: "Plateforme de mise en relation entre startups ambitieuses et experts certifiés.",
     footer_nav: "Navigation",
     footer_services: "Services",
@@ -71,7 +65,6 @@ const T: Record<Lang, Record<string, string>> = {
     footer_copy: "© 2026 Business Expert Hub · Tous droits réservés",
   },
   en: {
-    // Header
     nav_home: "Home",
     nav_about: "About",
     nav_services: "Services",
@@ -80,43 +73,39 @@ const T: Record<Lang, Record<string, string>> = {
     nav_contact: "Contact",
     btn_login: "Login",
     btn_signup: "Sign up",
-    // Hero
     hero_title: "Contact us",
     hero_desc: "A question? A project? Our team is here to listen and support you.",
-    // Contact form
     form_title: "Send us a message",
-    form_name: "Full name",
-    form_name_placeholder: "John Doe",
+    form_nom: "Last name",
+    form_prenom: "First name",
     form_email: "Email address",
-    form_email_placeholder: "john.doe@example.com",
-    form_company: "Company / Startup",
-    form_company_placeholder: "Your organization name",
+    form_phone: "Phone number",
+    form_subject: "Subject of your request",
     form_message: "Message",
     form_message_placeholder: "Describe your project or request...",
-    form_subject: "Subject",
-    subject_options: [
-      "Information request",
-      "Become an expert",
-      "Startup support",
-      "Partnership",
-      "Other",
-    ],
     form_btn_send: "Send message",
     form_sending: "Sending...",
     form_success: "Message sent successfully! We will get back to you shortly.",
     form_error: "An error occurred. Please try again.",
-    // Contact info
+    subject_options: [
+      { value: "", label: "— Select a subject —" },
+      { value: "diagnostic_gratuit", label: "🔍 Free diagnostic" },
+      { value: "audit_sur_site", label: "📋 On-site audit" },
+      { value: "demo_plateforme", label: "💻 Platform demo" },
+      { value: "conseil", label: "💡 Advice" },
+      { value: "reclamation", label: "⚠️ Complaint" },
+      { value: "formation", label: "🎓 Training" },
+      { value: "contact_expert", label: "⭐ Contact an expert" },
+    ],
     info_title: "Contact information",
     info_email: "contact@beh.com",
     info_phone: "+216 00 000 000",
     info_address: "Tunis, Tunisia",
     info_hours: "Mon - Fri: 9:00 AM - 6:00 PM",
-    // CTA
     cta_title: "Are you an expert or a startup?",
     cta_desc: "Join our ecosystem and benefit from personalized support.",
     cta_btn_expert: "Become an expert",
     cta_btn_startup: "Register my startup",
-    // Footer
     footer_desc: "Matching platform connecting ambitious startups with certified experts.",
     footer_nav: "Navigation",
     footer_services: "Services",
@@ -161,16 +150,10 @@ function LangSwitcher({ lang, setLang }: { lang: Lang; setLang: (l: Lang) => voi
         onClick={() => setOpen(!open)}
         style={{
           display: "flex", alignItems: "center", gap: 6,
-          background: "transparent",
-          border: "none",
-          padding: "6px 8px",
-          cursor: "pointer",
-          fontFamily: "'DM Sans', sans-serif",
-          fontSize: 13.5, fontWeight: 600,
-          color: "#374151",
-          borderRadius: 8,
-          transition: "color .18s, background .18s",
-          outline: "none",
+          background: "transparent", border: "none", padding: "6px 8px",
+          cursor: "pointer", fontFamily: "'DM Sans', sans-serif",
+          fontSize: 13.5, fontWeight: 600, color: "#374151",
+          borderRadius: 8, transition: "color .18s, background .18s", outline: "none",
         }}
         onMouseEnter={e => { e.currentTarget.style.color = "#0A2540"; e.currentTarget.style.background = "#F3F4F6"; }}
         onMouseLeave={e => { if (!open) { e.currentTarget.style.color = "#374151"; e.currentTarget.style.background = "transparent"; } }}
@@ -184,8 +167,8 @@ function LangSwitcher({ lang, setLang }: { lang: Lang; setLang: (l: Lang) => voi
           position: "absolute", top: "calc(100% + 6px)", right: 0,
           background: "#fff", borderRadius: 12,
           boxShadow: "0 8px 32px rgba(10,37,64,.13)",
-          border: "1px solid #E5E7EB",
-          overflow: "hidden", minWidth: 140, zIndex: 400,
+          border: "1px solid #E5E7EB", overflow: "hidden",
+          minWidth: 140, zIndex: 400,
           animation: "langDrop .15s cubic-bezier(.22,1,.36,1)",
         }}>
           {LANGS.map(l => (
@@ -197,12 +180,10 @@ function LangSwitcher({ lang, setLang }: { lang: Lang; setLang: (l: Lang) => voi
                 padding: "10px 14px",
                 background: l.code === lang ? "#F9FAFB" : "transparent",
                 border: "none", cursor: "pointer",
-                fontFamily: "'DM Sans', sans-serif",
-                fontSize: 13.5,
+                fontFamily: "'DM Sans', sans-serif", fontSize: 13.5,
                 fontWeight: l.code === lang ? 700 : 500,
                 color: l.code === lang ? "#0A2540" : "#6B7280",
-                transition: "background .12s, color .12s",
-                textAlign: "left",
+                transition: "background .12s, color .12s", textAlign: "left",
               }}
               onMouseEnter={e => { if (l.code !== lang) { e.currentTarget.style.background = "#F3F4F6"; e.currentTarget.style.color = "#374151"; } }}
               onMouseLeave={e => { if (l.code !== lang) { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#6B7280"; } }}
@@ -231,14 +212,29 @@ const SERVICES = [
   { label: "Formations", slug: "formations" },
 ];
 
+// Interface du config sans réseaux sociaux
+interface IContactConfig {
+  email?: string;
+  telephone?: string;
+  adresse?: string;
+  horaires?: string;
+  description_hero?: string;
+}
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+
+// ==================== PAGE PRINCIPALE ====================
+
 export default function ContactPage() {
   const [lang, setLang] = useState<Lang>("fr");
   const [navOpen, setNavOpen] = useState(false);
+  const [contactConfig, setContactConfig] = useState<IContactConfig | null>(null);
   const [formData, setFormData] = useState({
-    name: "",
+    nom: "",
+    prenom: "",
     email: "",
-    company: "",
-    subject: "Demande d'information",
+    phone: "",
+    subject: "",
     message: "",
   });
   const [status, setStatus] = useState<"idle" | "sending" | "success" | "error">("idle");
@@ -249,9 +245,28 @@ export default function ContactPage() {
     if (saved === "fr" || saved === "en") setLang(saved);
   }, []);
 
+  useEffect(() => {
+    async function fetchContactConfig() {
+      try {
+        const res = await fetch(`${API_BASE_URL}/contact/config`);
+        if (res.ok) {
+          const data = await res.json();
+          setContactConfig(data);
+        } else {
+          console.warn("Impossible de charger la configuration de contact");
+        }
+      } catch (error) {
+        console.error("Erreur lors du chargement du config contact:", error);
+      }
+    }
+    fetchContactConfig();
+  }, []);
+
   const tr = T[lang];
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
@@ -259,14 +274,17 @@ export default function ContactPage() {
     e.preventDefault();
     setStatus("sending");
     try {
-      const response = await fetch("http://localhost:3001/contact/send", {
+      const response = await fetch(`${API_BASE_URL}/contact/message`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          ...formData,
+          name: `${formData.prenom} ${formData.nom}`,
+        }),
       });
       if (response.ok) {
         setStatus("success");
-        setFormData({ name: "", email: "", company: "", subject: "Demande d'information", message: "" });
+        setFormData({ nom: "", prenom: "", email: "", phone: "", subject: "", message: "" });
         setTimeout(() => setStatus("idle"), 5000);
       } else {
         setStatus("error");
@@ -277,6 +295,12 @@ export default function ContactPage() {
       setTimeout(() => setStatus("idle"), 4000);
     }
   };
+
+  const displayEmail = contactConfig?.email || tr.info_email;
+  const displayPhone = contactConfig?.telephone || tr.info_phone;
+  const displayAddress = contactConfig?.adresse || tr.info_address;
+  const displayHours = contactConfig?.horaires || tr.info_hours;
+  const heroDescription = contactConfig?.description_hero || tr.hero_desc;
 
   return (
     <div style={{ fontFamily: "'DM Sans', sans-serif", background: "#F8FAFC", minHeight: "100vh" }}>
@@ -305,12 +329,38 @@ export default function ContactPage() {
           outline: none;
           transition: border-color .18s, box-shadow .18s;
           background: #fff;
+          appearance: none;
         }
         .form-input:focus, .form-textarea:focus, .form-select:focus {
           border-color: #0A2540;
           box-shadow: 0 0 0 3px rgba(10,37,64,.07);
         }
+        .form-input::placeholder, .form-textarea::placeholder {
+          color: #B0B8C4;
+        }
         .form-textarea { resize: vertical; min-height: 120px; }
+
+        .select-wrapper {
+          position: relative;
+        }
+        .select-wrapper::after {
+          content: '';
+          position: absolute;
+          right: 14px;
+          top: 50%;
+          transform: translateY(-50%);
+          width: 0;
+          height: 0;
+          border-left: 5px solid transparent;
+          border-right: 5px solid transparent;
+          border-top: 6px solid #6B7280;
+          pointer-events: none;
+        }
+        .form-select {
+          padding-right: 36px;
+          cursor: pointer;
+        }
+        .form-select option[value=""] { color: #B0B8C4; }
 
         .info-card {
           background: #fff;
@@ -338,11 +388,17 @@ export default function ContactPage() {
           display: inline-flex;
           align-items: center;
           gap: 8px;
+          font-family: 'DM Sans', sans-serif;
         }
         .btn-primary:hover {
           background: #F7B500;
           color: #0A2540;
           transform: translateY(-2px);
+        }
+        .btn-primary:disabled {
+          opacity: 0.65;
+          cursor: not-allowed;
+          transform: none;
         }
         .btn-outline {
           background: transparent;
@@ -357,11 +413,29 @@ export default function ContactPage() {
           display: inline-flex;
           align-items: center;
           gap: 8px;
+          font-family: 'DM Sans', sans-serif;
         }
         .btn-outline:hover {
           background: #F7B500;
           border-color: #F7B500;
           transform: translateY(-2px);
+        }
+
+        .field-icon-wrap {
+          position: relative;
+        }
+        .field-icon-wrap .field-icon {
+          position: absolute;
+          left: 13px;
+          top: 50%;
+          transform: translateY(-50%);
+          color: #9CA3AF;
+          font-size: 14px;
+          pointer-events: none;
+        }
+        .field-icon-wrap .form-input,
+        .field-icon-wrap .form-select {
+          padding-left: 38px;
         }
       `}</style>
 
@@ -376,7 +450,9 @@ export default function ContactPage() {
             <Link href="/" className="nav-l">{tr.nav_home}</Link>
             <Link href="/a-propos" className="nav-l">{tr.nav_about}</Link>
             <div style={{ position: "relative" }} onMouseEnter={() => setNavOpen(true)} onMouseLeave={() => setNavOpen(false)}>
-              <span className="nav-l" style={{ cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>{tr.nav_services} <FaChevronDown size={9} /></span>
+              <span className="nav-l" style={{ cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
+                {tr.nav_services} <FaChevronDown size={9} />
+              </span>
               {navOpen && (
                 <ul style={{ position: "absolute", top: "calc(100% + 10px)", left: 0, background: "#fff", borderRadius: 14, listStyle: "none", padding: "6px", margin: 0, zIndex: 200, minWidth: 200, boxShadow: "0 12px 44px rgba(10,37,64,.12)", border: "1px solid #F1F5F9" }}>
                   {SERVICES.map(s => <li key={s.slug}><Link href={`/services/${s.slug}`} className="drp-i">{s.label}</Link></li>)}
@@ -410,27 +486,31 @@ export default function ContactPage() {
             {tr.hero_title}
           </h1>
           <p style={{ fontSize: 16, color: "rgba(255,255,255,.65)", maxWidth: 520, lineHeight: 1.75 }}>
-            {tr.hero_desc}
+            {heroDescription}
           </p>
         </div>
       </section>
 
       {/* MAIN CONTENT */}
       <main style={{ maxWidth: 1200, margin: "0 auto", padding: "60px 28px 80px", display: "grid", gridTemplateColumns: "1fr 380px", gap: 48 }}>
-        
+
         {/* FORMULAIRE */}
         <div>
           <div style={{ background: "#fff", borderRadius: 24, border: "1px solid #E5E7EB", padding: "32px 36px", boxShadow: "0 4px 20px rgba(10,37,64,.04)" }}>
             <h2 style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 24, fontWeight: 800, color: "#0A2540", marginBottom: 8 }}>{tr.form_title}</h2>
-            <p style={{ color: "#6B7280", fontSize: 14, marginBottom: 28 }}>Remplissez le formulaire ci-dessous, nous vous répondrons sous 48h.</p>
+            <p style={{ color: "#6B7280", fontSize: 14, marginBottom: 28, lineHeight: 1.6 }}>
+              {lang === "fr"
+                ? "Remplissez le formulaire ci-dessous, nous vous répondrons sous 48h."
+                : "Fill in the form below, we will respond within 48 hours."}
+            </p>
 
             {status === "success" && (
-              <div style={{ background: "#ECFDF5", border: "1px solid #A7F3D0", borderRadius: 12, padding: "14px 18px", marginBottom: 24, display: "flex", alignItems: "center", gap: 10, color: "#059669" }}>
+              <div style={{ background: "#ECFDF5", border: "1px solid #A7F3D0", borderRadius: 12, padding: "14px 18px", marginBottom: 24, display: "flex", alignItems: "center", gap: 10, color: "#059669", fontSize: 14 }}>
                 <FaCheckCircle size={18} /> {tr.form_success}
               </div>
             )}
             {status === "error" && (
-              <div style={{ background: "#FEF2F2", border: "1px solid #FECACA", borderRadius: 12, padding: "14px 18px", marginBottom: 24, display: "flex", alignItems: "center", gap: 10, color: "#DC2626" }}>
+              <div style={{ background: "#FEF2F2", border: "1px solid #FECACA", borderRadius: 12, padding: "14px 18px", marginBottom: 24, display: "flex", alignItems: "center", gap: 10, color: "#DC2626", fontSize: 14 }}>
                 ⚠️ {tr.form_error}
               </div>
             )}
@@ -438,73 +518,177 @@ export default function ContactPage() {
             <form onSubmit={handleSubmit}>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 18, marginBottom: 18 }}>
                 <div>
-                  <label style={{ fontSize: 13, fontWeight: 700, color: "#374151", marginBottom: 6, display: "block" }}>{tr.form_name} *</label>
-                  <input type="text" name="name" value={formData.name} onChange={handleChange} required className="form-input" placeholder={tr.form_name_placeholder} />
+                  <label style={{ fontSize: 13, fontWeight: 700, color: "#374151", marginBottom: 6, display: "block" }}>
+                    {tr.form_nom} *
+                  </label>
+                  <input
+                    type="text"
+                    name="nom"
+                    value={formData.nom}
+                    onChange={handleChange}
+                    required
+                    className="form-input"
+                    autoComplete="family-name"
+                  />
                 </div>
                 <div>
-                  <label style={{ fontSize: 13, fontWeight: 700, color: "#374151", marginBottom: 6, display: "block" }}>{tr.form_email} *</label>
-                  <input type="email" name="email" value={formData.email} onChange={handleChange} required className="form-input" placeholder={tr.form_email_placeholder} />
+                  <label style={{ fontSize: 13, fontWeight: 700, color: "#374151", marginBottom: 6, display: "block" }}>
+                    {tr.form_prenom} *
+                  </label>
+                  <input
+                    type="text"
+                    name="prenom"
+                    value={formData.prenom}
+                    onChange={handleChange}
+                    required
+                    className="form-input"
+                    autoComplete="given-name"
+                  />
                 </div>
               </div>
+
               <div style={{ marginBottom: 18 }}>
-                <label style={{ fontSize: 13, fontWeight: 700, color: "#374151", marginBottom: 6, display: "block" }}>{tr.form_company}</label>
-                <input type="text" name="company" value={formData.company} onChange={handleChange} className="form-input" placeholder={tr.form_company_placeholder} />
+                <label style={{ fontSize: 13, fontWeight: 700, color: "#374151", marginBottom: 6, display: "block" }}>
+                  {tr.form_email} *
+                </label>
+                <input
+                  type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  required
+                  className="form-input"
+                  placeholder="exemple@email.com"
+                  autoComplete="email"
+                />
               </div>
+
               <div style={{ marginBottom: 18 }}>
-                <label style={{ fontSize: 13, fontWeight: 700, color: "#374151", marginBottom: 6, display: "block" }}>{tr.form_subject}</label>
-                <select name="subject" value={formData.subject} onChange={handleChange} className="form-select">
-                  {tr.subject_options.map(opt => (
-                    <option key={opt} value={opt}>{opt}</option>
-                  ))}
-                </select>
+                <label style={{ fontSize: 13, fontWeight: 700, color: "#374151", marginBottom: 6, display: "block" }}>
+                  {tr.form_phone}
+                </label>
+                <div className="field-icon-wrap">
+                  <FaPhone className="field-icon" />
+                  <input
+                    type="tel"
+                    name="phone"
+                    value={formData.phone}
+                    onChange={handleChange}
+                    className="form-input"
+                    placeholder="+216 XX XXX XXX"
+                    autoComplete="tel"
+                  />
+                </div>
               </div>
+
+              <div style={{ marginBottom: 18 }}>
+                <label style={{ fontSize: 13, fontWeight: 700, color: "#374151", marginBottom: 6, display: "block" }}>
+                  {tr.form_subject} *
+                </label>
+                <div className="select-wrapper">
+                  <select
+                    name="subject"
+                    value={formData.subject}
+                    onChange={handleChange}
+                    required
+                    className="form-select"
+                    style={{ color: formData.subject === "" ? "#B0B8C4" : "#374151" }}
+                  >
+                    {tr.subject_options.map((opt: { value: string; label: string }) => (
+                      <option
+                        key={opt.value}
+                        value={opt.value}
+                        disabled={opt.value === ""}
+                        style={{ color: opt.value === "" ? "#B0B8C4" : "#374151" }}
+                      >
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
               <div style={{ marginBottom: 24 }}>
-                <label style={{ fontSize: 13, fontWeight: 700, color: "#374151", marginBottom: 6, display: "block" }}>{tr.form_message} *</label>
-                <textarea name="message" value={formData.message} onChange={handleChange} required className="form-textarea" placeholder={tr.form_message_placeholder} />
+                <label style={{ fontSize: 13, fontWeight: 700, color: "#374151", marginBottom: 6, display: "block" }}>
+                  {tr.form_message} *
+                </label>
+                <textarea
+                  name="message"
+                  value={formData.message}
+                  onChange={handleChange}
+                  required
+                  className="form-textarea"
+                  placeholder={tr.form_message_placeholder}
+                />
               </div>
-              <button type="submit" disabled={status === "sending"} className="btn-primary" style={{ width: "100%", justifyContent: "center", opacity: status === "sending" ? 0.7 : 1 }}>
-                {status === "sending" ? tr.form_sending : <><FaPaperPlane /> {tr.form_btn_send}</>}
+
+              <button
+                type="submit"
+                disabled={status === "sending"}
+                className="btn-primary"
+                style={{ width: "100%", justifyContent: "center" }}
+              >
+                {status === "sending"
+                  ? <>{tr.form_sending}</>
+                  : <><FaPaperPlane size={13} /> {tr.form_btn_send}</>
+                }
               </button>
             </form>
           </div>
         </div>
 
-        {/* SIDEBAR INFOS */}
-        <aside style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+        {/* SIDEBAR INFOS (sans réseaux sociaux) */}
+        <aside style={{ display: "flex", flexDirection: "column", gap: 20 }}>
           <div className="info-card">
-            <div style={{ width: 48, height: 48, borderRadius: 12, background: "rgba(247,181,0,.12)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 16, fontSize: 22, color: "#F7B500" }}>
+            <div style={{ width: 48, height: 48, borderRadius: 12, background: "rgba(247,181,0,.12)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 14, fontSize: 20, color: "#F7B500" }}>
               <FaEnvelope />
             </div>
-            <h3 style={{ fontSize: 16, fontWeight: 800, color: "#0A2540", marginBottom: 8 }}>Email</h3>
-            <a href="mailto:contact@beh.com" style={{ color: "#6B7280", textDecoration: "none", fontSize: 14, transition: "color .2s" }} onMouseEnter={e => (e.currentTarget.style.color = "#F7B500")} onMouseLeave={e => (e.currentTarget.style.color = "#6B7280")}>
-              {tr.info_email}
+            <h3 style={{ fontSize: 15, fontWeight: 800, color: "#0A2540", marginBottom: 6 }}>Email</h3>
+            <a href={`mailto:${displayEmail}`} style={{ color: "#6B7280", textDecoration: "none", fontSize: 14, transition: "color .2s" }}
+              onMouseEnter={e => (e.currentTarget.style.color = "#F7B500")}
+              onMouseLeave={e => (e.currentTarget.style.color = "#6B7280")}>
+              {displayEmail}
             </a>
           </div>
 
           <div className="info-card">
-            <div style={{ width: 48, height: 48, borderRadius: 12, background: "rgba(247,181,0,.12)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 16, fontSize: 22, color: "#F7B500" }}>
+            <div style={{ width: 48, height: 48, borderRadius: 12, background: "rgba(247,181,0,.12)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 14, fontSize: 20, color: "#F7B500" }}>
               <FaPhone />
             </div>
-            <h3 style={{ fontSize: 16, fontWeight: 800, color: "#0A2540", marginBottom: 8 }}>Téléphone</h3>
-            <a href="tel:+21600000000" style={{ color: "#6B7280", textDecoration: "none", fontSize: 14, transition: "color .2s" }} onMouseEnter={e => (e.currentTarget.style.color = "#F7B500")} onMouseLeave={e => (e.currentTarget.style.color = "#6B7280")}>
-              {tr.info_phone}
+            <h3 style={{ fontSize: 15, fontWeight: 800, color: "#0A2540", marginBottom: 6 }}>Téléphone</h3>
+            <a href={`tel:${displayPhone.replace(/\s/g, "")}`} style={{ color: "#6B7280", textDecoration: "none", fontSize: 14, transition: "color .2s" }}
+              onMouseEnter={e => (e.currentTarget.style.color = "#F7B500")}
+              onMouseLeave={e => (e.currentTarget.style.color = "#6B7280")}>
+              {displayPhone}
             </a>
           </div>
 
           <div className="info-card">
-            <div style={{ width: 48, height: 48, borderRadius: 12, background: "rgba(247,181,0,.12)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 16, fontSize: 22, color: "#F7B500" }}>
+            <div style={{ width: 48, height: 48, borderRadius: 12, background: "rgba(247,181,0,.12)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 14, fontSize: 20, color: "#F7B500" }}>
               <FaMapMarkerAlt />
             </div>
-            <h3 style={{ fontSize: 16, fontWeight: 800, color: "#0A2540", marginBottom: 8 }}>Adresse</h3>
-            <p style={{ color: "#6B7280", fontSize: 14, margin: 0 }}>{tr.info_address}</p>
+            <h3 style={{ fontSize: 15, fontWeight: 800, color: "#0A2540", marginBottom: 6 }}>Adresse</h3>
+            <p style={{ color: "#6B7280", fontSize: 14, margin: 0 }}>{displayAddress}</p>
           </div>
 
           <div className="info-card">
-            <div style={{ width: 48, height: 48, borderRadius: 12, background: "rgba(247,181,0,.12)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 16, fontSize: 22, color: "#F7B500" }}>
+            <div style={{ width: 48, height: 48, borderRadius: 12, background: "rgba(247,181,0,.12)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 14, fontSize: 20, color: "#F7B500" }}>
               <FaClock />
             </div>
-            <h3 style={{ fontSize: 16, fontWeight: 800, color: "#0A2540", marginBottom: 8 }}>Horaires</h3>
-            <p style={{ color: "#6B7280", fontSize: 14, margin: 0 }}>{tr.info_hours}</p>
+            <h3 style={{ fontSize: 15, fontWeight: 800, color: "#0A2540", marginBottom: 6 }}>Horaires</h3>
+            <p style={{ color: "#6B7280", fontSize: 14, margin: 0 }}>{displayHours}</p>
+          </div>
+
+          {/* Encart info rapide */}
+          <div style={{ background: "linear-gradient(135deg,#0A2540,#1a3a6e)", borderRadius: 20, padding: "20px", border: "1px solid rgba(247,181,0,.2)" }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "#F7B500", marginBottom: 10, textTransform: "uppercase", letterSpacing: "1px" }}>
+              ⚡ Réponse rapide
+            </div>
+            <p style={{ color: "rgba(255,255,255,.7)", fontSize: 13, lineHeight: 1.7, margin: 0 }}>
+              {lang === "fr"
+                ? "Pour un diagnostic gratuit ou une démo, notre équipe vous répond sous 24h."
+                : "For a free diagnostic or a demo, our team responds within 24 hours."}
+            </p>
           </div>
         </aside>
       </main>
@@ -546,17 +730,38 @@ export default function ContactPage() {
               <p style={{ color: "rgba(255,255,255,.3)", fontSize: 13, lineHeight: 1.78 }}>{tr.footer_desc}</p>
             </div>
             {[
-              { title: tr.footer_nav, links: [[tr.nav_home, "/"],[tr.nav_about, "/a-propos"],[tr.nav_services, "/services"],[tr.nav_experts, "/experts"],[tr.nav_blog, "/blog"],[tr.nav_contact, "/contact"]] },
-              { title: tr.footer_services, links: SERVICES.map(s => [s.label, `/services/${s.slug}`]) },
-              { title: tr.footer_about, links: [["Qui sommes-nous ?", "/a-propos"],["Notre mission", "/a-propos#mission"],["Carrières", "#"],["Presse", "#"]] },
+              {
+                title: tr.footer_nav,
+                links: [
+                  [tr.nav_home, "/"],
+                  [tr.nav_about, "/a-propos"],
+                  [tr.nav_services, "/services"],
+                  [tr.nav_experts, "/experts"],
+                  [tr.nav_blog, "/blog"],
+                  [tr.nav_contact, "/contact"],
+                ],
+              },
+              {
+                title: tr.footer_services,
+                links: SERVICES.map(s => [s.label, `/services/${s.slug}`]),
+              },
+              {
+                title: tr.footer_about,
+                links: [
+                  ["Qui sommes-nous ?", "/a-propos"],
+                  ["Notre mission", "/a-propos#mission"],
+                  ["Carrières", "#"],
+                  ["Presse", "#"],
+                ],
+              },
             ].map(col => (
               <div key={col.title}>
                 <div style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,.28)", letterSpacing: "2px", textTransform: "uppercase", marginBottom: 18 }}>{col.title}</div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 11 }}>
                   {col.links.map(([label, href]) => (
                     <Link key={label} href={href} style={{ color: "rgba(255,255,255,.38)", fontSize: 13.5, textDecoration: "none", transition: "color .2s" }}
-                      onMouseEnter={e => (e.target as HTMLElement).style.color = "#F7B500"}
-                      onMouseLeave={e => (e.target as HTMLElement).style.color = "rgba(255,255,255,.38)"}>
+                      onMouseEnter={e => (e.currentTarget.style.color = "#F7B500")}
+                      onMouseLeave={e => (e.currentTarget.style.color = "rgba(255,255,255,.38)")}>
                       {label}
                     </Link>
                   ))}
@@ -567,7 +772,7 @@ export default function ContactPage() {
           <div style={{ borderTop: "1px solid rgba(255,255,255,.06)", paddingTop: 24, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
             <p style={{ color: "rgba(255,255,255,.2)", fontSize: 13 }}>{tr.footer_copy}</p>
             <div style={{ display: "flex", gap: 22 }}>
-              {[tr.footer_legal, tr.footer_privacy, tr.footer_cgu].map(item => (
+              {[tr.footer_legal, tr.footer_privacy, tr.footer_cgu].map((item: string) => (
                 <Link key={item} href="#" style={{ color: "rgba(255,255,255,.2)", fontSize: 12.5, textDecoration: "none" }}>{item}</Link>
               ))}
             </div>

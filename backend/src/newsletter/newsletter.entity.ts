@@ -16,4 +16,4 @@ export class Newsletter {
 
   @CreateDateColumn()
   createdAt: Date;
-}; console.log('OK');
+}
