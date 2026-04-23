@@ -1,13 +1,15 @@
+// src/experts/experts.controller.ts
 import {
   Controller, Get, Put, Patch, Post, Body, Param, Request,
   UseGuards, UseInterceptors, UploadedFile, Query,
-  ValidationPipe, ParseIntPipe, BadRequestException,
+  ParseIntPipe, BadRequestException, ValidationPipe,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import * as path from 'path';
 import { ExpertsService } from './experts.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { RequestModificationDto } from './dto/request-modification.dto';
 import { UpdateProfilDto } from './dto/update-profil.dto';
 
 @Controller('experts')
@@ -37,10 +39,21 @@ export class ExpertsController {
     return this.expertsService.findByDomaines(domainesArray);
   }
 
-  @Put('profil')
+// src/experts/experts.controller.ts
+@Put('profil')
+@UseGuards(JwtAuthGuard)
+updateProfil(@Request() req: any, @Body() body: any) {
+  return this.expertsService.updateProfil(req.user.id, body);
+}
+
+  // ✅ Route pour l'admin (modification directe avec validation normale)
+  @Put('admin/:id')
   @UseGuards(JwtAuthGuard)
-  updateProfil(@Request() req: any, @Body(ValidationPipe) dto: UpdateProfilDto) {
-    return this.expertsService.updateProfil(req.user.id, dto);
+  async updateExpertByAdmin(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateProfilDto,
+  ) {
+    return this.expertsService.updateExpertDirectly(id, dto);
   }
 
   @Post('photo')

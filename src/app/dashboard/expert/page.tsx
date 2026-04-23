@@ -10,7 +10,7 @@ import {
   FaChartLine, FaSearchPlus, FaDesktop, FaPlay, FaMicrophone,
   FaUsers, FaClock, FaCertificate, FaExternalLinkAlt, FaTimes,
   FaMobile, FaLaptopCode, FaEdit, FaTrash, FaSave, FaHeadphones,
-  FaPlus, FaUpload, FaFileAudio, FaImage,
+  FaPlus, FaUpload, FaFileAudio, FaImage, FaInfoCircle,
 } from "react-icons/fa";
 
 const BASE = "http://localhost:3001";
@@ -22,18 +22,6 @@ const ADN_ITEMS = [
   { title: "Notre Mission", body: "Offrir aux startups un accès privilégié à des experts certifiés.", color: "#F7B500", anchor: "mission" },
   { title: "Nos Valeurs", body: "Excellence, transparence et engagement humain.", color: "#10B981", anchor: "valeurs" },
 ];
-
-const S_COLOR: Record<string, string> = {
-  en_attente: "#F7B500", valide: "#22C55E", refuse: "#EF4444",
-  confirme: "#22C55E", annule: "#EF4444", acceptee: "#22C55E",
-  en_cours: "#3B82F6", terminee: "#10B981", refusee: "#EF4444",
-};
-
-const S_LABEL: Record<string, string> = {
-  en_attente: "⏳ En attente", valide: "✅ Validé", refuse: "❌ Refusé",
-  confirme: "✅ Confirmé", annule: "❌ Annulé", acceptee: "✅ Acceptée",
-  en_cours: "🔄 En cours", terminee: "✅ Terminée", refusee: "❌ Refusée",
-};
 
 type Tab = "accueil" | "profil" | "formations" | "podcasts" | "demandes" | "devis" | "messages" | "temoignages";
 
@@ -57,52 +45,6 @@ function Reveal({ children, delay = 0 }: { children: React.ReactNode; delay?: nu
   return (
     <div ref={ref} style={{ opacity: v ? 1 : 0, transform: v ? "none" : "translateY(28px)", transition: `opacity .7s cubic-bezier(.22,1,.36,1) ${delay}s, transform .7s cubic-bezier(.22,1,.36,1) ${delay}s` }}>
       {children}
-    </div>
-  );
-}
-
-// ─── MODAL FORMATION (proposition) ───────────────────────────────────────────
-
-function FormationModal({ formation, onClose }: { formation: any; onClose: () => void }) {
-  const modeInfo = { label: formation.mode === "presentiel" ? "Présentiel" : "En ligne", color: formation.mode === "presentiel" ? "#3B82F6" : "#22C55E" };
-  return (
-    <div className="modal-bg" onClick={onClose}>
-      <div className="modal-box" onClick={e => e.stopPropagation()}>
-        <div style={{ position: "relative", height: 180, background: "linear-gradient(135deg,#0A2540,#1a3a6e)", overflow: "hidden", borderRadius: "24px 24px 0 0" }}>
-          {formation.image && <img src={`${BASE}/uploads/formations/${formation.image}`} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", opacity: .5 }} />}
-          <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top,rgba(10,37,64,.9),transparent)" }} />
-          <button onClick={onClose} style={{ position: "absolute", top: 16, right: 16, width: 36, height: 36, borderRadius: "50%", background: "rgba(255,255,255,.15)", border: "1px solid rgba(255,255,255,.25)", color: "#fff", fontSize: 16, cursor: "pointer" }}><FaTimes /></button>
-          <div style={{ position: "absolute", bottom: 16, left: 20, right: 60 }}>
-            <div style={{ display: "flex", gap: 8, marginBottom: 8, flexWrap: "wrap" }}>
-              {formation.domaine && <span style={{ background: "#F7B500", color: "#0A2540", borderRadius: 99, padding: "3px 10px", fontSize: 11, fontWeight: 700 }}>{formation.domaine}</span>}
-              {formation.certifiante && <span style={{ background: "rgba(34,197,94,.2)", color: "#4ADE80", borderRadius: 99, padding: "3px 10px", fontSize: 11, fontWeight: 700 }}><FaCertificate style={{ marginRight: 3 }} />Certifiante</span>}
-              <span style={{ background: "rgba(0,0,0,.35)", backdropFilter: "blur(4px)", borderRadius: 99, padding: "3px 10px", fontSize: 11, fontWeight: 700, color: "#fff" }}>● {modeInfo.label}</span>
-            </div>
-            <div style={{ color: "#fff", fontWeight: 800, fontSize: 19 }}>{formation.titre}</div>
-          </div>
-        </div>
-        <div style={{ padding: "24px 28px" }}>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 20 }}>
-            {[
-              { label: "Formateur", val: formation.formateur || "Vous", color: "#3B82F6" },
-              { label: "Durée", val: formation.duree || "Non précisée", color: "#F7B500" },
-              { label: "Mode", val: modeInfo.label, color: modeInfo.color },
-              { label: "Lieu", val: formation.localisation || "En ligne", color: "#8B5CF6" },
-            ].map((row, i) => (
-              <div key={i} style={{ background: "#F8FAFC", borderRadius: 12, padding: "12px 14px", display: "flex", alignItems: "center", gap: 10 }}>
-                <div style={{ width: 28, height: 28, borderRadius: 8, background: `${row.color}18`, color: row.color, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: 10, fontWeight: 700 }}>●</div>
-                <div><div style={{ fontSize: 10, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase" }}>{row.label}</div><div style={{ fontSize: 13.5, fontWeight: 600, color: "#0A2540" }}>{row.val}</div></div>
-              </div>
-            ))}
-          </div>
-          {formation.description && <p style={{ fontSize: 14, color: "#475569", lineHeight: 1.8, marginBottom: 20 }}>{formation.description}</p>}
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "#F8FAFC", borderRadius: 14, padding: "16px 18px", marginBottom: 20 }}>
-            <div><div style={{ fontSize: 11, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase" }}>Prix</div><div style={{ fontSize: 26, fontWeight: 900, color: formation.prix ? "#0A2540" : "#22C55E" }}>{formation.prix ? `${formation.prix} DT` : "Gratuit"}</div></div>
-            {formation.places_limitees ? <div style={{ textAlign: "right" }}><div style={{ fontSize: 11, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase" }}>Places restantes</div><div style={{ fontSize: 22, fontWeight: 900, color: formation.places_disponibles > 0 ? "#22C55E" : "#EF4444" }}>{formation.places_disponibles ?? 0}</div></div> : <div style={{ textAlign: "right" }}><div style={{ fontSize: 11, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase" }}>Places</div><div style={{ fontSize: 18, fontWeight: 700, color: "#10B981" }}>Illimitées</div></div>}
-          </div>
-          <button className="btn btn-gray" style={{ width: "100%", justifyContent: "center" }} onClick={onClose}>Fermer</button>
-        </div>
-      </div>
     </div>
   );
 }
@@ -270,7 +212,6 @@ export default function DashboardExpert() {
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>("accueil");
 
-  // États spécifiques
   const [formations, setFormations] = useState<any[]>([]);
   const [podcasts, setPodcasts] = useState<any[]>([]);
   const [demandesAssignees, setDemandesAssignees] = useState<any[]>([]);
@@ -283,14 +224,20 @@ export default function DashboardExpert() {
   const [tIdx, setTIdx] = useState(0);
   const [tAnim, setTAnim] = useState(false);
   const [toast, setToast] = useState({ text: "", ok: true });
-  const [selectedFormation, setSelectedFormation] = useState<any>(null);
   const [selectedPodcast, setSelectedPodcast] = useState<any>(null);
   const [showCreatePodcastModal, setShowCreatePodcastModal] = useState(false);
   const [showEditPodcastModal, setShowEditPodcastModal] = useState(false);
   const [editingPodcast, setEditingPodcast] = useState<any>(null);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState("");
-  const [editProfil, setEditProfil] = useState({ domaine: "", description: "", localisation: "", telephone: "", annee_debut_experience: "" });
+  const [editProfil, setEditProfil] = useState({
+    domaine: "",
+    description: "",
+    localisation: "",
+    telephone: "",
+    annee_debut_experience: "",
+  });
+  const [modificationEnAttente, setModificationEnAttente] = useState(false);
   const [devisMission, setDevisMission] = useState<any>(null);
   const [devisForm, setDevisForm] = useState({ montant: "", description: "", delai: "" });
   const [showDevisModal, setShowDevisModal] = useState(false);
@@ -331,7 +278,14 @@ export default function DashboardExpert() {
       const exp = await expertRes.json();
       setExpert(exp);
       setUser(exp.user);
-      setEditProfil({ domaine: exp.domaine || "", description: exp.description || "", localisation: exp.localisation || "", telephone: exp.user?.telephone || "", annee_debut_experience: exp.annee_debut_experience?.toString() || "" });
+      setEditProfil({
+        domaine: exp.domaine || "",
+        description: exp.description || "",
+        localisation: exp.localisation || "",
+        telephone: exp.user?.telephone || "",
+        annee_debut_experience: exp.annee_debut_experience?.toString() || "",
+      });
+      setModificationEnAttente(exp.modification_demandee === true);
       setFormations(formationsRes.ok ? await formationsRes.json() : []);
       setPodcasts(podcastsRes.ok ? await podcastsRes.json() : []);
       setDemandesAssignees(demandesRes.ok ? await demandesRes.json() : []);
@@ -365,9 +319,37 @@ export default function DashboardExpert() {
   }
 
   async function updateProfile() {
-    const r = await fetch(`${BASE}/experts/profil`, { method: "PUT", headers: hdrJ(), body: JSON.stringify(editProfil) });
-    if (r.ok) { notify("✅ Profil mis à jour !"); await loadExpertData(); }
-    else notify("Erreur", false);
+    // Construction du payload avec les champs modifiés
+    const payload: any = {};
+    if (editProfil.domaine !== (expert?.domaine || "")) payload.domaine = editProfil.domaine;
+    if (editProfil.description !== (expert?.description || "")) payload.description = editProfil.description;
+    if (editProfil.localisation !== (expert?.localisation || "")) payload.localisation = editProfil.localisation;
+    if (editProfil.telephone !== (expert?.user?.telephone || "")) payload.telephone = editProfil.telephone;
+    const anneeNum = parseInt(editProfil.annee_debut_experience);
+    const anneeOriginale = expert?.annee_debut_experience;
+    if (!isNaN(anneeNum) && anneeNum !== anneeOriginale) {
+      payload.annee_debut_experience = anneeNum;
+    } else if (editProfil.annee_debut_experience === "" && anneeOriginale !== null) {
+      payload.annee_debut_experience = null;
+    }
+
+    if (Object.keys(payload).length === 0) {
+      notify("Aucune modification détectée", false);
+      return;
+    }
+
+    const res = await fetch(`${BASE}/experts/profil`, {
+      method: "PUT",
+      headers: hdrJ(),
+      body: JSON.stringify(payload),
+    });
+    if (res.ok) {
+      notify("✅ Modification envoyée à l'administrateur pour validation.", true);
+      await loadExpertData(); // recharge pour avoir modification_demandee = true
+    } else {
+      const err = await res.text();
+      notify(`Erreur: ${err}`, false);
+    }
   }
 
   async function loadConversation(startupUserId: number) {
@@ -428,7 +410,7 @@ export default function DashboardExpert() {
     }
   }
 
-  const photoUrl = expert?.photo ? `${BASE}/uploads/photos/${expert.photo}` : null;
+  const photoUrl = expert?.photo ? `${BASE}/uploads/photos/${expert?.photo}` : null;
   const initials = user ? (user.prenom?.[0] || "") + (user.nom?.[0] || "") : "?";
   const curTemo = pubTemos[tIdx % Math.max(pubTemos.length, 1)];
 
@@ -501,7 +483,6 @@ export default function DashboardExpert() {
         </div>
       )}
 
-      {selectedFormation && <FormationModal formation={selectedFormation} onClose={() => setSelectedFormation(null)} />}
       {selectedPodcast && <PodcastDetailModal podcast={selectedPodcast} onClose={() => setSelectedPodcast(null)} />}
       {showCreatePodcastModal && expert && (
         <CreatePodcastModal
@@ -636,15 +617,27 @@ export default function DashboardExpert() {
               </div>
               <div><div style={{ fontWeight: 800, fontSize: 18, color: "#0A2540" }}>{user?.prenom} {user?.nom}</div><div style={{ fontSize: 13, color: "#8A9AB5", marginTop: 3 }}>{user?.email}</div>{photoFile && <button className="btn btn-gold" style={{ fontSize: 12, padding: "7px 14px", marginTop: 10 }} onClick={updatePhoto}><FaCheck /> Sauvegarder la photo</button>}</div>
             </div>
+
+            {modificationEnAttente && (
+              <div className="card" style={{ marginBottom: 20, background: "#FFFBEB", borderLeft: "4px solid #F7B500" }}>
+                <div style={{ padding: "16px 20px", display: "flex", alignItems: "center", gap: 12 }}>
+                  <FaInfoCircle style={{ color: "#F7B500", fontSize: 20 }} />
+                  <div><strong>Modification en attente de validation</strong><br />Votre demande de modification a été envoyée à l’administrateur. Les modifications seront appliquées après validation.</div>
+                </div>
+              </div>
+            )}
+
             <div className="card">
               <div style={{ padding: "18px 24px", borderBottom: "1px solid #F1F5F9", background: "#FAFBFE" }}><div style={{ fontWeight: 700, fontSize: 16, color: "#0A2540" }}>Informations professionnelles</div></div>
               <div style={{ padding: "24px" }}>
-                <div style={{ marginBottom: 16 }}><label className="lbl">Domaine d'expertise</label><input className="inp" value={editProfil.domaine} onChange={e => setEditProfil({ ...editProfil, domaine: e.target.value })} placeholder="Ex: Marketing Digital" /></div>
-                <div style={{ marginBottom: 16 }}><label className="lbl">Année de début d'expérience</label><input className="inp" type="number" value={editProfil.annee_debut_experience} onChange={e => setEditProfil({ ...editProfil, annee_debut_experience: e.target.value })} placeholder="2020" /></div>
-                <div style={{ marginBottom: 16 }}><label className="lbl">Localisation</label><input className="inp" value={editProfil.localisation} onChange={e => setEditProfil({ ...editProfil, localisation: e.target.value })} placeholder="Tunis, Tunisie" /></div>
-                <div style={{ marginBottom: 16 }}><label className="lbl">Téléphone</label><input className="inp" value={editProfil.telephone} onChange={e => setEditProfil({ ...editProfil, telephone: e.target.value })} placeholder="+216 XX XXX XXX" /></div>
-                <div style={{ marginBottom: 20 }}><label className="lbl">Description / Compétences</label><textarea className="inp" rows={4} value={editProfil.description} onChange={e => setEditProfil({ ...editProfil, description: e.target.value })} placeholder="Décrivez votre expertise..." /></div>
-                <button className="btn btn-gold" onClick={updateProfile}><FaSave /> Sauvegarder</button>
+                <div style={{ marginBottom: 16 }}><label className="lbl">Domaine d'expertise</label><input className="inp" value={editProfil.domaine} onChange={e => setEditProfil({ ...editProfil, domaine: e.target.value })} placeholder="Ex: Marketing Digital" disabled={modificationEnAttente} /></div>
+                <div style={{ marginBottom: 16 }}><label className="lbl">Année de début d'expérience</label><input className="inp" type="number" min="1950" max={new Date().getFullYear()} value={editProfil.annee_debut_experience} onChange={e => setEditProfil({ ...editProfil, annee_debut_experience: e.target.value })} placeholder="2020" disabled={modificationEnAttente} /></div>
+                <div style={{ marginBottom: 16 }}><label className="lbl">Localisation</label><input className="inp" value={editProfil.localisation} onChange={e => setEditProfil({ ...editProfil, localisation: e.target.value })} placeholder="Tunis, Tunisie" disabled={modificationEnAttente} /></div>
+                <div style={{ marginBottom: 16 }}><label className="lbl">Téléphone</label><input className="inp" value={editProfil.telephone} onChange={e => setEditProfil({ ...editProfil, telephone: e.target.value })} placeholder="+216 XX XXX XXX" disabled={modificationEnAttente} /></div>
+                <div style={{ marginBottom: 20 }}><label className="lbl">Description / Compétences</label><textarea className="inp" rows={4} value={editProfil.description} onChange={e => setEditProfil({ ...editProfil, description: e.target.value })} placeholder="Décrivez votre expertise..." disabled={modificationEnAttente} /></div>
+                {!modificationEnAttente && (
+                  <button className="btn btn-gold" onClick={updateProfile}><FaSave /> Envoyer la modification</button>
+                )}
               </div>
             </div>
           </div>
@@ -663,14 +656,14 @@ export default function DashboardExpert() {
               <div key={f.id} className="card" style={{ marginBottom: 14, padding: "18px 22px", borderLeft: `4px solid ${f.statut === "publie" ? "#10B981" : f.statut === "refuse" ? "#EF4444" : "#F7B500"}` }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 12 }}>
                   <div><div style={{ fontWeight: 700, fontSize: 15, color: "#0A2540" }}>{f.titre}</div><div style={{ fontSize: 12, color: "#64748B", marginTop: 3 }}>📁 {f.domaine || "Non spécifié"} · 👨‍🏫 {f.formateur || "Vous"}</div><div style={{ fontSize: 13, color: "#475569", marginTop: 6, maxWidth: 600 }}>{f.description?.slice(0, 120)}...</div>{f.commentaire_admin && <div style={{ marginTop: 10, background: "#FFF8E1", padding: "8px 12px", borderRadius: 8, fontSize: 12 }}><strong>📩 Admin :</strong> {f.commentaire_admin}</div>}<div style={{ fontSize: 11, color: "#8A9AB5", marginTop: 8 }}>Soumis le {new Date(f.createdAt).toLocaleDateString("fr-FR")}</div></div>
-                  <div><span className={`${f.statut === "publie" ? "bo" : f.statut === "refuse" ? "bn" : "bw"}`}>{f.statut === "publie" ? "✅ Publiée" : f.statut === "refuse" ? "❌ Refusée" : "⏳ En attente"}</span><button className="btn btn-gray" style={{ marginTop: 8, width: "100%" }} onClick={() => setSelectedFormation(f)}>👁 Détails</button></div>
+                  <div><span className={`${f.statut === "publie" ? "bo" : f.statut === "refuse" ? "bn" : "bw"}`}>{f.statut === "publie" ? "✅ Publiée" : f.statut === "refuse" ? "❌ Refusée" : "⏳ En attente"}</span></div>
                 </div>
               </div>
             ))}
           </div>
         )}
 
-        {/* MES PODCASTS (avec modification et suppression) */}
+        {/* MES PODCASTS */}
         {tab === "podcasts" && (
           <div>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
@@ -693,15 +686,9 @@ export default function DashboardExpert() {
                       {p.statut === "publie" ? "✅ Publié" : p.statut === "refuse" ? "❌ Refusé" : "⏳ En attente"}
                     </span>
                     <div style={{ display: "flex", gap: 6 }}>
-                      <button className="btn btn-blue" style={{ fontSize: 12, padding: "5px 10px" }} onClick={() => { setEditingPodcast(p); setShowEditPodcastModal(true); }}>
-                        <FaEdit /> Modifier
-                      </button>
-                      <button className="btn btn-red" style={{ fontSize: 12, padding: "5px 10px" }} onClick={() => handleDeletePodcast(p.id)}>
-                        <FaTrash /> Supprimer
-                      </button>
-                      <button className="btn btn-gray" style={{ fontSize: 12, padding: "5px 10px" }} onClick={() => setSelectedPodcast(p)}>
-                        <FaHeadphones /> Écouter
-                      </button>
+                      <button className="btn btn-blue" style={{ fontSize: 12, padding: "5px 10px" }} onClick={() => { setEditingPodcast(p); setShowEditPodcastModal(true); }}><FaEdit /> Modifier</button>
+                      <button className="btn btn-red" style={{ fontSize: 12, padding: "5px 10px" }} onClick={() => handleDeletePodcast(p.id)}><FaTrash /> Supprimer</button>
+                      <button className="btn btn-gray" style={{ fontSize: 12, padding: "5px 10px" }} onClick={() => setSelectedPodcast(p)}><FaHeadphones /> Écouter</button>
                     </div>
                   </div>
                 </div>
