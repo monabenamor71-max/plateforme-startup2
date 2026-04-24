@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
-import { randomBytes } from 'crypto';   // ✅ ajouté
+import * as path from 'path';
 import { User } from '../user/user.entity';
 import { Expert } from '../user/expert.entity';
 import { Startup } from '../user/startup.entity';
@@ -22,7 +22,11 @@ export class AuthService {
     private mailService: MailService,
   ) {}
 
-  // ==================== INSCRIPTION EXPERT (inchangé) ====================
+  private extractFileName(filePath?: string): string | undefined {
+    if (!filePath) return undefined;
+    return path.basename(filePath);
+  }
+
   async registerExpert(
     dto: RegisterExpertDto,
     photoPath?: string,
@@ -43,7 +47,7 @@ export class AuthService {
       telephone: telephone || '',
       role: 'expert',
       statut: 'en_attente',
-      photo: photoPath,
+      photo: this.extractFileName(photoPath),
     });
     const savedUser = await this.userRepo.save(user);
 
@@ -60,8 +64,8 @@ export class AuthService {
       localisation: localisation || '',
       description: description || '',
       statut: 'en_attente',
-      cv: cvPath,
-      portfolio: portfolioPath,
+      cv: this.extractFileName(cvPath),
+      portfolio: this.extractFileName(portfolioPath),
     });
     await this.expertRepo.save(expert);
 
@@ -79,7 +83,6 @@ export class AuthService {
     return { message: 'Inscription réussie. Un email de confirmation vous a été envoyé.' };
   }
 
-  // ==================== INSCRIPTION STARTUP (inchangé) ====================
   async registerStartup(dto: RegisterStartupDto) {
     const { email, password, nom, prenom, telephone, nom_startup, secteur, fonction, taille, site_web, localisation, description } = dto;
     const existing = await this.userRepo.findOne({ where: { email } });
@@ -124,7 +127,6 @@ export class AuthService {
     return { message: 'Inscription réussie. Un email de confirmation vous a été envoyé.' };
   }
 
-  // ==================== CONNEXION ====================
   async login(dto: LoginDto) {
     const { email, password } = dto;
     const user = await this.userRepo.findOne({ where: { email } });
@@ -136,7 +138,6 @@ export class AuthService {
     return { access_token: token, user: { id: user.id, email: user.email, role: user.role, prenom: user.prenom, nom: user.nom } };
   }
 
-  // ==================== CONFIRMATION EMAIL ====================
   async confirmEmail(token: string) {
     try {
       const payload = this.jwtService.verify(token);
@@ -144,7 +145,6 @@ export class AuthService {
       if (!user) throw new BadRequestException('Utilisateur non trouvé');
       if (user.email_verified) throw new BadRequestException('Email déjà confirmé');
       user.email_verified = true;
-      // Au lieu de null, on met une chaîne vide (si la colonne n'accepte pas null)
       user.reset_code = '';
       await this.userRepo.save(user);
       return { message: 'Email confirmé avec succès. Vous pouvez maintenant vous connecter.' };
@@ -153,7 +153,6 @@ export class AuthService {
     }
   }
 
-  // ==================== MOT DE PASSE OUBLIÉ (code à 6 chiffres) ====================
   async forgotPassword(email: string) {
     const user = await this.userRepo.findOne({ where: { email } });
     if (!user) throw new BadRequestException('Aucun compte associé à cet email');
@@ -171,7 +170,6 @@ export class AuthService {
     return { message: 'Un code de réinitialisation a été envoyé à votre adresse email.' };
   }
 
-  // ==================== VÉRIFICATION DU CODE ET RÉINITIALISATION ====================
   async resetPasswordWithCode(email: string, code: string, newPassword: string) {
     const user = await this.userRepo.findOne({ where: { email } });
     if (!user) throw new BadRequestException('Email invalide');
@@ -185,15 +183,13 @@ export class AuthService {
 
     const hashedPassword = await bcrypt.hash(newPassword, 10);
     user.password = hashedPassword;
-    // On vide les champs (chaîne vide et date très ancienne pour éviter null)
     user.reset_code = '';
-    user.reset_code_expires = new Date(0); // 1970-01-01
+    user.reset_code_expires = new Date(0);
     await this.userRepo.save(user);
 
     return { message: 'Mot de passe réinitialisé avec succès.' };
   }
 
-  // ==================== RÉINITIALISATION PAR TOKEN (ancienne méthode) ====================
   async resetPassword(token: string, newPassword: string) {
     throw new BadRequestException('Utilisez la méthode avec code à 6 chiffres');
   }

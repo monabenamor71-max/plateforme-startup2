@@ -8,8 +8,6 @@ export class MailService {
   private readonly adminEmail = 'plateformebeh@gmail.com';
 
   constructor() {
-    // ⚠️ Remplacez 'VOTRE_MOT_DE_PASSE_APPLICATION' par le mot de passe généré par Google
-    // → https://myaccount.google.com/apppasswords (application = Mail, appareil = Autre)
     this.transporter = nodemailer.createTransport({
       host: 'smtp.gmail.com',
       port: 587,
@@ -46,12 +44,10 @@ export class MailService {
       <head><meta charset="UTF-8"></head>
       <body style="margin:0; padding:0; background:#F0F4FA; font-family: 'Segoe UI', Helvetica, Arial, sans-serif;">
         <div style="max-width: 520px; margin: 40px auto; background: #FFFFFF; border-radius: 24px; overflow: hidden; box-shadow: 0 8px 30px rgba(10,37,64,0.12);">
-          <!-- En-tête BEH -->
           <div style="background: #0A2540; padding: 28px 24px; text-align: center;">
             <div style="display: inline-block; background: #F7B500; width: 48px; height: 48px; border-radius: 12px; line-height: 48px; font-size: 20px; font-weight: 900; color: #0A2540;">BEH</div>
             <h1 style="margin: 16px 0 0; font-size: 20px; color: #FFFFFF; font-weight: 700;">Business Expert Hub</h1>
           </div>
-          <!-- Corps -->
           <div style="padding: 32px 32px 40px;">
             ${content}
             ${buttonHtml}
@@ -62,6 +58,22 @@ export class MailService {
       </body>
       </html>
     `;
+  }
+
+  // ==================== ENVOI GÉNÉRIQUE (utilisé par NewsletterService) ====================
+  async sendEmail(to: string, subject: string, html: string) {
+    try {
+      await this.transporter.sendMail({
+        from: '"BEH — Business Expert Hub" <plateformebeh@gmail.com>',
+        to,
+        subject,
+        html,
+      });
+      this.logger.log(`✅ Email envoyé à ${to}`);
+    } catch (error) {
+      this.logger.error(`❌ Erreur envoi email à ${to} : ${error.message}`);
+      throw error; // pour que l'appelant puisse gérer l'erreur
+    }
   }
 
   // ==================== EMAIL DE CONFIRMATION ====================
@@ -77,18 +89,7 @@ export class MailService {
     `;
 
     const html = this.getBaseHtml(content, { url: confirmLink, text: '✅ Confirmer mon compte' });
-
-    try {
-      await this.transporter.sendMail({
-        from: '"BEH — Business Expert Hub" <plateformebeh@gmail.com>',
-        to: email,
-        subject: 'Confirmation de votre adresse email',
-        html,
-      });
-      this.logger.log(`✅ Email de confirmation envoyé à ${email}`);
-    } catch (error) {
-      this.logger.error(`❌ Erreur envoi confirmation : ${error.message}`);
-    }
+    await this.sendEmail(email, 'Confirmation de votre adresse email', html);
   }
 
   // ==================== NOTIFICATION ADMIN ====================
@@ -105,18 +106,7 @@ export class MailService {
     `;
 
     const html = this.getBaseHtml(content, { url: 'http://localhost:3000/dashboard/admin', text: '📊 Accéder à l’admin' });
-
-    try {
-      await this.transporter.sendMail({
-        from: '"BEH — Business Expert Hub" <plateformebeh@gmail.com>',
-        to: this.adminEmail,
-        subject: `Nouvelle inscription ${role}`,
-        html,
-      });
-      this.logger.log(`✅ Email admin envoyé`);
-    } catch (error) {
-      this.logger.error(`❌ Erreur envoi admin : ${error.message}`);
-    }
+    await this.sendEmail(this.adminEmail, `Nouvelle inscription ${role}`, html);
   }
 
   // ==================== VALIDATION DU COMPTE (après approbation admin) ====================
@@ -127,18 +117,7 @@ export class MailService {
     `;
 
     const html = this.getBaseHtml(content, { url: 'http://localhost:3000/connexion', text: '🔑 Se connecter' });
-
-    try {
-      await this.transporter.sendMail({
-        from: '"BEH — Business Expert Hub" <plateformebeh@gmail.com>',
-        to: email,
-        subject: '✅ Votre compte BEH est activé',
-        html,
-      });
-      this.logger.log(`✅ Email validation envoyé à ${email}`);
-    } catch (error) {
-      this.logger.error(`❌ Erreur validation : ${error.message}`);
-    }
+    await this.sendEmail(email, '✅ Votre compte BEH est activé', html);
   }
 
   // ==================== REFUS DU COMPTE ====================
@@ -150,69 +129,41 @@ export class MailService {
     `;
 
     const html = this.getBaseHtml(content, { url: 'http://localhost:3000/contact', text: '📞 Nous contacter' });
-
-    try {
-      await this.transporter.sendMail({
-        from: '"BEH — Business Expert Hub" <plateformebeh@gmail.com>',
-        to: email,
-        subject: 'Votre inscription BEH',
-        html,
-      });
-      this.logger.log(`✅ Email refus envoyé à ${email}`);
-    } catch (error) {
-      this.logger.error(`❌ Erreur refus : ${error.message}`);
-    }
+    await this.sendEmail(email, 'Votre inscription BEH', html);
   }
+
   // ==================== NOTIFICATION CONTACT ADMIN ====================
-async sendContactNotification(nom: string, prenom: string, email: string, sujet: string, message: string) {
-  const content = `
-    <h2 style="color: #0A2540; font-size: 20px; margin-bottom: 16px;">📩 Nouveau message de contact</h2>
-    <div style="background: #F8FAFC; border-radius: 16px; padding: 20px; margin: 16px 0;">
-      <p><strong>Nom complet :</strong> ${prenom} ${nom}</p>
-      <p><strong>Email :</strong> ${email}</p>
-      <p><strong>Sujet :</strong> ${sujet}</p>
-      <p><strong>Message :</strong></p>
-      <p style="background: white; padding: 12px; border-radius: 12px;">${message.replace(/\n/g, '<br>')}</p>
-    </div>
-    <p style="color:#475569;">Connectez-vous à l’espace administration pour consulter l’historique complet.</p>
-  `;
+  async sendContactNotification(nom: string, prenom: string, email: string, sujet: string, message: string) {
+    const content = `
+      <h2 style="color: #0A2540; font-size: 20px; margin-bottom: 16px;">📩 Nouveau message de contact</h2>
+      <div style="background: #F8FAFC; border-radius: 16px; padding: 20px; margin: 16px 0;">
+        <p><strong>Nom complet :</strong> ${prenom} ${nom}</p>
+        <p><strong>Email :</strong> ${email}</p>
+        <p><strong>Sujet :</strong> ${sujet}</p>
+        <p><strong>Message :</strong></p>
+        <p style="background: white; padding: 12px; border-radius: 12px;">${message.replace(/\n/g, '<br>')}</p>
+      </div>
+      <p style="color:#475569;">Connectez-vous à l’espace administration pour consulter l’historique complet.</p>
+    `;
 
-  const html = this.getBaseHtml(content, { url: 'http://localhost:3000/dashboard/admin/contacts', text: '📋 Voir tous les messages' });
+    const html = this.getBaseHtml(content, { url: 'http://localhost:3000/dashboard/admin/contacts', text: '📋 Voir tous les messages' });
+    await this.sendEmail(this.adminEmail, `📬 Nouveau message de contact - ${sujet}`, html);
+  }
 
-  try {
-    await this.transporter.sendMail({
-      from: '"BEH — Business Expert Hub" <plateformebeh@gmail.com>',
-      to: this.adminEmail,
-      subject: `📬 Nouveau message de contact - ${sujet}`,
-      html,
-    });
-    this.logger.log(`✅ Email admin contact envoyé`);
-  } catch (error) {
-    this.logger.error(`❌ Erreur envoi admin contact : ${error.message}`);
+  // ==================== RÉPONSE AUX MESSAGES DE CONTACT ====================
+  async sendReplyEmail(to: string, nom: string, reponse: string) {
+    const content = `
+      <h2 style="color: #0A2540;">Réponse de l'équipe BEH</h2>
+      <p>Bonjour ${nom},</p>
+      <div style="background: #F8FAFC; padding: 16px; border-radius: 12px; margin: 16px 0;">
+        ${reponse.replace(/\n/g, '<br>')}
+      </div>
+      <p>Cordialement,<br/>L’équipe Business Expert Hub</p>
+    `;
+    const html = this.getBaseHtml(content);
+    await this.sendEmail(to, 'Réponse à votre message', html);
   }
-}
-async sendReplyEmail(to: string, nom: string, reponse: string) {
-  const content = `
-    <h2 style="color: #0A2540;">Réponse de l'équipe BEH</h2>
-    <p>Bonjour ${nom},</p>
-    <div style="background: #F8FAFC; padding: 16px; border-radius: 12px; margin: 16px 0;">
-      ${reponse.replace(/\n/g, '<br>')}
-    </div>
-    <p>Cordialement,<br/>L’équipe Business Expert Hub</p>
-  `;
-  const html = this.getBaseHtml(content);
-  try {
-    await this.transporter.sendMail({
-      from: '"BEH — Business Expert Hub" <plateformebeh@gmail.com>',
-      to,
-      subject: 'Réponse à votre message',
-      html,
-    });
-    this.logger.log(`✅ Email de réponse envoyé à ${to}`);
-  } catch (error) {
-    this.logger.error(`❌ Erreur envoi réponse : ${error.message}`);
-  }
-}
+
   // ==================== MODIFICATION DE PROFIL (admin) ====================
   async sendModificationNotification(nom: string, email: string) {
     const content = `
@@ -225,18 +176,7 @@ async sendReplyEmail(to: string, nom: string, reponse: string) {
     `;
 
     const html = this.getBaseHtml(content, { url: 'http://localhost:3000/dashboard/admin', text: '🔧 Gérer la modification' });
-
-    try {
-      await this.transporter.sendMail({
-        from: '"BEH — Business Expert Hub" <plateformebeh@gmail.com>',
-        to: this.adminEmail,
-        subject: '🔔 Modification de profil expert en attente',
-        html,
-      });
-      this.logger.log(`✅ Email modification envoyé`);
-    } catch (error) {
-      this.logger.error(`❌ Erreur modification : ${error.message}`);
-    }
+    await this.sendEmail(this.adminEmail, '🔔 Modification de profil expert en attente', html);
   }
 
   // ==================== RÉINITIALISATION PAR CODE ====================
@@ -249,18 +189,7 @@ async sendReplyEmail(to: string, nom: string, reponse: string) {
     `;
 
     const html = this.getBaseHtml(content);
-
-    try {
-      await this.transporter.sendMail({
-        from: '"BEH — Business Expert Hub" <plateformebeh@gmail.com>',
-        to: email,
-        subject: 'Code de réinitialisation BEH',
-        html,
-      });
-      this.logger.log(`✅ Email code envoyé à ${email}`);
-    } catch (error) {
-      this.logger.error(`❌ Erreur code : ${error.message}`);
-    }
+    await this.sendEmail(email, 'Code de réinitialisation BEH', html);
   }
 
   // ==================== RÉINITIALISATION PAR LIEN ====================
@@ -272,18 +201,6 @@ async sendReplyEmail(to: string, nom: string, reponse: string) {
     `;
 
     const html = this.getBaseHtml(content, { url: resetLink, text: '🔐 Réinitialiser mon mot de passe' });
-
-    try {
-      await this.transporter.sendMail({
-        from: '"BEH — Business Expert Hub" <plateformebeh@gmail.com>',
-        to: email,
-        subject: 'Réinitialisation mot de passe BEH',
-        html,
-      });
-      this.logger.log(`✅ Email reset envoyé à ${email}`);
-    } catch (error) {
-      this.logger.error(`❌ Erreur reset : ${error.message}`);
-      console.log(`🔗 LIEN DE RÉINITIALISATION (copiez-le) : ${resetLink}`);
-    }
+    await this.sendEmail(email, 'Réinitialisation mot de passe BEH', html);
   }
 }

@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsInt, Min, Max, IsPhoneNumber } from 'class-validator';
+import { IsString, IsOptional, IsInt } from 'class-validator';
 
 export class UpdateProfilDto {
   @IsString()
@@ -17,13 +17,12 @@ export class UpdateProfilDto {
   @IsOptional()
   experience?: string;
 
-  @IsPhoneNumber()
+  @IsString()
   @IsOptional()
   telephone?: string;
 
-  @IsInt()
-  @Min(1950)
-  @Max(new Date().getFullYear())
+  // ✅ Plus aucune contrainte de plage
   @IsOptional()
+  @IsInt()
   annee_debut_experience?: number;
 }

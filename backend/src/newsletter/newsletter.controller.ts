@@ -9,7 +9,8 @@ import {
   ValidationPipe,
   BadRequestException,
 } from '@nestjs/common';
-import { NewsletterService, SubscribeDto, UnsubscribeDto, SendNewsletterDto } from './newsletter.service';
+import { NewsletterService, UnsubscribeDto, SendNewsletterDto } from './newsletter.service';
+import { SubscribeNewsletterDto } from './dto/subscribe-newsletter.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 @Controller('newsletter')
@@ -17,7 +18,7 @@ export class NewsletterController {
   constructor(private readonly svc: NewsletterService) {}
 
   @Post('subscribe')
-  subscribe(@Body(ValidationPipe) dto: SubscribeDto) {
+  subscribe(@Body(ValidationPipe) dto: SubscribeNewsletterDto) {
     return this.svc.subscribe(dto);
   }
 

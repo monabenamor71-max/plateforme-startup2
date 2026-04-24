@@ -2,7 +2,7 @@
 import {
   Controller, Get, Put, Patch, Post, Body, Param, Request,
   UseGuards, UseInterceptors, UploadedFile, Query,
-  ParseIntPipe, BadRequestException, ValidationPipe,
+  ParseIntPipe, BadRequestException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
@@ -39,14 +39,13 @@ export class ExpertsController {
     return this.expertsService.findByDomaines(domainesArray);
   }
 
-// src/experts/experts.controller.ts
-@Put('profil')
-@UseGuards(JwtAuthGuard)
-updateProfil(@Request() req: any, @Body() body: any) {
-  return this.expertsService.updateProfil(req.user.id, body);
-}
+  @Put('profil')
+  @UseGuards(JwtAuthGuard)
+  updateProfil(@Request() req: any, @Body() body: any) {
+    return this.expertsService.updateProfil(req.user.id, body);
+  }
 
-  // ✅ Route pour l'admin (modification directe avec validation normale)
+  // Route pour l'admin (modification directe avec validation normale)
   @Put('admin/:id')
   @UseGuards(JwtAuthGuard)
   async updateExpertByAdmin(
@@ -73,7 +72,10 @@ updateProfil(@Request() req: any, @Body() body: any) {
     },
   }))
   async uploadPhoto(@Request() req: any, @UploadedFile() file: Express.Multer.File) {
-    if (!file) throw new BadRequestException('Aucun fichier reçu');
+    // ✅ La photo devient optionnelle (plus d'obligation)
+    if (!file) {
+      return { message: 'Aucune photo fournie, profil non modifié' };
+    }
     return this.expertsService.updatePhoto(req.user.id, file.filename);
   }
 
@@ -83,13 +85,9 @@ updateProfil(@Request() req: any, @Body() body: any) {
     return this.expertsService.validerModification(id);
   }
 
-  // ... autres méthodes ...
-
-@Patch(':id/refuser-modification')
-@UseGuards(JwtAuthGuard)
-refuserModification(@Param('id', ParseIntPipe) id: number) {
-  return this.expertsService.refuserModification(id);
-}
-
-
+  @Patch(':id/refuser-modification')
+  @UseGuards(JwtAuthGuard)
+  refuserModification(@Param('id', ParseIntPipe) id: number) {
+    return this.expertsService.refuserModification(id);
+  }
 }

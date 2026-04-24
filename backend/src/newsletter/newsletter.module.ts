@@ -1,14 +1,14 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { ConfigModule } from '@nestjs/config';   // ← ajout indispensable
 import { NewsletterService } from './newsletter.service';
 import { NewsletterController } from './newsletter.controller';
 import { Newsletter } from './newsletter.entity';
+import { MailModule } from '../mail/mail.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Newsletter]),
-    ConfigModule,   // ← rend ConfigService injectable
+    MailModule,   // ← indispensable pour injecter MailService
   ],
   controllers: [NewsletterController],
   providers: [NewsletterService],

@@ -1,70 +1,72 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { getCsrfToken } from "@/lib/csrf";
+import { useRouter } from "next/navigation";
 
-// Listes (inchangées)
-const SECTEURS_STARTUP = [
-  "Technologie",
-  "Finance",
-  "Santé",
-  "E-commerce",
-  "Éducation",
-  "Transport",
-  "Autre"
-];
+// ========== CONSTANTES ==========
+const ANNEE_DEBUT_EXPERIENCE = (() => {
+  const currentYear = new Date().getFullYear();
+  const years = [];
+  for (let y = currentYear; y >= 1950; y--) years.push(y);
+  return years;
+})();
 
 const DOMAINES_EXPERT = [
   "Marketing Digital",
-  "Finance / Comptabilité",
-  "Ressources Humaines",
-  "Développement Web / Mobile",
-  "Design UI/UX",
-  "Stratégie Commerciale",
-  "Logistique / Supply Chain",
-  "Intelligence Artificielle / Data",
-  "Autre"
+  "Finance & Comptabilité",
+  "RH & Organisation",
+  "Stratégie & Management",
+  "Droit & Fiscalité",
+  "IA & Transformation Digitale",
+  "Vente & Développement commercial",
+  "Autre",
+];
+
+const SECTEURS_STARTUP = [
+  "Tech / SaaS",
+  "E-commerce",
+  "Santé / Biotech",
+  "FinTech",
+  "Éducation / EdTech",
+  "Marketing / Communication",
+  "Agroalimentaire",
+  "Autre",
 ];
 
 const FONCTIONS = [
-  "CEO / Fondateur",
-  "Co-fondateur",
-  "Directeur Général",
-  "Directeur Financier (CFO)",
-  "Directeur Technique (CTO)",
-  "Directeur Commercial",
-  "Directeur Marketing",
-  "Responsable Produit",
-  "Chef de projet",
-  "Business Developer",
-  "Autre"
+  "Fondateur / CEO",
+  "Co-fondateur / CTO",
+  "Directeur général",
+  "Responsable marketing",
+  "Responsable commercial",
+  "Chef de produit",
+  "Autre",
 ];
 
-const TAILLES = ["1-5", "6-10", "11-50", "51-200", "200+"];
+const TAILLES = ["1-5", "6-10", "11-20", "21-50", "51+"];
 
-const currentYear = new Date().getFullYear();
-const ANNEE_DEBUT_EXPERIENCE = Array.from(
-  { length: currentYear - 1970 + 1 },
-  (_, i) => 1970 + i
-).reverse();
+const getCsrfToken = () => "";
 
-export default function Inscription() {
+export default function RegisterPage() {
   const router = useRouter();
+  const currentYear = new Date().getFullYear();
+
   const [formData, setFormData] = useState({
-    prenom: "",
-    nom: "",
+    role: "startup",
     email: "",
-    telephone: "",
     password: "",
     confirmPassword: "",
-    role: "startup",
+    prenom: "",
+    nom: "",
+    telephone: "",
+    // startup
     nom_startup: "",
     secteur: "",
     secteur_precision: "",
     fonction: "",
     taille: "",
+    // expert
     domaine: "",
     domaine_precision: "",
     annee_debut_experience: "",
@@ -142,7 +144,6 @@ export default function Inscription() {
       let options: RequestInit = { method: "POST" };
 
       if (formData.role === "startup") {
-        // Startup validation (inchangée)
         if (!formData.nom_startup.trim()) throw new Error("Le nom de la startup est requis");
         if (!formData.secteur) throw new Error("Le secteur est requis");
         if (formData.secteur === "Autre" && !formData.secteur_precision.trim())
@@ -168,8 +169,7 @@ export default function Inscription() {
           taille: formData.taille || undefined,
         });
       } else {
-        // ===== EXPERT : construction explicite du FormData =====
-        // Récupération des valeurs
+        // EXPERT
         const emailVal = formData.email.trim().toLowerCase();
         const passwordVal = formData.password;
         const prenomVal = formData.prenom.trim();
@@ -177,16 +177,16 @@ export default function Inscription() {
         let domaineVal = formData.domaine;
         if (domaineVal === "Autre") domaineVal = formData.domaine_precision.trim();
         const anneeVal = formData.annee_debut_experience;
-        
-        // Validation
+        const localisationVal = formData.localisation.trim();
+
         if (!emailVal) throw new Error("L'email est requis");
         if (!passwordVal) throw new Error("Mot de passe requis");
         if (!prenomVal) throw new Error("Prénom requis");
         if (!nomVal) throw new Error("Nom requis");
         if (!domaineVal) throw new Error("Domaine requis");
-        if (!anneeVal) throw new Error("Année de début requise");
-        if (!photoFile) throw new Error("Photo requise");
-        if (!cvFile) throw new Error("CV requis");
+        if (!anneeVal) throw new Error("Année de début d'expérience requise");
+        if (!localisationVal) throw new Error("Localisation requise");
+        if (!cvFile) throw new Error("CV requis (PDF)");
 
         url = "http://localhost:3001/auth/register/expert";
         const fd = new FormData();
@@ -197,17 +197,11 @@ export default function Inscription() {
         if (formData.telephone.trim()) fd.append("telephone", formData.telephone.trim());
         fd.append("domaine", domaineVal);
         fd.append("annee_debut_experience", parseInt(anneeVal, 10).toString());
-        if (formData.localisation.trim()) fd.append("localisation", formData.localisation.trim());
+        fd.append("localisation", localisationVal);
         if (formData.description.trim()) fd.append("description", formData.description.trim());
-        fd.append("photo", photoFile);
+        if (photoFile) fd.append("photo", photoFile);
         fd.append("cv", cvFile);
         if (portfolioFile) fd.append("portfolio", portfolioFile);
-
-        // DEBUG : afficher le contenu
-        console.log("=== FORM DATA ENVOYÉ ===");
-        for (let [key, value] of fd.entries()) {
-          console.log(key, value instanceof File ? `[Fichier] ${value.name}` : value);
-        }
 
         options = {
           method: "POST",
@@ -432,12 +426,12 @@ export default function Inscription() {
 
             {formData.role === "expert" && (
               <>
-                <div className="section-title">Photo de profil</div>
+                <div className="section-title">Photo de profil (optionnelle)</div>
                 <div className="fg">
                   <label className="photo-upload" htmlFor="photo-input">
                     {photoPreview ? <img src={photoPreview} className="photo-preview" alt="preview" /> : <div className="photo-placeholder">👤</div>}
                     <div>
-                      <div style={{ fontWeight: 700, fontSize: 14, color: "#0A2540" }}>Ajouter votre photo *</div>
+                      <div style={{ fontWeight: 700, fontSize: 14, color: "#0A2540" }}>Ajouter votre photo (optionnel)</div>
                       <div style={{ fontSize: 12, color: "#8A9AB5", marginTop: 3 }}>JPG, PNG — max 5 Mo</div>
                       {photoFile && <div style={{ fontSize: 12, color: "#059669", marginTop: 3 }}>✅ {photoFile.name}</div>}
                     </div>
@@ -473,7 +467,10 @@ export default function Inscription() {
                       </div>
                     )}
                   </div>
-                  <div className="fg"><label className="lbl">Localisation</label><input className="inp" type="text" name="localisation" value={formData.localisation} onChange={handleChange} placeholder="Ex: Tunis, Sfax" /></div>
+                  <div className="fg">
+                    <label className="lbl">Localisation *</label>
+                    <input className="inp" type="text" name="localisation" value={formData.localisation} onChange={handleChange} required placeholder="Ex: Tunis, Sfax" />
+                  </div>
                 </div>
                 <div className="fg"><label className="lbl">Description / Bio</label><textarea className="inp" name="description" value={formData.description} onChange={handleChange} placeholder="Présentez votre parcours…" /></div>
 
@@ -481,7 +478,7 @@ export default function Inscription() {
                 <div className="fg">
                   <label className="lbl">CV (PDF) *</label>
                   <div className={`file-zone ${cvFile ? "has-file" : ""}`}>
-                    <input type="file" accept=".pdf" onChange={e => e.target.files?.[0] && setCvFile(e.target.files[0])} />
+                    <input type="file" accept=".pdf" onChange={e => e.target.files?.[0] && setCvFile(e.target.files[0])} required />
                     <div style={{ fontSize: 28, marginBottom: 8 }}>📄</div>
                     {cvFile ? <div style={{ fontSize: 12.5, color: "#059669", fontWeight: 600 }}>✅ {cvFile.name}</div> : <><div style={{ fontWeight: 600 }}>Cliquez pour uploader votre CV</div><div style={{ fontSize: 11.5, color: "#8A9AB5" }}>PDF uniquement — max 10 Mo</div></>}
                   </div>

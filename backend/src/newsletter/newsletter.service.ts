@@ -2,14 +2,8 @@ import { Injectable, BadRequestException, Logger, NotFoundException } from '@nes
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Newsletter } from './newsletter.entity';
-import * as nodemailer from 'nodemailer';
-import { ConfigService } from '@nestjs/config';
-
-// DTO définis localement
-export class SubscribeDto {
-  email: string;
-  nom?: string;
-}
+import { SubscribeNewsletterDto } from './dto/subscribe-newsletter.dto';
+import { MailService } from '../mail/mail.service';
 
 export class UnsubscribeDto {
   email: string;
@@ -23,27 +17,15 @@ export class SendNewsletterDto {
 @Injectable()
 export class NewsletterService {
   private readonly logger = new Logger(NewsletterService.name);
-  private transporter: nodemailer.Transporter;
 
   constructor(
     @InjectRepository(Newsletter)
     private repo: Repository<Newsletter>,
-    private configService: ConfigService,
-  ) {
-    this.transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user: this.configService.get('EMAIL_USER'),
-        pass: this.configService.get('EMAIL_PASS'),
-      },
-      tls: { rejectUnauthorized: false },
-    });
-  }
+    private mailService: MailService,
+  ) {}
 
-  async subscribe(dto: SubscribeDto) {
+  async subscribe(dto: SubscribeNewsletterDto) {
     const { email, nom } = dto;
-    // ... (reste identique à la version précédente)
-    // Je copie le corps complet depuis la dernière version corrigée
     try {
       let sub = await this.repo.findOne({ where: { email } });
       if (sub) {
@@ -59,10 +41,13 @@ export class NewsletterService {
       await this.repo.save(sub);
       this.logger.log(`Nouvel abonné newsletter : ${email}`);
 
-      this.sendWelcomeEmail(email, nom).catch(err =>
+      // Envoi de l'email de bienvenue
+      await this.sendWelcomeEmail(email, nom).catch(err =>
         this.logger.error(`Erreur envoi email bienvenue à ${email} : ${err.message}`)
       );
-      this.notifyAdminNewSubscription(email, nom).catch(err =>
+
+      // Notification admin
+      await this.notifyAdminNewSubscription(email, nom).catch(err =>
         this.logger.error(`Erreur notification admin pour ${email} : ${err.message}`)
       );
 
@@ -84,22 +69,14 @@ export class NewsletterService {
         <p style="color:#8A9AB5;font-size:13px">- L'équipe BEH</p>
       </div>
     </div>`;
-    await this.transporter.sendMail({
-      from: this.configService.get('EMAIL_FROM'),
-      to: email,
-      subject: 'Bienvenue dans la newsletter BEH !',
-      html,
-    });
+    // Utilisation d'une méthode générique à ajouter dans MailService
+    await this.mailService.sendEmail(email, 'Bienvenue dans la newsletter BEH !', html);
   }
 
   private async notifyAdminNewSubscription(email: string, nom?: string) {
     const html = `<p>Nouvel abonné newsletter : <strong>${email}</strong>${nom ? ` (${nom})` : ''}</p>`;
-    await this.transporter.sendMail({
-      from: this.configService.get('EMAIL_FROM'),
-      to: this.configService.get('ADMIN_EMAIL'),
-      subject: '[BEH] Nouvelle inscription newsletter',
-      html,
-    });
+    const adminEmail = process.env.ADMIN_EMAIL || 'plateformebeh@gmail.com';
+    await this.mailService.sendEmail(adminEmail, '[BEH] Nouvelle inscription newsletter', html);
   }
 
   async unsubscribe(dto: UnsubscribeDto) {
@@ -125,19 +102,15 @@ export class NewsletterService {
     let sent = 0;
     for (const a of abonnes) {
       try {
-        await this.transporter.sendMail({
-          from: this.configService.get('EMAIL_FROM'),
-          to: a.email,
-          subject: sujet,
-          html: `<div style="font-family:sans-serif;max-width:600px;margin:0 auto">
-            <div style="background:#0A2540;padding:24px;border-radius:12px 12px 0 0">
-              <h2 style="color:#F7B500;margin:0">Business Expert Hub</h2>
-            </div>
-            <div style="padding:24px">${contenu}<hr style="border:none;border-top:1px solid #E8EEF6;margin:24px 0"/>
-            <p style="font-size:12px;color:#8A9AB5">Pour vous désabonner, <a href="http://localhost:3000/newsletter/unsubscribe?email=${a.email}">cliquez ici</a></p>
-            </div>
-          </div>`,
-        });
+        const html = `<div style="font-family:sans-serif;max-width:600px;margin:0 auto">
+          <div style="background:#0A2540;padding:24px;border-radius:12px 12px 0 0">
+            <h2 style="color:#F7B500;margin:0">Business Expert Hub</h2>
+          </div>
+          <div style="padding:24px">${contenu}<hr style="border:none;border-top:1px solid #E8EEF6;margin:24px 0"/>
+          <p style="font-size:12px;color:#8A9AB5">Pour vous désabonner, <a href="http://localhost:3000/newsletter/unsubscribe?email=${a.email}">cliquez ici</a></p>
+          </div>
+        </div>`;
+        await this.mailService.sendEmail(a.email, sujet, html);
         sent++;
         this.logger.log(`Newsletter envoyée à ${a.email}`);
       } catch (err) {
