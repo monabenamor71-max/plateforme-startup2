@@ -1,3 +1,4 @@
+// src/mail/mail.service.ts
 import { Injectable, Logger } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
 
@@ -11,10 +12,10 @@ export class MailService {
     this.transporter = nodemailer.createTransport({
       host: 'smtp.gmail.com',
       port: 587,
-      secure: false,
+      secure: false, // true pour 465
       auth: {
         user: 'plateformebeh@gmail.com',
-        pass: 'eeby aygp htye hwvu', // ← à modifier
+        pass: 'eeby aygp htye hwvu', // ← REMPLACER PAR UN MOT DE PASSE D'APPLICATION GMAIL
       },
       tls: { rejectUnauthorized: false },
     });
@@ -60,7 +61,7 @@ export class MailService {
     `;
   }
 
-  // ==================== ENVOI GÉNÉRIQUE (utilisé par NewsletterService) ====================
+  // ==================== ENVOI GÉNÉRIQUE ====================
   async sendEmail(to: string, subject: string, html: string) {
     try {
       await this.transporter.sendMail({
@@ -72,7 +73,7 @@ export class MailService {
       this.logger.log(`✅ Email envoyé à ${to}`);
     } catch (error) {
       this.logger.error(`❌ Erreur envoi email à ${to} : ${error.message}`);
-      throw error; // pour que l'appelant puisse gérer l'erreur
+      throw error;
     }
   }
 
@@ -86,6 +87,7 @@ export class MailService {
       <h2 style="color: #0A2540; font-size: 22px; margin-bottom: 12px;">Bienvenue sur BEH 🚀</h2>
       <p style="color: #475569; font-size: 15px; line-height: 1.6;">Merci de vous être inscrit. Avant de continuer, veuillez confirmer votre adresse email en cliquant sur le bouton ci-dessous.</p>
       <p style="color: #64748B; font-size: 13px; margin-top: 20px;">Ce lien expire dans 24 heures.</p>
+      <p style="margin-top: 20px; font-size: 13px;">Si le bouton ne fonctionne pas, copiez et collez ce lien dans votre navigateur :<br/><a href="${confirmLink}" style="word-break: break-all;">${confirmLink}</a></p>
     `;
 
     const html = this.getBaseHtml(content, { url: confirmLink, text: '✅ Confirmer mon compte' });
@@ -109,7 +111,7 @@ export class MailService {
     await this.sendEmail(this.adminEmail, `Nouvelle inscription ${role}`, html);
   }
 
-  // ==================== VALIDATION DU COMPTE (après approbation admin) ====================
+  // ==================== VALIDATION DU COMPTE ====================
   async sendValidationEmail(nom: string, email: string) {
     const content = `
       <h2 style="color: #0A2540; font-size: 20px; margin-bottom: 12px;">Félicitations, ${nom} ! 🎉</h2>
@@ -198,6 +200,7 @@ export class MailService {
     const content = `
       <h2 style="color: #0A2540;">Réinitialisation de votre mot de passe</h2>
       <p>Cliquez sur le bouton ci-dessous pour choisir un nouveau mot de passe. Ce lien expire dans 1 heure.</p>
+      <p style="margin-top: 16px;">Si le bouton ne fonctionne pas, copiez ce lien : <br/><a href="${resetLink}">${resetLink}</a></p>
     `;
 
     const html = this.getBaseHtml(content, { url: resetLink, text: '🔐 Réinitialiser mon mot de passe' });

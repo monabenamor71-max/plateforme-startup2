@@ -1,5 +1,5 @@
 // src/experts/experts.service.ts
-import { Injectable, NotFoundException, Logger } from '@nestjs/common';
+import { Injectable, NotFoundException, Logger, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
 import { Expert } from '../user/expert.entity';
@@ -61,48 +61,50 @@ export class ExpertsService {
     });
   }
 
- async updateProfil(userId: number, body: any) {
-  const expert = await this.expertRepo.findOne({
-    where: { user_id: userId },
-    relations: ['user'],
-  });
-  if (!expert) throw new NotFoundException('Expert non trouvé');
+  async updateProfil(userId: number, body: any) {
+    const expert = await this.expertRepo.findOne({
+      where: { user_id: userId },
+      relations: ['user'],
+    });
+    if (!expert) throw new NotFoundException('Expert non trouvé');
 
-  const modifications: any = {};
-  if (body.domaine !== undefined && body.domaine !== '') modifications.domaine = body.domaine;
-  if (body.description !== undefined) modifications.description = body.description;
-  if (body.localisation !== undefined && body.localisation !== '') modifications.localisation = body.localisation;
-  if (body.experience !== undefined && body.experience !== '') modifications.experience = body.experience;
-  if (body.telephone !== undefined && body.telephone !== '') modifications.telephone = body.telephone;
-  if (body.annee_debut_experience !== undefined && body.annee_debut_experience !== '') {
-    modifications.annee_debut_experience = String(body.annee_debut_experience);
+    const modifications: any = {};
+    if (body.domaine !== undefined && body.domaine !== '') modifications.domaine = body.domaine;
+    if (body.description !== undefined) modifications.description = body.description;
+    if (body.localisation !== undefined && body.localisation !== '') modifications.localisation = body.localisation;
+    if (body.experience !== undefined && body.experience !== '') modifications.experience = body.experience;
+    if (body.telephone !== undefined && body.telephone !== '') modifications.telephone = body.telephone;
+    if (body.annee_debut_experience !== undefined && body.annee_debut_experience !== '') {
+      modifications.annee_debut_experience = String(body.annee_debut_experience);
+    }
+
+    if (Object.keys(modifications).length === 0) {
+      return { message: 'Aucune modification à enregistrer' };
+    }
+
+    const updateResult = await this.expertRepo.update({ user_id: userId }, {
+      modifications_en_attente: JSON.stringify(modifications),
+      modification_demandee: true,
+    });
+    if (updateResult.affected === 0) {
+      throw new BadRequestException('Impossible d’enregistrer la demande de modification');
+    }
+
+    this.logger.log(`Expert ${userId} a demandé une modification de profil`);
+
+    try {
+      await this.mailService.sendAdminNotification(
+        expert.user.nom,
+        'Modification profil expert',
+        expert.user.email,
+      );
+    } catch(e) {
+      this.logger.error(`Erreur envoi email admin pour expert ${userId}: ${e.message}`);
+    }
+
+    return { message: 'Modification envoyée à l’admin pour validation' };
   }
 
-  if (Object.keys(modifications).length === 0) {
-    return { message: 'Aucune modification à enregistrer' };
-  }
-
-  await this.expertRepo.update({ user_id: userId }, {
-    modifications_en_attente: JSON.stringify(modifications),
-    modification_demandee: true,
-  });
-
-  this.logger.log(`Expert ${userId} a demandé une modification de profil`);
-
-  try {
-    await this.mailService.sendAdminNotification(
-      expert.user.nom,
-      'Modification profil expert',
-      expert.user.email,
-    );
-  } catch(e) {
-    this.logger.error(`Erreur envoi email admin pour expert ${userId}: ${e.message}`);
-  }
-
-  return { message: 'Modification envoyée à l’admin pour validation' };
-}
-
-  // Validation par l'admin
   async validerModification(expertId: number) {
     const expert = await this.expertRepo.findOne({ where: { id: expertId }, relations: ['user'] });
     if (!expert) throw new NotFoundException(`Expert ${expertId} non trouvé`);
@@ -122,16 +124,22 @@ export class ExpertsService {
       if (!isNaN(annee)) expertUpdate.annee_debut_experience = annee;
     }
 
-    await this.expertRepo.update(expertId, {
+    const updateResult = await this.expertRepo.update(expertId, {
       ...expertUpdate,
       modifications_en_attente: '',
       modification_demandee: false,
     });
+    if (updateResult.affected === 0) {
+      throw new BadRequestException('Impossible de valider la modification');
+    }
 
     if (modifications.telephone) {
-      await this.userRepo.update(expert.user_id, {
+      const userUpdateResult = await this.userRepo.update(expert.user_id, {
         telephone: modifications.telephone,
       });
+      if (userUpdateResult.affected === 0) {
+        throw new BadRequestException('Impossible de mettre à jour le téléphone');
+      }
     }
 
     this.logger.log(`Modification validée pour expert ${expertId}`);
@@ -141,15 +149,17 @@ export class ExpertsService {
   async refuserModification(expertId: number) {
     const expert = await this.expertRepo.findOne({ where: { id: expertId } });
     if (!expert) throw new NotFoundException(`Expert ${expertId} non trouvé`);
-    await this.expertRepo.update(expertId, {
+    const updateResult = await this.expertRepo.update(expertId, {
       modifications_en_attente: '',
       modification_demandee: false,
     });
+    if (updateResult.affected === 0) {
+      throw new BadRequestException('Impossible de refuser la modification');
+    }
     this.logger.log(`Modification refusée pour expert ${expertId}`);
     return { message: 'Modification refusée' };
   }
 
-  // Modification directe par l'admin (avec validation)
   async updateExpertDirectly(expertId: number, dto: UpdateProfilDto) {
     const expert = await this.expertRepo.findOne({ where: { id: expertId }, relations: ['user'] });
     if (!expert) throw new NotFoundException('Expert non trouvé');
@@ -163,17 +173,25 @@ export class ExpertsService {
       expertUpdate.annee_debut_experience = dto.annee_debut_experience;
     }
 
-    await this.expertRepo.update(expertId, expertUpdate);
-
-    if (dto.telephone !== undefined && dto.telephone !== '') {
-      await this.userRepo.update(expert.user_id, { telephone: dto.telephone });
+    const updateExpertResult = await this.expertRepo.update(expertId, expertUpdate);
+    if (updateExpertResult.affected === 0) {
+      throw new BadRequestException('Impossible de mettre à jour le profil expert');
     }
 
-    // Réinitialiser les demandes de modification
-    await this.expertRepo.update(expertId, {
+    if (dto.telephone !== undefined && dto.telephone !== '') {
+      const updateUserResult = await this.userRepo.update(expert.user_id, { telephone: dto.telephone });
+      if (updateUserResult.affected === 0) {
+        throw new BadRequestException('Impossible de mettre à jour le téléphone');
+      }
+    }
+
+    const resetResult = await this.expertRepo.update(expertId, {
       modifications_en_attente: '',
       modification_demandee: false,
     });
+    if (resetResult.affected === 0) {
+      throw new BadRequestException('Impossible de réinitialiser la demande de modification');
+    }
 
     this.logger.log(`Admin a modifié directement l'expert ${expertId}`);
     return { message: 'Profil mis à jour directement' };
@@ -182,7 +200,10 @@ export class ExpertsService {
   async updatePhoto(userId: number, filename: string) {
     const expert = await this.expertRepo.findOne({ where: { user_id: userId } });
     if (!expert) throw new NotFoundException(`Expert pour user ${userId} non trouvé`);
-    await this.expertRepo.update({ user_id: userId }, { photo: filename });
+    const updateResult = await this.expertRepo.update({ user_id: userId }, { photo: filename });
+    if (updateResult.affected === 0) {
+      throw new BadRequestException('Impossible de mettre à jour la photo');
+    }
     this.logger.log(`Photo mise à jour pour expert ${userId}`);
     return { message: 'Photo mise à jour' };
   }

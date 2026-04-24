@@ -1,3 +1,4 @@
+// backend/src/auth/auth.service.ts
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -50,6 +51,9 @@ export class AuthService {
       photo: this.extractFileName(photoPath),
     });
     const savedUser = await this.userRepo.save(user);
+    if (!savedUser || !savedUser.id) {
+      throw new BadRequestException('Erreur lors de la création de l’utilisateur (aucun ID retourné)');
+    }
 
     let anneeDebut: number | null = null;
     if (annee_debut_experience !== undefined && annee_debut_experience !== null) {
@@ -67,7 +71,10 @@ export class AuthService {
       cv: this.extractFileName(cvPath),
       portfolio: this.extractFileName(portfolioPath),
     });
-    await this.expertRepo.save(expert);
+    const savedExpert = await this.expertRepo.save(expert);
+    if (!savedExpert) {
+      throw new BadRequestException('Erreur lors de la création du profil expert');
+    }
 
     const confirmationToken = this.jwtService.sign(
       { id: savedUser.id, email },
@@ -75,7 +82,10 @@ export class AuthService {
     );
     savedUser.reset_code = confirmationToken;
     savedUser.email_verified = false;
-    await this.userRepo.save(savedUser);
+    const updatedUser = await this.userRepo.save(savedUser);
+    if (!updatedUser) {
+      throw new BadRequestException('Erreur lors de la mise à jour du token de confirmation');
+    }
 
     await this.mailService.sendConfirmationEmail(email, confirmationToken);
     await this.mailService.sendAdminNotification(`${prenom} ${nom}`, 'expert', email);
@@ -99,6 +109,9 @@ export class AuthService {
       statut: 'en_attente',
     });
     const savedUser = await this.userRepo.save(user);
+    if (!savedUser || !savedUser.id) {
+      throw new BadRequestException('Erreur lors de la création de l’utilisateur startup (aucun ID retourné)');
+    }
 
     const startup = this.startupRepo.create({
       user_id: savedUser.id,
@@ -111,7 +124,10 @@ export class AuthService {
       description,
       statut: 'en_attente',
     });
-    await this.startupRepo.save(startup);
+    const savedStartup = await this.startupRepo.save(startup);
+    if (!savedStartup) {
+      throw new BadRequestException('Erreur lors de la création du profil startup');
+    }
 
     const confirmationToken = this.jwtService.sign(
       { id: savedUser.id, email },
@@ -119,7 +135,10 @@ export class AuthService {
     );
     savedUser.reset_code = confirmationToken;
     savedUser.email_verified = false;
-    await this.userRepo.save(savedUser);
+    const updatedUser = await this.userRepo.save(savedUser);
+    if (!updatedUser) {
+      throw new BadRequestException('Erreur lors de la mise à jour du token de confirmation');
+    }
 
     await this.mailService.sendConfirmationEmail(email, confirmationToken);
     await this.mailService.sendAdminNotification(`${prenom} ${nom} (${nom_startup})`, 'startup', email);
@@ -146,7 +165,10 @@ export class AuthService {
       if (user.email_verified) throw new BadRequestException('Email déjà confirmé');
       user.email_verified = true;
       user.reset_code = '';
-      await this.userRepo.save(user);
+      const updatedUser = await this.userRepo.save(user);
+      if (!updatedUser) {
+        throw new BadRequestException('Erreur lors de la mise à jour de la confirmation email');
+      }
       return { message: 'Email confirmé avec succès. Vous pouvez maintenant vous connecter.' };
     } catch (err) {
       throw new BadRequestException('Lien de confirmation invalide ou expiré');
@@ -163,7 +185,10 @@ export class AuthService {
 
     user.reset_code = resetCode;
     user.reset_code_expires = expires;
-    await this.userRepo.save(user);
+    const updatedUser = await this.userRepo.save(user);
+    if (!updatedUser) {
+      throw new BadRequestException('Erreur lors de l’enregistrement du code de réinitialisation');
+    }
 
     await this.mailService.sendResetCodeEmail(email, resetCode);
 
@@ -185,7 +210,10 @@ export class AuthService {
     user.password = hashedPassword;
     user.reset_code = '';
     user.reset_code_expires = new Date(0);
-    await this.userRepo.save(user);
+    const updatedUser = await this.userRepo.save(user);
+    if (!updatedUser) {
+      throw new BadRequestException('Erreur lors de la réinitialisation du mot de passe');
+    }
 
     return { message: 'Mot de passe réinitialisé avec succès.' };
   }

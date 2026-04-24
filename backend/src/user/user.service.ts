@@ -1,4 +1,5 @@
-import { Injectable } from '@nestjs/common';
+// src/user/user.service.ts
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from './user.entity';
@@ -10,11 +11,15 @@ export class UserService {
     private userRepo: Repository<User>,
   ) {}
 
-  findAll() {
+  async findAll() {
     return this.userRepo.find();
   }
 
-  findOne(id: number) {
-    return this.userRepo.findOne({ where: { id } });
+  async findOne(id: number): Promise<User> {
+    const user = await this.userRepo.findOne({ where: { id } });
+    if (!user) {
+      throw new NotFoundException(`Utilisateur avec l'ID ${id} introuvable`);
+    }
+    return user;
   }
 }

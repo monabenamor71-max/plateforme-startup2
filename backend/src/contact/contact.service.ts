@@ -1,5 +1,5 @@
 // src/contact/contact.service.ts
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ContactConfig } from './contact-config.entity';
@@ -29,6 +29,9 @@ export class ContactService {
         description_hero: 'Une question ? Un projet ? Notre équipe est à votre écoute.',
       });
       config = await this.configRepo.save(config);
+      if (!config || !config.id) {
+        throw new BadRequestException('Erreur lors de la création de la configuration par défaut');
+      }
     }
     return config;
   }
@@ -40,7 +43,11 @@ export class ContactService {
     if (updateData.adresse !== undefined) config.adresse = updateData.adresse;
     if (updateData.horaires !== undefined) config.horaires = updateData.horaires;
     if (updateData.description_hero !== undefined) config.description_hero = updateData.description_hero;
-    return await this.configRepo.save(config);
+    const updated = await this.configRepo.save(config);
+    if (!updated) {
+      throw new BadRequestException('Erreur lors de la mise à jour de la configuration');
+    }
+    return updated;
   }
 
   async saveContactMessage(dto: CreateContactMessageDto): Promise<ContactMessage> {
@@ -55,6 +62,9 @@ export class ContactService {
       is_read: false,
     });
     const saved = await this.messageRepo.save(message);
+    if (!saved || !saved.id) {
+      throw new BadRequestException('Erreur lors de la sauvegarde du message');
+    }
     // Envoi d'email à l'admin
     await this.mailService.sendContactNotification(
       dto.nom,
@@ -74,7 +84,11 @@ export class ContactService {
     const message = await this.messageRepo.findOne({ where: { id } });
     if (!message) throw new NotFoundException('Message non trouvé');
     message.is_read = true;
-    return await this.messageRepo.save(message);
+    const updated = await this.messageRepo.save(message);
+    if (!updated) {
+      throw new BadRequestException('Erreur lors du marquage du message comme lu');
+    }
+    return updated;
   }
 
   async deleteMessage(id: number): Promise<void> {
@@ -86,12 +100,13 @@ export class ContactService {
     const message = await this.messageRepo.findOne({ where: { id } });
     if (!message) throw new NotFoundException('Message non trouvé');
 
-    // Enregistre la réponse en base
     message.admin_reply = reponse;
     message.replied_at = new Date();
     const updated = await this.messageRepo.save(message);
+    if (!updated) {
+      throw new BadRequestException('Erreur lors de l’enregistrement de la réponse');
+    }
 
-    // Envoie l'email au client
     await this.mailService.sendReplyEmail(
       message.email,
       `${message.prenom} ${message.nom}`,

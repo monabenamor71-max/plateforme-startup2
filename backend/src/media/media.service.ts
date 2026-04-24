@@ -1,31 +1,39 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+// src/media/media.service.ts
+import { Injectable, NotFoundException, Logger, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Media } from './media.entity';
+import { CreateMediaDto, UpdateMediaDto } from './dto/media.dto';
 
 @Injectable()
 export class MediaService {
+  private readonly logger = new Logger(MediaService.name);
+
   constructor(
     @InjectRepository(Media)
     private mediaRepo: Repository<Media>,
   ) {}
 
-  async create(data: any, miniatureFile?: Express.Multer.File): Promise<Media> {
+  async create(createDto: CreateMediaDto, miniatureFile?: Express.Multer.File): Promise<Media> {
     const mediaData: Partial<Media> = {
-      titre: data.titre,
-      description: data.description,
-      url: data.url,
-      type: data.type,
-      miniature: miniatureFile?.filename || data.miniature || undefined,
-      // duree: data.duree,  ← supprimé (colonne inexistante)
-      emission: data.emission,
-      date_publication: data.date_publication ? new Date(data.date_publication) : undefined,
-      categorie: data.categorie,
-      featured: data.featured === 'true' || data.featured === true,
-      statut: data.statut,
+      titre: createDto.titre,
+      description: createDto.description,
+      url: createDto.url,
+      type: createDto.type || 'youtube',
+      miniature: miniatureFile?.filename || createDto.miniature,
+      emission: createDto.emission,
+      date_publication: createDto.date_publication ? new Date(createDto.date_publication) : null,
+      categorie: createDto.categorie || 'interview',
+      featured: createDto.featured || false,
+      statut: createDto.statut || 'brouillon',
     };
     const media = this.mediaRepo.create(mediaData);
-    return await this.mediaRepo.save(media);
+    const saved = await this.mediaRepo.save(media);
+    if (!saved || !saved.id) {
+      throw new BadRequestException('Erreur lors de la création du média');
+    }
+    this.logger.log(`Média créé : ${saved.id} - ${saved.titre}`);
+    return saved;
   }
 
   async findAllAdmin(): Promise<Media[]> {
@@ -34,21 +42,30 @@ export class MediaService {
 
   async findOne(id: number): Promise<Media> {
     const media = await this.mediaRepo.findOne({ where: { id } });
-    if (!media) throw new NotFoundException('Média non trouvé');
+    if (!media) throw new NotFoundException(`Média ${id} non trouvé`);
     return media;
   }
 
-  async update(id: number, data: any, miniatureFile?: Express.Multer.File): Promise<Media> {
+  async update(id: number, updateDto: UpdateMediaDto, miniatureFile?: Express.Multer.File): Promise<Media> {
     const media = await this.findOne(id);
-    if (miniatureFile) data.miniature = miniatureFile.filename;
-    if (data.date_publication) data.date_publication = new Date(data.date_publication);
-    Object.assign(media, data);
-    return await this.mediaRepo.save(media);
+    if (miniatureFile) updateDto.miniature = miniatureFile.filename;
+    if (updateDto.date_publication) updateDto.date_publication = new Date(updateDto.date_publication) as any;
+    Object.assign(media, updateDto);
+    const updated = await this.mediaRepo.save(media);
+    if (!updated) {
+      throw new BadRequestException('Erreur lors de la mise à jour du média');
+    }
+    this.logger.log(`Média mis à jour : ${id}`);
+    return updated;
   }
 
   async delete(id: number): Promise<void> {
     const media = await this.findOne(id);
-    await this.mediaRepo.remove(media);
+    const removed = await this.mediaRepo.remove(media);
+    if (!removed) {
+      throw new BadRequestException('Erreur lors de la suppression du média');
+    }
+    this.logger.log(`Média supprimé : ${id}`);
   }
 
   async findPublished(featuredOnly = false): Promise<Media[]> {

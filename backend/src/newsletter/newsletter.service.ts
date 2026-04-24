@@ -1,3 +1,4 @@
+// src/newsletter/newsletter.service.ts
 import { Injectable, BadRequestException, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -30,15 +31,21 @@ export class NewsletterService {
       let sub = await this.repo.findOne({ where: { email } });
       if (sub) {
         if (!sub.actif) {
-          await this.repo.update(sub.id, { actif: true });
+          const updateResult = await this.repo.update(sub.id, { actif: true });
+          if (updateResult.affected === 0) {
+            throw new BadRequestException('Impossible de réactiver l’abonnement');
+          }
           this.logger.log(`Abonné ${email} réactivé`);
           return { success: true, message: 'Inscription réactivée' };
         }
         return { success: true, message: 'Déjà inscrit', alreadyExists: true };
       }
 
-      sub = this.repo.create({ email, nom, actif: true });
-      await this.repo.save(sub);
+      const newSub = this.repo.create({ email, nom, actif: true });
+      const saved = await this.repo.save(newSub);
+      if (!saved || !saved.id) {
+        throw new BadRequestException('Erreur lors de la sauvegarde de l’abonné');
+      }
       this.logger.log(`Nouvel abonné newsletter : ${email}`);
 
       // Envoi de l'email de bienvenue
@@ -69,7 +76,6 @@ export class NewsletterService {
         <p style="color:#8A9AB5;font-size:13px">- L'équipe BEH</p>
       </div>
     </div>`;
-    // Utilisation d'une méthode générique à ajouter dans MailService
     await this.mailService.sendEmail(email, 'Bienvenue dans la newsletter BEH !', html);
   }
 
@@ -85,7 +91,10 @@ export class NewsletterService {
     if (!abonne) throw new NotFoundException('Email non trouvé');
     if (!abonne.actif) return { success: true, message: 'Déjà désabonné' };
 
-    await this.repo.update({ email }, { actif: false });
+    const updateResult = await this.repo.update({ email }, { actif: false });
+    if (updateResult.affected === 0) {
+      throw new BadRequestException('Impossible de désabonner cet email');
+    }
     this.logger.log(`Désabonné : ${email}`);
     return { success: true, message: 'Désabonnement effectué' };
   }
@@ -124,7 +133,10 @@ export class NewsletterService {
   async removeByEmail(email: string) {
     const abonne = await this.repo.findOne({ where: { email } });
     if (!abonne) throw new NotFoundException('Email non trouvé');
-    await this.repo.delete({ email });
+    const deleteResult = await this.repo.delete({ email });
+    if (deleteResult.affected === 0) {
+      throw new BadRequestException('Impossible de supprimer cet abonné');
+    }
     this.logger.log(`Abonné supprimé : ${email}`);
     return { success: true };
   }

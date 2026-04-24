@@ -1,4 +1,5 @@
-import { Injectable, NotFoundException, ForbiddenException, Logger } from '@nestjs/common';
+// src/messages/messages.service.ts
+import { Injectable, NotFoundException, ForbiddenException, Logger, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Message } from './message.entity';
@@ -20,6 +21,9 @@ export class MessagesService {
     }
     const msg = this.messageRepo.create({ sender_id, receiver_id, contenu });
     const saved = await this.messageRepo.save(msg);
+    if (!saved || !saved.id) {
+      throw new BadRequestException('Erreur lors de l’envoi du message');
+    }
     this.logger.log(`Message envoyé de ${sender_id} à ${receiver_id}`);
     return saved;
   }
@@ -33,7 +37,6 @@ export class MessagesService {
   }
 
   async getExpertMessages(userId: number) {
-    // Identique à getMyMessages (peut être fusionné)
     return this.messageRepo.find({
       where: [{ sender_id: userId }, { receiver_id: userId }],
       relations: ['sender', 'receiver'],
@@ -79,7 +82,10 @@ export class MessagesService {
     if (!isAdmin && message.sender_id !== userId) {
       throw new ForbiddenException('Vous ne pouvez supprimer que vos propres messages');
     }
-    await this.messageRepo.delete(id);
+    const deleteResult = await this.messageRepo.delete(id);
+    if (deleteResult.affected === 0) {
+      throw new BadRequestException('Impossible de supprimer le message');
+    }
     this.logger.log(`Message ${id} supprimé par ${isAdmin ? 'admin' : `utilisateur ${userId}`}`);
     return { success: true };
   }

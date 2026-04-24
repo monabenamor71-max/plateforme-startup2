@@ -1,3 +1,4 @@
+// src/admin/admin.service.ts
 import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
@@ -7,7 +8,9 @@ import { Startup } from '../user/startup.entity';
 import { Blog } from '../blog/blog.entity';
 import { MailService } from '../mail/mail.service';
 import { MediaService } from '../media/media.service';
-import { PodcastService, CreatePodcastDto, UpdatePodcastDto } from '../podcast/podcast.service';
+import { PodcastService } from '../podcast/podcast.service';
+// ✅ Importer les DTOs depuis le fichier dédié (pas depuis le service)
+import { CreatePodcastDto, UpdatePodcastDto } from '../podcast/dto/podcast.dto';
 
 @Injectable()
 export class AdminService {
@@ -32,14 +35,20 @@ export class AdminService {
   async deleteUser(id: number) {
     const user = await this.userRepo.findOne({ where: { id } });
     if (!user) throw new NotFoundException(`Utilisateur ${id} introuvable`);
-    await this.userRepo.delete(id);
+    const deleteResult = await this.userRepo.delete(id);
+    if (deleteResult.affected === 0) {
+      throw new BadRequestException('Impossible de supprimer l’utilisateur');
+    }
     return { message: 'Utilisateur supprimé' };
   }
 
   async toggleUserStatut(id: number, statut: string) {
     const user = await this.userRepo.findOne({ where: { id } });
     if (!user) throw new NotFoundException(`Utilisateur ${id} introuvable`);
-    await this.userRepo.update(id, { statut });
+    const updateResult = await this.userRepo.update(id, { statut });
+    if (updateResult.affected === 0) {
+      throw new BadRequestException('Impossible de mettre à jour le statut');
+    }
     return { message: 'Statut mis à jour' };
   }
 
@@ -74,12 +83,18 @@ export class AdminService {
     if (modifications.experience !== undefined) expert.experience = modifications.experience;
     if (modifications.annee_debut_experience !== undefined) expert.annee_debut_experience = modifications.annee_debut_experience;
     if (modifications.telephone) {
-      await this.userRepo.update(expert.user_id, { telephone: modifications.telephone });
+      const userUpdate = await this.userRepo.update(expert.user_id, { telephone: modifications.telephone });
+      if (userUpdate.affected === 0) {
+        throw new BadRequestException('Impossible de mettre à jour le téléphone');
+      }
     }
 
     expert.modification_demandee = false;
     expert.modifications_en_attente = '';
-    await this.expertRepo.save(expert);
+    const saved = await this.expertRepo.save(expert);
+    if (!saved) {
+      throw new BadRequestException('Erreur lors de la sauvegarde des modifications');
+    }
     return { message: 'Modifications validées et appliquées' };
   }
 
@@ -88,11 +103,13 @@ export class AdminService {
     if (!expert) throw new NotFoundException('Expert non trouvé');
     expert.modification_demandee = false;
     expert.modifications_en_attente = '';
-    await this.expertRepo.save(expert);
+    const saved = await this.expertRepo.save(expert);
+    if (!saved) {
+      throw new BadRequestException('Erreur lors du refus des modifications');
+    }
     return { message: 'Modifications refusées' };
   }
 
-  // Version avec transaction pour validation expert + email
   async validerExpert(id: number) {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
@@ -103,11 +120,12 @@ export class AdminService {
       if (!expert) throw new NotFoundException('Expert non trouvé');
 
       expert.statut = 'valide';
-      await queryRunner.manager.save(expert);
+      const savedExpert = await queryRunner.manager.save(expert);
+      if (!savedExpert) throw new BadRequestException('Erreur lors de la validation de l’expert');
 
-      await queryRunner.manager.update(User, expert.user_id, { statut: 'actif' });
+      const userUpdate = await queryRunner.manager.update(User, expert.user_id, { statut: 'actif' });
+      if (userUpdate.affected === 0) throw new BadRequestException('Impossible de mettre à jour l’utilisateur');
 
-      // Envoi d'email (peut échouer)
       await this.mailService.sendValidationEmail(expert.user.nom, expert.user.email);
 
       await queryRunner.commitTransaction();
@@ -132,9 +150,11 @@ export class AdminService {
       if (!expert) throw new NotFoundException('Expert non trouvé');
 
       expert.statut = 'refuse';
-      await queryRunner.manager.save(expert);
+      const savedExpert = await queryRunner.manager.save(expert);
+      if (!savedExpert) throw new BadRequestException('Erreur lors du refus de l’expert');
 
-      await queryRunner.manager.update(User, expert.user_id, { statut: 'inactif' });
+      const userUpdate = await queryRunner.manager.update(User, expert.user_id, { statut: 'inactif' });
+      if (userUpdate.affected === 0) throw new BadRequestException('Impossible de mettre à jour l’utilisateur');
 
       await this.mailService.sendRefusEmail(expert.user.nom, expert.user.email);
 
@@ -169,9 +189,11 @@ export class AdminService {
       if (!startup) throw new NotFoundException('Startup non trouvée');
 
       startup.statut = 'valide';
-      await queryRunner.manager.save(startup);
+      const savedStartup = await queryRunner.manager.save(startup);
+      if (!savedStartup) throw new BadRequestException('Erreur lors de la validation de la startup');
 
-      await queryRunner.manager.update(User, startup.user_id, { statut: 'actif' });
+      const userUpdate = await queryRunner.manager.update(User, startup.user_id, { statut: 'actif' });
+      if (userUpdate.affected === 0) throw new BadRequestException('Impossible de mettre à jour l’utilisateur');
 
       await this.mailService.sendValidationEmail(startup.user.nom, startup.user.email);
 
@@ -197,9 +219,11 @@ export class AdminService {
       if (!startup) throw new NotFoundException('Startup non trouvée');
 
       startup.statut = 'refuse';
-      await queryRunner.manager.save(startup);
+      const savedStartup = await queryRunner.manager.save(startup);
+      if (!savedStartup) throw new BadRequestException('Erreur lors du refus de la startup');
 
-      await queryRunner.manager.update(User, startup.user_id, { statut: 'inactif' });
+      const userUpdate = await queryRunner.manager.update(User, startup.user_id, { statut: 'inactif' });
+      if (userUpdate.affected === 0) throw new BadRequestException('Impossible de mettre à jour l’utilisateur');
 
       await this.mailService.sendRefusEmail(startup.user.nom, startup.user.email);
 
@@ -245,7 +269,11 @@ export class AdminService {
       image: imageFile?.filename || null,
       pdf: pdfFile?.filename || null,
     });
-    return this.blogRepo.save(article);
+    const saved = await this.blogRepo.save(article);
+    if (!saved || !saved.id) {
+      throw new BadRequestException('Erreur lors de la création de l’article');
+    }
+    return saved;
   }
 
   async updateArticle(id: number, data: any, imageFile: any, pdfFile: any) {
@@ -253,18 +281,30 @@ export class AdminService {
     if (imageFile) data.image = imageFile.filename;
     if (pdfFile) data.pdf = pdfFile.filename;
     Object.assign(article, data);
-    return this.blogRepo.save(article);
+    const saved = await this.blogRepo.save(article);
+    if (!saved) {
+      throw new BadRequestException('Erreur lors de la mise à jour de l’article');
+    }
+    return saved;
   }
 
   async updateArticleStatut(id: number, statut: string) {
     const article = await this.findArticleById(id);
     article.statut = statut;
-    return this.blogRepo.save(article);
+    const saved = await this.blogRepo.save(article);
+    if (!saved) {
+      throw new BadRequestException('Erreur lors de la mise à jour du statut');
+    }
+    return saved;
   }
 
   async deleteArticle(id: number) {
     const article = await this.findArticleById(id);
-    return this.blogRepo.remove(article);
+    const removed = await this.blogRepo.remove(article);
+    if (!removed) {
+      throw new BadRequestException('Erreur lors de la suppression de l’article');
+    }
+    return removed;
   }
 
   // ==================== MÉDIAS ====================

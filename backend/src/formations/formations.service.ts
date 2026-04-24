@@ -1,9 +1,9 @@
+// src/formations/formations.service.ts
 import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Formation } from './formation.entity';
 
-// DTO définis directement dans le service
 export class CreateFormationDto {
   titre: string;
   description?: string;
@@ -99,6 +99,9 @@ export class FormationsService {
       image: imageFile?.filename || '',
     });
     const saved = await this.formationRepo.save(formation);
+    if (!saved || !saved.id) {
+      throw new BadRequestException('Erreur lors de la création de la formation');
+    }
     this.logger.log(`Expert ${expertId} a proposé la formation ${saved.id}`);
     return saved;
   }
@@ -137,6 +140,9 @@ export class FormationsService {
       image: imageFile?.filename || '',
     });
     const saved = await this.formationRepo.save(formation);
+    if (!saved || !saved.id) {
+      throw new BadRequestException('Erreur lors de la création de la formation');
+    }
     this.logger.log(`Admin a créé la formation ${saved.id}`);
     return saved;
   }
@@ -169,6 +175,9 @@ export class FormationsService {
     if (dto.categorie !== undefined) formation.categorie = dto.categorie;
     if (dto.statut !== undefined) formation.statut = dto.statut;
     const updated = await this.formationRepo.save(formation);
+    if (!updated) {
+      throw new BadRequestException('Erreur lors de la mise à jour de la formation');
+    }
     this.logger.log(`Formation ${id} mise à jour`);
     return updated;
   }
@@ -178,13 +187,19 @@ export class FormationsService {
     formation.statut = dto.statut;
     if (dto.commentaire) formation.commentaire_admin = dto.commentaire;
     const updated = await this.formationRepo.save(formation);
+    if (!updated) {
+      throw new BadRequestException('Erreur lors de la mise à jour du statut');
+    }
     this.logger.log(`Formation ${id} : statut changé à ${dto.statut}`);
     return updated;
   }
 
   async delete(id: number): Promise<{ success: boolean }> {
     const formation = await this.findOneOrFail(id);
-    await this.formationRepo.remove(formation);
+    const result = await this.formationRepo.remove(formation);
+    if (!result) {
+      throw new BadRequestException('Erreur lors de la suppression de la formation');
+    }
     this.logger.log(`Formation ${id} supprimée`);
     return { success: true };
   }
@@ -196,7 +211,10 @@ export class FormationsService {
         throw new BadRequestException('Plus de places disponibles pour cette formation');
       }
       formation.places_disponibles -= 1;
-      await this.formationRepo.save(formation);
+      const saved = await this.formationRepo.save(formation);
+      if (!saved) {
+        throw new BadRequestException('Erreur lors de la mise à jour des places');
+      }
       this.logger.log(`Formation ${formationId} : places restantes = ${formation.places_disponibles}`);
     }
   }
@@ -205,7 +223,10 @@ export class FormationsService {
     const formation = await this.findOneOrFail(formationId);
     if (formation.places_limitees) {
       formation.places_disponibles = (formation.places_disponibles || 0) + 1;
-      await this.formationRepo.save(formation);
+      const saved = await this.formationRepo.save(formation);
+      if (!saved) {
+        throw new BadRequestException('Erreur lors de la restitution des places');
+      }
       this.logger.log(`Formation ${formationId} : places restituées → ${formation.places_disponibles}`);
     }
   }

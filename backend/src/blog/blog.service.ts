@@ -1,9 +1,9 @@
-import { Injectable, NotFoundException, Logger } from '@nestjs/common';
+// src/blog/blog.service.ts
+import { Injectable, NotFoundException, Logger, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Blog } from './blog.entity';
 
-// DTO internes
 export class CreateArticleDto {
   titre: string;
   description?: string;
@@ -58,6 +58,9 @@ export class BlogService {
     if (pdfFile) articleData.pdf = pdfFile.filename;
     const article = this.blogRepo.create(articleData);
     const saved = await this.blogRepo.save(article);
+    if (!saved || !saved.id) {
+      throw new BadRequestException('Erreur lors de la création de l’article');
+    }
     this.logger.log(`Article créé : ${saved.id} - ${saved.titre}`);
     return saved;
   }
@@ -82,6 +85,9 @@ export class BlogService {
     if (dto.duree_lecture !== undefined) article.duree_lecture = dto.duree_lecture;
     if (dto.statut !== undefined) article.statut = dto.statut;
     const updated = await this.blogRepo.save(article);
+    if (!updated) {
+      throw new BadRequestException(`Erreur lors de la mise à jour de l’article ${id}`);
+    }
     this.logger.log(`Article ${id} mis à jour`);
     return updated;
   }
@@ -90,13 +96,19 @@ export class BlogService {
     const article = await this.findOneOrFail(id);
     article.statut = dto.statut;
     const updated = await this.blogRepo.save(article);
+    if (!updated) {
+      throw new BadRequestException(`Erreur lors de la mise à jour du statut de l’article ${id}`);
+    }
     this.logger.log(`Article ${id} : statut changé à ${dto.statut}`);
     return updated;
   }
 
   async delete(id: number): Promise<void> {
     const article = await this.findOneOrFail(id);
-    await this.blogRepo.remove(article);
+    const deleteResult = await this.blogRepo.delete({ id });
+    if (deleteResult.affected === 0) {
+      throw new BadRequestException(`Impossible de supprimer l’article ${id}`);
+    }
     this.logger.log(`Article ${id} supprimé`);
   }
 
@@ -119,7 +131,11 @@ export class BlogService {
     });
     if (!article) throw new NotFoundException('Article non trouvé ou non publié');
     article.vues += 1;
-    await this.blogRepo.save(article);
+    const saved = await this.blogRepo.save(article);
+    if (!saved) {
+      // L'incrémentation a échoué mais on retourne l'article quand même (pas bloquant)
+      this.logger.error(`Impossible d'incrémenter les vues pour l'article ${id}`);
+    }
     return article;
   }
 

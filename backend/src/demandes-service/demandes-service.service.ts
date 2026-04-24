@@ -1,3 +1,4 @@
+// src/demandes-service/demandes-service.service.ts
 import {
   Injectable,
   NotFoundException,
@@ -11,7 +12,6 @@ import { Formation } from '../formations/formation.entity';
 import { Expert } from '../user/expert.entity';
 import { FormationsService } from '../formations/formations.service';
 
-// DTO internes
 export class CreateDemandeDto {
   service?: string;
   description: string;
@@ -79,7 +79,10 @@ export class DemandesServiceService {
     if (!demande) throw new NotFoundException(`Demande ${id} non trouvée`);
     demande.statut = dto.statut;
     if (dto.commentaire) demande.commentaire_admin = dto.commentaire;
-    await this.repo.save(demande);
+    const saved = await this.repo.save(demande);
+    if (!saved) {
+      throw new BadRequestException('Erreur lors de la mise à jour du statut');
+    }
     this.logger.log(`Demande ${id} : statut changé à ${dto.statut}`);
     return { message: 'Statut mis à jour' };
   }
@@ -87,7 +90,10 @@ export class DemandesServiceService {
   async supprimer(id: number) {
     const demande = await this.repo.findOne({ where: { id } });
     if (!demande) throw new NotFoundException(`Demande ${id} non trouvée`);
-    await this.repo.remove(demande);
+    const removeResult = await this.repo.remove(demande);
+    if (!removeResult) {
+      throw new BadRequestException('Erreur lors de la suppression de la demande');
+    }
     this.logger.log(`Demande ${id} supprimée`);
     return { message: 'Demande supprimée' };
   }
@@ -101,7 +107,10 @@ export class DemandesServiceService {
     if (nouveaux.length === 0) return { message: 'Aucun nouvel expert à notifier' };
 
     demande.experts_notifies = [...actuels, ...nouveaux];
-    await this.repo.save(demande);
+    const saved = await this.repo.save(demande);
+    if (!saved) {
+      throw new BadRequestException('Erreur lors de la notification des experts');
+    }
     this.logger.log(`Experts notifiés pour demande ${demandeId} : ${nouveaux.join(',')}`);
     return { message: `${nouveaux.length} expert(s) notifié(s)` };
   }
@@ -129,7 +138,10 @@ export class DemandesServiceService {
     demande.expert_assigne_id = dto.expert_id;
     demande.statut = 'acceptee';
     if (dto.commentaire) demande.commentaire_admin = dto.commentaire;
-    await this.repo.save(demande);
+    const saved = await this.repo.save(demande);
+    if (!saved) {
+      throw new BadRequestException('Erreur lors de l’assignation de l’expert');
+    }
     this.logger.log(`Expert ${dto.expert_id} assigné à la demande ${demandeId}`);
     return { message: 'Expert assigné avec succès' };
   }
@@ -159,7 +171,10 @@ export class DemandesServiceService {
     }
 
     demande.statut = 'acceptee';
-    await this.repo.save(demande);
+    const saved = await this.repo.save(demande);
+    if (!saved) {
+      throw new BadRequestException('Erreur lors de l’acceptation de la demande');
+    }
 
     return {
       message: 'Demande acceptée',
@@ -188,7 +203,10 @@ export class DemandesServiceService {
     }
 
     demande.statut = 'refusee';
-    await this.repo.save(demande);
+    const saved = await this.repo.save(demande);
+    if (!saved) {
+      throw new BadRequestException('Erreur lors du refus de la demande');
+    }
     this.logger.log(`Demande ${demandeId} refusée`);
     return { message: 'Demande refusée' };
   }
@@ -207,6 +225,9 @@ export class DemandesServiceService {
     const data = { user_id: userId, ...dto };
     const demande = this.repo.create(data);
     const saved = await this.repo.save(demande);
+    if (!saved || !saved.id) {
+      throw new BadRequestException('Erreur lors de la création de la demande');
+    }
     this.logger.log(`Demande créée par user ${userId}`);
     return saved;
   }
@@ -243,6 +264,9 @@ export class DemandesServiceService {
     });
 
     const saved = await this.repo.save(demande);
+    if (!saved || !saved.id) {
+      throw new BadRequestException('Erreur lors de la création de la demande de formation');
+    }
     this.logger.log(`Demande de formation créée par user ${userId} pour formation ${formationId}`);
     return saved;
   }
@@ -253,9 +277,16 @@ export class DemandesServiceService {
     if (demande.statut !== 'en_attente')
       throw new BadRequestException('Seules les demandes en attente peuvent être modifiées');
 
-    await this.repo.update(id, dto);
+    const updateResult = await this.repo.update(id, dto);
+    if (updateResult.affected === 0) {
+      throw new BadRequestException('Impossible de mettre à jour la demande');
+    }
     this.logger.log(`Demande ${id} mise à jour par user ${userId}`);
-    return this.repo.findOne({ where: { id } });
+    const updated = await this.repo.findOne({ where: { id } });
+    if (!updated) {
+      throw new NotFoundException('Demande non trouvée après mise à jour');
+    }
+    return updated;
   }
 
   async deleteDemande(id: number, userId: number) {
@@ -264,7 +295,10 @@ export class DemandesServiceService {
     if (demande.statut !== 'en_attente')
       throw new BadRequestException('Seules les demandes en attente peuvent être supprimées');
 
-    await this.repo.delete(id);
+    const deleteResult = await this.repo.delete(id);
+    if (deleteResult.affected === 0) {
+      throw new BadRequestException('Impossible de supprimer la demande');
+    }
     this.logger.log(`Demande ${id} supprimée par user ${userId}`);
     return { success: true };
   }
@@ -327,7 +361,10 @@ export class DemandesServiceService {
     if (acceptes.includes(expert.id)) return { message: 'Vous avez déjà accepté' };
 
     demande.experts_acceptes = [...acceptes, expert.id];
-    await this.repo.save(demande);
+    const saved = await this.repo.save(demande);
+    if (!saved) {
+      throw new BadRequestException('Erreur lors de l’enregistrement de l’acceptation');
+    }
     this.logger.log(`Expert ${expert.id} a accepté la mission ${demandeId}`);
     return { message: 'Acceptation enregistrée, en attente de validation admin' };
   }

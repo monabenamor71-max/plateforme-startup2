@@ -1,3 +1,4 @@
+// src/devis/devis.service.ts
 import { Injectable, NotFoundException, BadRequestException, UnauthorizedException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
@@ -5,7 +6,6 @@ import { Devis } from './devis.entity';
 import { DemandeService } from '../demandes-service/demande-service.entity';
 import { Expert } from '../user/expert.entity';
 
-// DTO définis directement dans le service (pas de fichier externe)
 export class CreateDevisDto {
   demande_id: number;
   montant: number;
@@ -49,28 +49,30 @@ export class DevisService {
       delai: dto.delai,
     });
     const saved = await this.devisRepo.save(devis);
+    if (!saved || !saved.id) {
+      throw new BadRequestException('Erreur lors de la création du devis');
+    }
     this.logger.log(`Devis créé pour demande ${dto.demande_id}`);
     return saved;
   }
 
- async findByExpert(userId: number) {
-  // 1. Récupérer l'expert correspondant à l'utilisateur connecté
-  const expert = await this.expertRepo.findOne({ where: { user_id: userId } });
-  if (!expert) {
-    console.log(`❌ Aucun expert trouvé pour user_id ${userId}`);
-    return [];
-  }
-  console.log(`✅ Expert trouvé : id=${expert.id}`);
+  async findByExpert(userId: number) {
+    const expert = await this.expertRepo.findOne({ where: { user_id: userId } });
+    if (!expert) {
+      this.logger.log(`❌ Aucun expert trouvé pour user_id ${userId}`);
+      return [];
+    }
+    this.logger.log(`✅ Expert trouvé : id=${expert.id}`);
 
-  // 2. Récupérer tous les devis de cet expert (avec les relations)
-  const devis = await this.devisRepo.find({
-    where: { expert_id: expert.id },
-    relations: ['demande', 'demande.user'],
-    order: { createdAt: 'DESC' },
-  });
-  console.log(`📋 Nombre de devis trouvés pour expert ${expert.id} : ${devis.length}`);
-  return devis;
-}
+    const devis = await this.devisRepo.find({
+      where: { expert_id: expert.id },
+      relations: ['demande', 'demande.user'],
+      order: { createdAt: 'DESC' },
+    });
+    this.logger.log(`📋 Nombre de devis trouvés pour expert ${expert.id} : ${devis.length}`);
+    return devis;
+  }
+
   async findByClient(userId: number) {
     const demandes = await this.demandeRepo.find({
       where: { user_id: userId },
@@ -109,6 +111,9 @@ export class DevisService {
 
     devis.statut = dto.statut;
     const updated = await this.devisRepo.save(devis);
+    if (!updated) {
+      throw new BadRequestException('Erreur lors de la mise à jour du statut');
+    }
     this.logger.log(`Client ${userId} a ${dto.statut} le devis ${devisId}`);
     return updated;
   }
@@ -119,6 +124,9 @@ export class DevisService {
 
     devis.statut = dto.statut;
     const updated = await this.devisRepo.save(devis);
+    if (!updated) {
+      throw new BadRequestException('Erreur lors de la mise à jour du statut');
+    }
     this.logger.log(`Admin a changé le statut du devis ${devisId} en ${dto.statut}`);
     return updated;
   }

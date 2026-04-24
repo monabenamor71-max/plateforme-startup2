@@ -1,32 +1,26 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+// src/podcast/podcast.service.ts
+import { Injectable, NotFoundException, ForbiddenException, BadRequestException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Podcast } from './podcast.entity';
+import { CreatePodcastDto, UpdatePodcastDto } from './dto/podcast.dto';
 import * as fs from 'fs';
 import * as path from 'path';
 
-export class CreatePodcastDto {
-  titre: string;
-  description?: string;
-  auteur?: string;
-  domaine?: string;
-  statut?: 'en_attente' | 'publie' | 'refuse';
-}
-
-export class UpdatePodcastDto {
-  titre?: string;
-  description?: string;
-  auteur?: string;
-  domaine?: string;
-  statut?: 'en_attente' | 'publie' | 'refuse';
-}
-
 @Injectable()
 export class PodcastService {
+  private readonly logger = new Logger(PodcastService.name);
+
   constructor(
     @InjectRepository(Podcast)
     private podcastRepo: Repository<Podcast>,
   ) {}
+
+  private async ensurePodcastExists(id: number): Promise<Podcast> {
+    const podcast = await this.podcastRepo.findOne({ where: { id } });
+    if (!podcast) throw new NotFoundException(`Podcast ${id} introuvable`);
+    return podcast;
+  }
 
   // ==================== ADMIN ====================
   async findAll(): Promise<Podcast[]> {
@@ -34,9 +28,7 @@ export class PodcastService {
   }
 
   async findOne(id: number): Promise<Podcast> {
-    const podcast = await this.podcastRepo.findOne({ where: { id } });
-    if (!podcast) throw new NotFoundException('Podcast non trouvé');
-    return podcast;
+    return this.ensurePodcastExists(id);
   }
 
   async create(
@@ -44,15 +36,21 @@ export class PodcastService {
     audioFile?: Express.Multer.File,
     imageFile?: Express.Multer.File,
   ): Promise<Podcast> {
-    const podcast = new Podcast();
-    podcast.titre = dto.titre;
-    podcast.description = dto.description || '';
-    podcast.auteur = dto.auteur || '';
-    podcast.domaine = dto.domaine || '';
-    podcast.statut = dto.statut || 'en_attente';
-    podcast.url_audio = audioFile?.filename || '';
-    podcast.image = imageFile?.filename || '';
-    return this.podcastRepo.save(podcast);
+    const podcast = this.podcastRepo.create({
+      titre: dto.titre,
+      description: dto.description || '',
+      auteur: dto.auteur || '',
+      domaine: dto.domaine || '',
+      statut: dto.statut || 'en_attente',
+      url_audio: audioFile?.filename || '',
+      image: imageFile?.filename || '',
+    });
+    const saved = await this.podcastRepo.save(podcast);
+    if (!saved || !saved.id) {
+      throw new BadRequestException('Erreur lors de la création du podcast');
+    }
+    this.logger.log(`Podcast créé (admin) : ${saved.id}`);
+    return saved;
   }
 
   async update(
@@ -61,42 +59,63 @@ export class PodcastService {
     audioFile?: Express.Multer.File,
     imageFile?: Express.Multer.File,
   ): Promise<Podcast> {
-    const podcast = await this.findOne(id);
-    if (audioFile && podcast.url_audio) {
-      const oldPath = path.join(__dirname, '../../uploads/podcasts-audio', podcast.url_audio);
-      if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+    const podcast = await this.ensurePodcastExists(id);
+
+    if (audioFile) {
+      if (podcast.url_audio) {
+        const oldPath = path.join(process.cwd(), 'uploads', 'podcasts-audio', podcast.url_audio);
+        if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+      }
       podcast.url_audio = audioFile.filename;
     }
-    if (imageFile && podcast.image) {
-      const oldPath = path.join(__dirname, '../../uploads/podcasts-images', podcast.image);
-      if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+    if (imageFile) {
+      if (podcast.image) {
+        const oldPath = path.join(process.cwd(), 'uploads', 'podcasts-images', podcast.image);
+        if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+      }
       podcast.image = imageFile.filename;
     }
+
     if (dto.titre !== undefined) podcast.titre = dto.titre;
     if (dto.description !== undefined) podcast.description = dto.description;
     if (dto.auteur !== undefined) podcast.auteur = dto.auteur;
     if (dto.domaine !== undefined) podcast.domaine = dto.domaine;
     if (dto.statut !== undefined) podcast.statut = dto.statut;
-    return this.podcastRepo.save(podcast);
+
+    const updated = await this.podcastRepo.save(podcast);
+    if (!updated) {
+      throw new BadRequestException('Erreur lors de la mise à jour du podcast');
+    }
+    this.logger.log(`Podcast ${id} mis à jour`);
+    return updated;
   }
 
   async updateStatut(id: number, statut: 'en_attente' | 'publie' | 'refuse'): Promise<Podcast> {
-    const podcast = await this.findOne(id);
+    const podcast = await this.ensurePodcastExists(id);
     podcast.statut = statut;
-    return this.podcastRepo.save(podcast);
+    const updated = await this.podcastRepo.save(podcast);
+    if (!updated) {
+      throw new BadRequestException('Erreur lors de la mise à jour du statut');
+    }
+    this.logger.log(`Podcast ${id} : statut changé à ${statut}`);
+    return updated;
   }
 
   async delete(id: number): Promise<void> {
-    const podcast = await this.findOne(id);
+    const podcast = await this.ensurePodcastExists(id);
     if (podcast.url_audio) {
-      const audioPath = path.join(__dirname, '../../uploads/podcasts-audio', podcast.url_audio);
+      const audioPath = path.join(process.cwd(), 'uploads', 'podcasts-audio', podcast.url_audio);
       if (fs.existsSync(audioPath)) fs.unlinkSync(audioPath);
     }
     if (podcast.image) {
-      const imagePath = path.join(__dirname, '../../uploads/podcasts-images', podcast.image);
+      const imagePath = path.join(process.cwd(), 'uploads', 'podcasts-images', podcast.image);
       if (fs.existsSync(imagePath)) fs.unlinkSync(imagePath);
     }
-    await this.podcastRepo.remove(podcast);
+    const removed = await this.podcastRepo.remove(podcast);
+    if (!removed) {
+      throw new BadRequestException('Erreur lors de la suppression du podcast');
+    }
+    this.logger.log(`Podcast ${id} supprimé`);
   }
 
   // ==================== EXPERTS ====================
@@ -106,16 +125,22 @@ export class PodcastService {
     audioFile?: Express.Multer.File,
     imageFile?: Express.Multer.File,
   ): Promise<Podcast> {
-    const podcast = new Podcast();
-    podcast.titre = dto.titre;
-    podcast.description = dto.description || '';
-    podcast.auteur = dto.auteur || '';
-    podcast.domaine = dto.domaine || '';
-    podcast.statut = 'en_attente';
-    podcast.url_audio = audioFile?.filename || '';
-    podcast.image = imageFile?.filename || '';
-    podcast.expert_id = expertId;
-    return this.podcastRepo.save(podcast);
+    const podcast = this.podcastRepo.create({
+      titre: dto.titre,
+      description: dto.description || '',
+      auteur: dto.auteur || '',
+      domaine: dto.domaine || '',
+      statut: 'en_attente',
+      url_audio: audioFile?.filename || '',
+      image: imageFile?.filename || '',
+      expert_id: expertId,
+    });
+    const saved = await this.podcastRepo.save(podcast);
+    if (!saved || !saved.id) {
+      throw new BadRequestException('Erreur lors de la création du podcast par l’expert');
+    }
+    this.logger.log(`Podcast créé par expert ${expertId} : ${saved.id}`);
+    return saved;
   }
 
   async findByExpert(expertId: number): Promise<Podcast[]> {
@@ -125,7 +150,6 @@ export class PodcastService {
     });
   }
 
-  /** Modification par l'expert (vérifie l'appartenance) */
   async updateByExpert(
     podcastId: number,
     expertId: number,
@@ -133,18 +157,17 @@ export class PodcastService {
     audioFile?: Express.Multer.File,
     imageFile?: Express.Multer.File,
   ): Promise<Podcast> {
-    const podcast = await this.findOne(podcastId);
+    const podcast = await this.ensurePodcastExists(podcastId);
     if (podcast.expert_id !== expertId) {
       throw new ForbiddenException('Vous ne pouvez pas modifier ce podcast');
     }
-    // Seul l'admin peut changer le statut, on le bloque pour l'expert
-    if (dto.statut !== undefined) delete dto.statut;
-    return this.update(podcastId, dto, audioFile, imageFile);
+    // L'expert ne peut pas changer le statut
+    const { statut, ...allowedDto } = dto;
+    return this.update(podcastId, allowedDto, audioFile, imageFile);
   }
 
-  /** Suppression par l'expert (vérifie l'appartenance) */
   async deleteByExpert(podcastId: number, expertId: number): Promise<void> {
-    const podcast = await this.findOne(podcastId);
+    const podcast = await this.ensurePodcastExists(podcastId);
     if (podcast.expert_id !== expertId) {
       throw new ForbiddenException('Vous ne pouvez pas supprimer ce podcast');
     }

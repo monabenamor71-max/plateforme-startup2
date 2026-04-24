@@ -19,7 +19,8 @@ import { Roles } from '../auth/roles.decorator';
 import { FileFieldsInterceptor, FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
-import { CreatePodcastDto, UpdatePodcastDto } from '../podcast/podcast.service';
+// ✅ Importer les DTOs depuis le bon fichier
+import { CreatePodcastDto, UpdatePodcastDto } from '../podcast/dto/podcast.dto';
 
 // Stockage pour les articles (images + PDF)
 const articleStorage = diskStorage({
