@@ -352,18 +352,13 @@ export default function DashboardAdmin() {
   const [demandeStatutFilt,  setDemandeStatutFilt]  = useState("tous");
   const [demandeServiceFilt, setDemandeServiceFilt] = useState("tous");
 
-  // État pour la modale de profil expert
   const [selectedExpertProfile, setSelectedExpertProfile] = useState<any>(null);
 
-  // Helper pour récupérer le token
   const token = () => {
     if (typeof window === "undefined") return "";
     const t = localStorage.getItem("access_token");
-    if (!t) {
-      router.replace("/connexion");
-      return "";
-    }
-    return t;
+    if (!t) router.replace("/connexion");
+    return t || "";
   };
   const hdr = () => ({ Authorization: `Bearer ${token()}` });
   const hdrJ = () => ({ Authorization: `Bearer ${token()}`, "Content-Type": "application/json" });
@@ -427,15 +422,12 @@ export default function DashboardAdmin() {
 
   async function loadHistoire() { try { const r = await fetch(`${BASE}/histoire?_=${Date.now()}`); if (r.ok) setHForm(await r.json()); } catch {} }
   async function loadArticles() { try { const r = await fetch(`${BASE}/articles/admin/all?_=${Date.now()}`, { headers: hdr() }); if (r.ok) setArticles(await r.json()); } catch {} }
-  
-  // ==================== CORRECTIONS POUR LES MESSAGES ====================
   async function loadContactMessages() {
     try {
       const r = await fetch(`${BASE}/contact/messages?_=${Date.now()}`, { headers: hdr() });
       if (r.ok) setContactMsgs(await r.json());
     } catch (err) { console.error(err); }
   }
-  
   async function loadMedias() { try { const r = await fetch(`${BASE}/admin/medias/all`, { headers: hdr() }); if (r.ok) setMedias(await r.json()); else setMedias([]); } catch { setMedias([]); } }
 
   const hf  = (k: string) => hForm[k] || "";
@@ -454,19 +446,18 @@ export default function DashboardAdmin() {
   async function validerTemo(id: number) { const r = await fetch(`${BASE}/temoignages/${id}/valider?_=${Date.now()}`, { method: "PATCH", headers: hdr() }); if (r.ok) { notify("✅ Publié !"); loadAll(); } else notify("Erreur", false); }
   async function refuserTemo(id: number) { const r = await fetch(`${BASE}/temoignages/${id}/refuser?_=${Date.now()}`, { method: "PATCH", headers: hdr() }); if (r.ok) { notify("Refusé"); loadAll(); } else notify("Erreur", false); }
   async function supprimerTemo(id: number) { if (!confirm("Supprimer ?")) return; const r = await fetch(`${BASE}/temoignages/${id}?_=${Date.now()}`, { method: "DELETE", headers: hdr() }); if (r.ok) { notify("Supprimé"); loadAll(); } else notify("Erreur", false); }
-  
-  // ========== CORRECTIONS MESSAGES ==========
+
   async function marquerLu(id: number) {
     const r = await fetch(`${BASE}/contact/messages/${id}/lu`, { method: "PATCH", headers: hdr() });
     if (r.ok) { notify("Lu"); loadContactMessages(); } else notify("Erreur", false);
   }
-  
+
   async function supprimerMessage(id: number) {
     if (!confirm("Supprimer ?")) return;
     const r = await fetch(`${BASE}/contact/messages/${id}`, { method: "DELETE", headers: hdr() });
     if (r.ok) { notify("Supprimé"); loadContactMessages(); } else notify("Erreur", false);
   }
-  
+
   async function envoyerReponse(e: React.FormEvent) {
     e.preventDefault();
     if (!replyText.trim()) { notify("Écrivez une réponse", false); return; }
@@ -477,13 +468,15 @@ export default function DashboardAdmin() {
         headers: hdrJ(),
         body: JSON.stringify({ reponse: replyText })
       });
-      if (r.ok) { notify("✅ Envoyé !"); setReplyModal({ open: false, messageId: 0, email: "", nom: "", prenom: "" }); setReplyText(""); loadContactMessages(); }
-      else notify("Erreur", false);
+      if (r.ok) {
+        notify("✅ Envoyé !");
+        setReplyModal({ open: false, messageId: 0, email: "", nom: "", prenom: "" });
+        setReplyText("");
+        await loadContactMessages();
+      } else notify("Erreur", false);
     } catch { notify("Erreur", false); }
     setSendingReply(false);
   }
-  
-  // ========== FIN CORRECTIONS ==========
 
   async function changerStatutDemande(id: number, statut: string) {
     const body: any = { statut };
@@ -542,46 +535,29 @@ export default function DashboardAdmin() {
   async function sauvegarderFormation(e: React.FormEvent) {
     e.preventDefault();
     const fd = new FormData();
-    Object.entries(formationForm).forEach(([k, v]) => {
-      if (v !== null && v !== undefined) fd.append(k, String(v));
-    });
+    Object.entries(formationForm).forEach(([k, v]) => { if (v !== null && v !== undefined) fd.append(k, String(v)); });
     if (formationImageFile) fd.append("image", formationImageFile);
     const url = editingFormation ? `${BASE}/formations/admin/${editingFormation.id}` : `${BASE}/formations/admin/create`;
-    const r = await fetch(url, {
-      method: editingFormation ? "PUT" : "POST",
-      headers: hdr(),
-      body: fd,
-    });
-    if (r.ok) {
-      notify(editingFormation ? "✅ Modifié !" : "✅ Créé !");
-      setShowFormationModal(false);
-      resetFormationForm();
-      loadFormations();
-    } else {
-      const err = await r.text();
-      notify(`Erreur: ${err}`, false);
-    }
+    const r = await fetch(url, { method: editingFormation ? "PUT" : "POST", headers: hdr(), body: fd });
+    if (r.ok) { notify(editingFormation ? "✅ Modifié !" : "✅ Créé !"); setShowFormationModal(false); resetFormationForm(); loadFormations(); }
+    else { const err = await r.text(); notify(`Erreur: ${err}`, false); }
   }
-
   async function publierFormation(id: number) {
     const r = await fetch(`${BASE}/formations/admin/${id}/statut`, { method: "PATCH", headers: hdrJ(), body: JSON.stringify({ statut: "publie" }) });
     if (r.ok) { notify("✅ Formation publiée !"); loadFormations(); }
     else notify("Erreur", false);
   }
-
   async function archiverFormation(id: number) {
     const r = await fetch(`${BASE}/formations/admin/${id}/statut`, { method: "PATCH", headers: hdrJ(), body: JSON.stringify({ statut: "archive" }) });
     if (r.ok) { notify("📦 Formation archivée"); loadFormations(); }
     else notify("Erreur", false);
   }
-
   async function supprimerFormation(id: number) {
     if (!confirm("Supprimer définitivement ?")) return;
     const r = await fetch(`${BASE}/formations/admin/${id}`, { method: "DELETE", headers: hdr() });
     if (r.ok) { notify("✅ Supprimé"); loadFormations(); }
     else notify("Erreur", false);
   }
-
   function resetFormationForm() {
     setEditingFormation(null);
     setFormationImageFile(null);
@@ -627,7 +603,6 @@ export default function DashboardAdmin() {
     { id: "medias",      label: "Médias & Vidéos",   icon: "🎬" },
   ];
 
-  // Fonction pour extraire le domaine d'une demande
   function getDemandeDomaine(demande: any): string {
     if (demande.domaine) return demande.domaine;
     const match = demande.description?.match(/\[Domaine:\s*([^\]]+)\]/i);
@@ -635,7 +610,6 @@ export default function DashboardAdmin() {
     return "Autre";
   }
 
-  // Modale de profil expert détaillé
   function ExpertProfileModal({ expert, onClose }: { expert: any; onClose: () => void }) {
     const user = expert.user;
     return (
@@ -651,41 +625,14 @@ export default function DashboardAdmin() {
             <button onClick={onClose} style={{ background: "rgba(255,255,255,.15)", border: "none", borderRadius: 8, width: 32, height: 32, cursor: "pointer", color: "#fff", fontSize: 14 }}>✕</button>
           </div>
           <div style={{ padding: "24px 28px" }}>
-            <div style={{ marginBottom: 16 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: "#7D8FAA", textTransform: "uppercase", marginBottom: 4 }}>Email</div>
-              <div style={{ fontSize: 14, color: "#0A2540" }}>{user?.email || "—"}</div>
-            </div>
-            <div style={{ marginBottom: 16 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: "#7D8FAA", textTransform: "uppercase", marginBottom: 4 }}>Téléphone</div>
-              <div style={{ fontSize: 14, color: "#0A2540" }}>{user?.telephone || expert.telephone || "—"}</div>
-            </div>
-            <div style={{ marginBottom: 16 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: "#7D8FAA", textTransform: "uppercase", marginBottom: 4 }}>Localisation</div>
-              <div style={{ fontSize: 14, color: "#0A2540" }}>{expert.localisation || "—"}</div>
-            </div>
-            <div style={{ marginBottom: 16 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: "#7D8FAA", textTransform: "uppercase", marginBottom: 4 }}>Expérience</div>
-              <div style={{ fontSize: 14, color: "#0A2540" }}>{expert.annee_debut_experience ? `${new Date().getFullYear() - expert.annee_debut_experience} ans (depuis ${expert.annee_debut_experience})` : expert.experience || "Non renseignée"}</div>
-            </div>
-            <div style={{ marginBottom: 16 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: "#7D8FAA", textTransform: "uppercase", marginBottom: 4 }}>Compétences / Description</div>
-              <div style={{ fontSize: 14, color: "#475569", lineHeight: 1.7 }}>{expert.description || "Aucune description"}</div>
-            </div>
-            {expert.cv && (
-              <div style={{ marginBottom: 16 }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: "#7D8FAA", textTransform: "uppercase", marginBottom: 4 }}>CV</div>
-                <a href={`${BASE}/uploads/cv/${expert.cv}`} target="_blank" className="file-link">📄 Télécharger CV</a>
-              </div>
-            )}
-            {expert.portfolio && (
-              <div style={{ marginBottom: 16 }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: "#7D8FAA", textTransform: "uppercase", marginBottom: 4 }}>Portfolio</div>
-                <a href={`${BASE}/uploads/portfolio/${expert.portfolio}`} target="_blank" className="file-link">📁 Voir portfolio</a>
-              </div>
-            )}
-            <div style={{ display: "flex", justifyContent: "flex-end" }}>
-              <button className="btn btn-gray" onClick={onClose}>Fermer</button>
-            </div>
+            <div style={{ marginBottom: 16 }}><div style={{ fontSize: 11, fontWeight: 700, color: "#7D8FAA", textTransform: "uppercase", marginBottom: 4 }}>Email</div><div style={{ fontSize: 14, color: "#0A2540" }}>{user?.email || "—"}</div></div>
+            <div style={{ marginBottom: 16 }}><div style={{ fontSize: 11, fontWeight: 700, color: "#7D8FAA", textTransform: "uppercase", marginBottom: 4 }}>Téléphone</div><div style={{ fontSize: 14, color: "#0A2540" }}>{user?.telephone || expert.telephone || "—"}</div></div>
+            <div style={{ marginBottom: 16 }}><div style={{ fontSize: 11, fontWeight: 700, color: "#7D8FAA", textTransform: "uppercase", marginBottom: 4 }}>Localisation</div><div style={{ fontSize: 14, color: "#0A2540" }}>{expert.localisation || "—"}</div></div>
+            <div style={{ marginBottom: 16 }}><div style={{ fontSize: 11, fontWeight: 700, color: "#7D8FAA", textTransform: "uppercase", marginBottom: 4 }}>Expérience</div><div style={{ fontSize: 14, color: "#0A2540" }}>{expert.annee_debut_experience ? `${new Date().getFullYear() - expert.annee_debut_experience} ans (depuis ${expert.annee_debut_experience})` : expert.experience || "Non renseignée"}</div></div>
+            <div style={{ marginBottom: 16 }}><div style={{ fontSize: 11, fontWeight: 700, color: "#7D8FAA", textTransform: "uppercase", marginBottom: 4 }}>Compétences / Description</div><div style={{ fontSize: 14, color: "#475569", lineHeight: 1.7 }}>{expert.description || "Aucune description"}</div></div>
+            {expert.cv && (<div style={{ marginBottom: 16 }}><div style={{ fontSize: 11, fontWeight: 700, color: "#7D8FAA", textTransform: "uppercase", marginBottom: 4 }}>CV</div><a href={`${BASE}/uploads/cv/${expert.cv}`} target="_blank" className="file-link">📄 Télécharger CV</a></div>)}
+            {expert.portfolio && (<div style={{ marginBottom: 16 }}><div style={{ fontSize: 11, fontWeight: 700, color: "#7D8FAA", textTransform: "uppercase", marginBottom: 4 }}>Portfolio</div><a href={`${BASE}/uploads/portfolio/${expert.portfolio}`} target="_blank" className="file-link">📁 Voir portfolio</a></div>)}
+            <div style={{ display: "flex", justifyContent: "flex-end" }}><button className="btn btn-gray" onClick={onClose}>Fermer</button></div>
           </div>
         </div>
       </div>
@@ -733,9 +680,8 @@ export default function DashboardAdmin() {
         .badge{display:inline-flex;align-items:center;gap:4px;border-radius:99px;padding:3px 10px;font-size:11px;font-weight:700;}
       `}</style>
 
-      {/* Toast */}
       {toast.text && (
-        <div style={{ position: "fixed", top: 20, right: 20, zIndex: 9999, background: toast.ok ? "#ECFDF5" : "#FEF2F2", border: `1px solid ${toast.ok ? "#A7F3D0" : "#FECACA"}`, borderLeft: `4px solid ${toast.ok ? "#059669" : "#DC2626"}`, color: toast.ok ? "#059669" : "#DC2626", borderRadius: 12, padding: "13px 20px", fontWeight: 700, fontSize: 13, boxShadow: "0 8px 28px rgba(0,0,0,.12)", display: "flex", alignItems: "center", gap: 8 }}>
+        <div style={{ position: "fixed", top: 20, right: 20, zIndex: 9999, background: toast.ok ? "#ECFDF5" : "#FEF2F2", border: `1px solid ${toast.ok ? "#A7F3D0" : "#FECACA"}`, borderLeft: `4px solid ${toast.ok ? "#059669" : "#DC2626"}`, color: toast.ok ? "#059669" : "#DC2626", borderRadius: 12, padding: "13px 20px", fontWeight: 700, fontSize: 13, boxShadow: "0 8px 28px rgba(0,0,0,.12)" }}>
           {toast.text}
         </div>
       )}
@@ -816,10 +762,7 @@ export default function DashboardAdmin() {
         />
       )}
 
-      {/* Modale de profil expert détaillé */}
-      {selectedExpertProfile && (
-        <ExpertProfileModal expert={selectedExpertProfile} onClose={() => setSelectedExpertProfile(null)} />
-      )}
+      {selectedExpertProfile && <ExpertProfileModal expert={selectedExpertProfile} onClose={() => setSelectedExpertProfile(null)} />}
 
       {/* Modal réponse contact */}
       {replyModal.open && (
@@ -919,7 +862,6 @@ export default function DashboardAdmin() {
         </div>
       )}
 
-      {/* Layout principal */}
       <div style={{ display: "flex", minHeight: "100vh" }}>
         <aside style={{ width: sideCollapsed ? 64 : 230, background: "#0A2540", display: "flex", flexDirection: "column", position: "sticky", top: 0, height: "100vh", flexShrink: 0, transition: "width .22s cubic-bezier(.22,1,.36,1)", overflow: "hidden" }}>
           <div style={{ padding: "20px 18px 16px", borderBottom: "1px solid rgba(255,255,255,.07)", display: "flex", alignItems: "center", gap: 10 }}>
@@ -1075,60 +1017,57 @@ export default function DashboardAdmin() {
                   </div>
                 </div>
               )}
-         {tab === "startups" && (
-  <div style={{ padding: "24px 28px" }}>
-    <div style={{ background: "#fff", border: "1.5px solid #EEF2F7", borderRadius: 16, overflow: "hidden" }}>
-      <div style={{ padding: "14px 20px", borderBottom: "1px solid #F1F5F9", background: "#FAFBFE" }}>
-        <span style={{ fontWeight: 700, fontSize: 14.5 }}>🚀 Startups ({startups.length}) · {enAttenteStartups.length} en attente</span>
-      </div>
-      <table style={{ width: "100%", borderCollapse: "collapse" }}>
-        <thead>
-          <tr>
-            <th>Responsable</th><th>Email</th><th>Startup</th><th>Secteur</th><th>Taille</th><th>Statut</th><th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {startups.length === 0 ? (
-            <tr>
-              <td colSpan={7} style={{ textAlign: "center", padding: 40, color: "#94A3B8" }}>Aucune startup</td>
-            </tr>
-          ) : (
-            startups.map((s: any) => (
-              <tr key={s.id}>
-                <td>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <div style={{ width: 32, height: 32, borderRadius: "50%", background: "#0A2540", display: "flex", alignItems: "center", justifyContent: "center", color: "#F7B500", fontWeight: 700 }}>
-                      {s.user?.prenom?.[0]}{s.user?.nom?.[0]}
-                    </div>
-                    <span style={{ fontWeight: 600 }}>{s.user?.prenom} {s.user?.nom}</span>
+              {tab === "startups" && (
+                <div style={{ padding: "24px 28px" }}>
+                  <div style={{ background: "#fff", border: "1.5px solid #EEF2F7", borderRadius: 16, overflow: "hidden" }}>
+                    <div style={{ padding: "14px 20px", borderBottom: "1px solid #F1F5F9", background: "#FAFBFE" }}><span style={{ fontWeight: 700, fontSize: 14.5 }}>🚀 Startups ({startups.length}) · {enAttenteStartups.length} en attente</span></div>
+                    <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                      <thead>
+                        <tr>
+                          <th>Responsable</th><th>Email</th><th>Startup</th><th>Secteur</th><th>Taille</th><th>Statut</th><th>Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {startups.length === 0 && (
+                          <tr>
+                            <td colSpan={7} style={{ textAlign: "center", padding: 40, color: "#94A3B8" }}>Aucune startup</td>
+                          </tr>
+                        )}
+                        {startups.map((s: any) => (
+                          <tr key={s.id}>
+                            <td>
+                              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                <div style={{ width: 32, height: 32, borderRadius: "50%", background: "#0A2540", display: "flex", alignItems: "center", justifyContent: "center", color: "#F7B500", fontWeight: 700 }}>
+                                  {s.user?.prenom?.[0]}{s.user?.nom?.[0]}
+                                </div>
+                                <span style={{ fontWeight: 600 }}>{s.user?.prenom} {s.user?.nom}</span>
+                              </div>
+                            </td>
+                            <td style={{ color: "#64748B" }}>{s.user?.email}</td>
+                            <td style={{ fontWeight: 600 }}>{s.nom_startup || "—"}</td>
+                            <td>{s.secteur || "—"}</td>
+                            <td>{s.taille || "—"}</td>
+                            <td>
+                              {s.statut === "valide" ? <span className="badge" style={{ background: "#ECFDF5", color: "#059669" }}>✅ Validé</span> : s.statut === "en_attente" ? <span className="badge" style={{ background: "#FFFBEB", color: "#B45309" }}>⏳ Attente</span> : <span className="badge" style={{ background: "#FEF2F2", color: "#DC2626" }}>❌ Refusé</span>}
+                            </td>
+                            <td>
+                              <div style={{ display: "flex", gap: 6 }}>
+                                <button className="btn btn-blue" style={{ fontSize: 12, padding: "5px 11px" }} onClick={() => setSelected({ type: "startup", data: s })}>👁 Voir</button>
+                                {s.statut === "en_attente" && (
+                                  <>
+                                    <button className="btn btn-green" style={{ fontSize: 12, padding: "5px 9px" }} onClick={() => valider("startups", s.id)}>✅</button>
+                                    <button className="btn btn-red" style={{ fontSize: 12, padding: "5px 9px" }} onClick={() => refuser("startups", s.id)}>❌</button>
+                                  </>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
-                </td>
-                <td style={{ color: "#64748B" }}>{s.user?.email}</td>
-                <td style={{ fontWeight: 600 }}>{s.nom_startup || "—"}</td>
-                <td>{s.secteur || "—"}</td>
-                <td>{s.taille || "—"}</td>
-                <td>
-                  {s.statut === "valide" ? <span className="badge" style={{ background: "#ECFDF5", color: "#059669" }}>✅ Validé</span> : s.statut === "en_attente" ? <span className="badge" style={{ background: "#FFFBEB", color: "#B45309" }}>⏳ Attente</span> : <span className="badge" style={{ background: "#FEF2F2", color: "#DC2626" }}>❌ Refusé</span>}
-                </td>
-                <td>
-                  <div style={{ display: "flex", gap: 6 }}>
-                    <button className="btn btn-blue" style={{ fontSize: 12, padding: "5px 11px" }} onClick={() => setSelected({ type: "startup", data: s })}>👁 Voir</button>
-                    {s.statut === "en_attente" && (
-                      <>
-                        <button className="btn btn-green" style={{ fontSize: 12, padding: "5px 9px" }} onClick={() => valider("startups", s.id)}>✅</button>
-                        <button className="btn btn-red" style={{ fontSize: 12, padding: "5px 9px" }} onClick={() => refuser("startups", s.id)}>❌</button>
-                      </>
-                    )}
-                  </div>
-                </td>
-              </tr>
-            ))
-          )}
-        </tbody>
-      </table>
-    </div>
-  </div>
-)}
+                </div>
+              )}
               {tab === "temoignages" && (
                 <div style={{ padding: "24px 28px" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, flexWrap: "wrap", gap: 12 }}><div><h2 style={{ fontSize: 17, fontWeight: 800, color: "#0A2540" }}>⭐ Témoignages ({temoignages.length})</h2><div style={{ fontSize: 13, color: "#8A9AB5", marginTop: 2 }}>{temosAttente.length} en attente · {temoignages.filter((t: any) => t.statut === "valide").length} publiés</div></div></div>
@@ -1151,18 +1090,56 @@ export default function DashboardAdmin() {
               {tab === "contacts" && (
                 <div style={{ padding: "24px 28px" }}>
                   <h2 style={{ fontSize: 17, fontWeight: 800, color: "#0A2540", marginBottom: 20 }}>📩 Messages reçus ({contactMsgs.length}) · {msgsNonLus} non lus</h2>
-                  {contactMsgs.length === 0 ? <div className="card" style={{ padding: "60px 0", textAlign: "center", color: "#94A3B8" }}><div style={{ fontSize: 40, marginBottom: 12 }}>📭</div><div style={{ fontWeight: 600 }}>Aucun message</div></div> : contactMsgs.map((msg: any) => (
-                    <div key={msg.id} className="card" style={{ borderLeft: `4px solid ${msg.is_read ? "#E2E8F0" : "#F7B500"}`, padding: "18px 20px", marginBottom: 12 }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
-                        <div style={{ flex: 1 }}>
-                          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 10 }}><div style={{ width: 42, height: 42, borderRadius: "50%", background: "#0A2540", color: "#F7B500", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 17 }}>{msg.prenom?.[0]?.toUpperCase() || "?"}</div><div><div style={{ fontWeight: 700, fontSize: 14.5 }}>{msg.prenom} {msg.nom}</div><div style={{ fontSize: 12, color: "#8A9AB5" }}>{msg.email}</div></div>{!msg.is_read && <span className="badge" style={{ background: "#FFFBEB", color: "#B45309" }}>NOUVEAU</span>}</div>
-                          <div style={{ background: "#F8FAFC", borderRadius: 10, padding: "12px 14px", marginBottom: 8 }}><div style={{ fontSize: 12, color: "#64748B", marginBottom: 5 }}>📌 <strong>{msg.subject}</strong></div><p style={{ fontSize: 13.5, color: "#334155", lineHeight: 1.7, margin: 0 }}>{msg.message}</p></div>
-                          <div style={{ fontSize: 11, color: "#B8C4D6" }}>{new Date(msg.createdAt).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" })}</div>
-                        </div>
-                        <div style={{ display: "flex", gap: 7, flexDirection: "column", alignItems: "flex-end" }}>{!msg.is_read && <button className="btn btn-green" style={{ fontSize: 12 }} onClick={() => marquerLu(msg.id)}>✅ Lu</button>}<button className="btn btn-blue" style={{ fontSize: 12 }} onClick={() => setReplyModal({ open: true, messageId: msg.id, email: msg.email, nom: msg.nom, prenom: msg.prenom })}>✉️ Répondre</button><button className="btn btn-red" style={{ fontSize: 12 }} onClick={() => supprimerMessage(msg.id)}>🗑</button></div>
-                      </div>
+                  {contactMsgs.length === 0 ? (
+                    <div className="card" style={{ padding: "60px 0", textAlign: "center", color: "#94A3B8" }}>
+                      <div style={{ fontSize: 40, marginBottom: 12 }}>📭</div>
+                      <div style={{ fontWeight: 600 }}>Aucun message</div>
                     </div>
-                  ))}
+                  ) : (
+                    contactMsgs.map((msg: any) => (
+                      <div key={msg.id} className="card" style={{ borderLeft: `4px solid ${msg.is_read ? "#E2E8F0" : "#F7B500"}`, padding: "18px 20px", marginBottom: 12 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
+                          <div style={{ flex: 1 }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 10 }}>
+                              <div style={{ width: 42, height: 42, borderRadius: "50%", background: "#0A2540", color: "#F7B500", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 17 }}>
+                                {msg.prenom?.[0]?.toUpperCase() || "?"}
+                              </div>
+                              <div>
+                                <div style={{ fontWeight: 700, fontSize: 14.5 }}>{msg.prenom} {msg.nom}</div>
+                                <div style={{ fontSize: 12, color: "#8A9AB5" }}>{msg.email}</div>
+                              </div>
+                              {!msg.is_read && <span className="badge" style={{ background: "#FFFBEB", color: "#B45309" }}>NOUVEAU</span>}
+                            </div>
+                            {/* Message original */}
+                            <div style={{ background: "#F8FAFC", borderRadius: 10, padding: "12px 14px", marginBottom: 8 }}>
+                              <div style={{ fontSize: 12, color: "#64748B", marginBottom: 5 }}>📌 <strong>{msg.subject}</strong></div>
+                              <p style={{ fontSize: 13.5, color: "#334155", lineHeight: 1.7, margin: 0 }}>{msg.message}</p>
+                            </div>
+                            {/* Réponse de l'admin */}
+                            {msg.admin_reply && (
+                              <div style={{ background: "#EFF6FF", borderRadius: 10, padding: "12px 14px", marginBottom: 8, borderLeft: "3px solid #3B82F6" }}>
+                                <div style={{ fontSize: 12, fontWeight: 700, color: "#1D4ED8", marginBottom: 5 }}>✉️ Réponse de l'admin</div>
+                                <p style={{ fontSize: 13.5, color: "#1E3A8A", lineHeight: 1.7, margin: 0 }}>{msg.admin_reply}</p>
+                                {msg.replied_at && (
+                                  <div style={{ fontSize: 11, color: "#64748B", marginTop: 6 }}>
+                                    Répondu le {new Date(msg.replied_at).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                            <div style={{ fontSize: 11, color: "#B8C4D6" }}>
+                              {new Date(msg.createdAt).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                            </div>
+                          </div>
+                          <div style={{ display: "flex", gap: 7, flexDirection: "column", alignItems: "flex-end" }}>
+                            {!msg.is_read && <button className="btn btn-green" style={{ fontSize: 12 }} onClick={() => marquerLu(msg.id)}>✅ Lu</button>}
+                            <button className="btn btn-blue" style={{ fontSize: 12 }} onClick={() => setReplyModal({ open: true, messageId: msg.id, email: msg.email, nom: msg.nom, prenom: msg.prenom })}>✉️ Répondre</button>
+                            <button className="btn btn-red" style={{ fontSize: 12 }} onClick={() => supprimerMessage(msg.id)}>🗑</button>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
               )}
               {tab === "histoire" && (
@@ -1186,7 +1163,7 @@ export default function DashboardAdmin() {
                     </div>
                     <div style={{ background: "#fff", border: "1.5px solid #EEF2F7", borderRadius: 18, overflow: "hidden", marginBottom: 20 }}>
                       <div style={{ padding: "14px 20px", borderBottom: "1px solid #F1F5F9", background: "#FAFBFE" }}><span style={{ fontWeight: 700, fontSize: 14, color: "#0A2540" }}>⭐ Valeurs — 3 valeurs</span></div>
-                      <div style={{ padding: "16px 20px" }}><div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 14 }}>{[1,2,3].map(n => (<div key={n} style={{ background: "#F8FAFC", borderRadius: 12, padding: "14px 16px", border: "1px solid #EEF2F7" }}><div style={{ fontWeight: 700, color: "#F7B500", marginBottom: 10, fontSize: 12 }}>Valeur {n}</div><HField label="Titre" cle={`valeur${n}_titre`} hf={hf} setHF={setHF} /><HField label="Description" cle={`valeur${n}_desc`} rows={3} hf={hf} setHF={setHF} /><div style={{ marginBottom: 12 }}><label style={{ fontSize: 11, fontWeight: 700, color: "#7D8FAA", textTransform: "uppercase", letterSpacing: "1px", display: "block", marginBottom: 5 }}>Couleur</label><div style={{ display: "flex", gap: 8, alignItems: "center" }}><input className="inp" value={hf(`valeur${n}_color`)} onChange={e => setHF(`valeur${n}_color`, (e.target as any).value)} placeholder="#F7B500" style={{ flex: 1 }} /><input type="color" value={hf(`valeur${n}_color`) || "#F7B500"} onChange={e => setHF(`valeur${n}_color`, (e.target as any).value)} style={{ width: 38, height: 34, borderRadius: 8, border: "1.5px solid #E2E8F0", cursor: "pointer", padding: 2 }} /></div></div></div>))}</div></div>
+                      <div style={{ padding: "16px 20px" }}><div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 14 }}>{[1,2,3].map(n => (<div key={n} style={{ background: "#F8FAFC", borderRadius: 12, padding: "14px 16px", border: "1px solid #EEF2F7" }}><div style={{ fontWeight: 700, color: "#F7B500", marginBottom: 10, fontSize: 12 }}>Valeur {n}</div><HField label="Titre" cle={`valeur${n}_titre`} hf={hf} setHF={setHF} /><HField label="Description" cle={`valeur${n}_desc`} rows={3} hf={hf} setHF={setHF} /><div style={{ marginBottom: 12 }}><label style={{ fontSize: 11, fontWeight: 700, color: "#7D8FAA", textTransform: "uppercase", letterSpacing: "1px", display: "block", marginBottom: 5 }}>Couleur</label><div style={{ display: "flex", gap: 8, alignItems: "center" }}><input className="inp" value={hf(`valeur${n}_color`)} onChange={e => setHF(`valeur${n}_color`, e.target.value)} placeholder="#F7B500" style={{ flex: 1 }} /><input type="color" value={hf(`valeur${n}_color`) || "#F7B500"} onChange={e => setHF(`valeur${n}_color`, e.target.value)} style={{ width: 38, height: 34, borderRadius: 8, border: "1.5px solid #E2E8F0", cursor: "pointer", padding: 2 }} /></div></div></div>))}</div></div>
                     </div>
                     <div style={{ background: "#fff", border: "1.5px solid #EEF2F7", borderRadius: 18, overflow: "hidden", marginBottom: 20 }}>
                       <div style={{ padding: "14px 20px", borderBottom: "1px solid #F1F5F9", background: "#FAFBFE" }}><span style={{ fontWeight: 700, fontSize: 14, color: "#0A2540" }}>📞 Informations de contact</span></div>
@@ -1524,11 +1501,11 @@ function DashboardView({ experts, startups, temoignages, demandes, formations, p
           : (
             <div style={{ overflowX: "auto" }}>
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
-               <thead>
-  <tr style={{ background: "#F8FAFC" }}>
-    {["Client / Startup","Service","Formation","Date","Statut"].map(h => <th key={h} style={{ padding: "10px 14px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#7D8FAA", textTransform: "uppercase", borderBottom: "1.5px solid #EEF2F7" }}>{h}</th>)}
-  </tr>
-</thead>
+                <thead>
+                  <tr style={{ background: "#F8FAFC" }}>
+                    {["Client / Startup","Service","Formation","Date","Statut"].map(h => <th key={h} style={{ padding: "10px 14px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#7D8FAA", textTransform: "uppercase", borderBottom: "1.5px solid #EEF2F7" }}>{h}</th>)}
+                  </tr>
+                </thead>
                 <tbody>
                   {demandes.slice(0,8).map((d: any, i: number) => (
                     <tr key={i} style={{ borderBottom: "1px solid #F8FAFC" }}>
