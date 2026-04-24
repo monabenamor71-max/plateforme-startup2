@@ -5,13 +5,14 @@ import { ValidationPipe } from '@nestjs/common';
 import cookieParser from 'cookie-parser';
 import { WinstonModule } from 'nest-winston';
 import * as winston from 'winston';
+import 'winston-daily-rotate-file';
 import { AllExceptionsFilter } from './common/filters/http-exception.filter';
 import * as path from 'path';
 import { mkdirSync, existsSync } from 'fs';
 import * as express from 'express';
 
 async function bootstrap() {
-  // Création des dossiers d'upload
+  // Création des dossiers d'upload (inchangée)
   const uploadDirs = [
     './uploads', './uploads/articles-img', './uploads/articles-pdf',
     './uploads/videos-miniatures', './uploads/podcasts-audio', './uploads/podcasts-images',
@@ -19,33 +20,55 @@ async function bootstrap() {
   ];
   uploadDirs.forEach(dir => { if (!existsSync(dir)) mkdirSync(dir, { recursive: true }); });
 
-  // Logger avec Winston
-  const logger = WinstonModule.createLogger({
+  // ========= CONFIGURATION DES LOGS WINSTON =========
+  const winstonLogger = WinstonModule.createLogger({
     transports: [
-      new winston.transports.Console({ format: winston.format.simple() }),
-      new winston.transports.File({ filename: 'logs/error.log', level: 'error' }),
-      new winston.transports.File({ filename: 'logs/combined.log' }),
+      // Console (colorée, lisible en dev)
+      new winston.transports.Console({
+        format: winston.format.combine(
+          winston.format.timestamp(),
+          winston.format.colorize(),
+          winston.format.printf(({ timestamp, level, message, context, stack }) => {
+            return `${timestamp} [${context || 'App'}] ${level}: ${message}${stack ? `\n${stack}` : ''}`;
+          }),
+        ),
+      }),
+      // Fichier combiné (tous les logs)
+      new winston.transports.DailyRotateFile({
+        filename: 'logs/combined-%DATE%.log',
+        datePattern: 'YYYY-MM-DD',
+        maxSize: '20m',
+        maxFiles: '14d',
+        format: winston.format.combine(winston.format.timestamp(), winston.format.json()),
+      }),
+      // Fichier des erreurs (uniquement error)
+      new winston.transports.DailyRotateFile({
+        filename: 'logs/error-%DATE%.log',
+        datePattern: 'YYYY-MM-DD',
+        level: 'error',
+        maxSize: '20m',
+        maxFiles: '14d',
+        format: winston.format.combine(winston.format.timestamp(), winston.format.json()),
+      }),
     ],
   });
 
-  const app = await NestFactory.create<NestExpressApplication>(AppModule, { logger });
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, { logger: winstonLogger });
 
-  // Middlewares
+  // Middlewares (inchangés)
   app.use(express.json({ limit: '50mb' }));
   app.use(express.urlencoded({ extended: true, limit: '50mb' }));
   app.enableCors({ origin: 'http://localhost:3000', credentials: true });
   app.use(cookieParser());
 
-  // Pipes et filtres globaux
+  // Pipes et filtres
   app.useGlobalPipes(new ValidationPipe({
     whitelist: true,
     forbidNonWhitelisted: true,
     transform: true,
-    disableErrorMessages: process.env.NODE_ENV === 'production', // masque en prod
+    disableErrorMessages: process.env.NODE_ENV === 'production',
   }));
-  app.useGlobalFilters(new AllExceptionsFilter());  // ← filtre actif partout
-
-  // Dossiers statiques
+  app.useGlobalFilters(new AllExceptionsFilter());
   app.useStaticAssets(path.join(process.cwd(), 'uploads'), { prefix: '/uploads' });
 
   await app.listen(3001);
