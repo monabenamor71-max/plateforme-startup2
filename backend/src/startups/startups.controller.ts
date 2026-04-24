@@ -71,4 +71,8 @@ export class StartupsController {
     console.log(`🎯 /startups/experts-recommandes appelé par user ID: ${req.user.id}`);
     return this.startupsService.getRecommendedExperts(req.user.id);
   }
+  @Get('test-error')
+testError() {
+  throw new Error('Test erreur 500 pour startups');
+}
 }

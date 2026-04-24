@@ -83,9 +83,13 @@ updateProfil(@Request() req: any, @Body() body: any) {
     return this.expertsService.validerModification(id);
   }
 
-  @Patch(':id/refuser-modification')
-  @UseGuards(JwtAuthGuard)
-  refuserModification(@Param('id', ParseIntPipe) id: number) {
-    return this.expertsService.refuserModification(id);
-  }
+  // ... autres méthodes ...
+
+@Patch(':id/refuser-modification')
+@UseGuards(JwtAuthGuard)
+refuserModification(@Param('id', ParseIntPipe) id: number) {
+  return this.expertsService.refuserModification(id);
+}
+
+
 }

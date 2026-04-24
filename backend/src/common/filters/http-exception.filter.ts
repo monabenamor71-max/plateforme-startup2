@@ -21,8 +21,6 @@ export class AllExceptionsFilter implements ExceptionFilter {
     if (exception instanceof HttpException) {
       status = exception.getStatus();
       const exceptionResponse = exception.getResponse();
-      // Pour ValidationPipe, exceptionResponse est un objet { message: string[], error: string, statusCode: number }
-      // On le transmet tel quel (sauf possible masquage en prod)
       responseBody = {
         statusCode: status,
         timestamp: new Date().toISOString(),
@@ -30,11 +28,9 @@ export class AllExceptionsFilter implements ExceptionFilter {
         ...(typeof exceptionResponse === 'object' ? exceptionResponse : { message: exception.message }),
       };
     } else {
-      // Erreur interne non-HTTP
       responseBody.message = 'Erreur interne du serveur';
     }
 
-    // Journaliser
     this.logger.error(
       `[${request.method}] ${request.url} - ${status} : ${responseBody.message || 'Erreur'}`,
       exception instanceof Error ? exception.stack : ''

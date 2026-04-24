@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { MailModule } from './mail/mail.module';
 import { AdminModule } from './admin/admin.module';
@@ -16,7 +18,6 @@ import { ServicesPlateformeModule } from './services-plateforme/services-platefo
 import { FormationsModule } from './formations/formations.module';
 import { ContactModule } from './contact/contact.module';
 import { NewsletterModule } from './newsletter/newsletter.module';
-// import { CommentsModule } from './comments/comments.module'; ← SUPPRIMÉ
 import { BlogModule } from './blog/blog.module';
 import { MediaModule } from './media/media.module';
 import { PodcastModule } from './podcast/podcast.module';
@@ -25,7 +26,6 @@ import { PodcastModule } from './podcast/podcast.module';
 import { User } from './user/user.entity';
 import { Expert } from './user/expert.entity';
 import { Startup } from './user/startup.entity';
-
 import { Rendezvous } from './rendez-vous/rendezvous.entity';
 import { Message } from './messages/message.entity';
 import { Temoignage } from './temoignages/temoignage.entity';
@@ -75,10 +75,11 @@ import { Podcast } from './podcast/podcast.entity';
     FormationsModule,
     ContactModule,
     NewsletterModule,
-    // CommentsModule, ← SUPPRIMÉ
     BlogModule,
     MediaModule,
     PodcastModule,
   ],
+  controllers: [AppController],
+  providers: [AppService],
 })
 export class AppModule {}
