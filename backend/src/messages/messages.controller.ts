@@ -9,36 +9,36 @@ import {
   UseGuards,
   ValidationPipe,
   ParseIntPipe,
+  Logger,
 } from '@nestjs/common';
 import { MessagesService } from './messages.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { SendMessageDto } from './dto/message.dto';
+import { SendMessageDto } from './dto/send-message.dto';
 
 @Controller('messages')
 export class MessagesController {
+  private readonly logger = new Logger(MessagesController.name);
+
   constructor(private messagesService: MessagesService) {}
 
   @Post()
   @UseGuards(JwtAuthGuard)
-  send(@Body(ValidationPipe) dto: SendMessageDto, @Request() req: any) {
+  async send(@Body(ValidationPipe) dto: SendMessageDto, @Request() req: any) {
+    this.logger.log(`📨 POST /messages - sender=${req.user.id}, receiver=${dto.receiver_id}`);
     return this.messagesService.send(req.user.id, dto);
   }
 
   @Get('mes-messages')
   @UseGuards(JwtAuthGuard)
-  getMyMessages(@Request() req: any) {
+  async getMyMessages(@Request() req: any) {
+    this.logger.log(`📞 GET /messages/mes-messages - user=${req.user.id}`);
     return this.messagesService.getMyMessages(req.user.id);
-  }
-
-  @Get('expert')
-  @UseGuards(JwtAuthGuard)
-  getExpertMessages(@Request() req: any) {
-    return this.messagesService.getExpertMessages(req.user.id);
   }
 
   @Get('conversation/:userId')
   @UseGuards(JwtAuthGuard)
-  getConversation(@Request() req: any, @Param('userId', ParseIntPipe) userId: number) {
+  async getConversation(@Request() req: any, @Param('userId', ParseIntPipe) userId: number) {
+    this.logger.log(`📞 GET /messages/conversation/${userId} - currentUser=${req.user.id}`);
     return this.messagesService.getConversation(req.user.id, userId);
   }
 

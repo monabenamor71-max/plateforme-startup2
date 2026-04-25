@@ -1,9 +1,8 @@
-// src/messages/messages.service.ts
 import { Injectable, NotFoundException, ForbiddenException, Logger, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Message } from './message.entity';
-import { SendMessageDto } from './dto/message.dto';
+import { SendMessageDto } from './dto/send-message.dto';
 
 @Injectable()
 export class MessagesService {
@@ -21,32 +20,26 @@ export class MessagesService {
     }
     const msg = this.messageRepo.create({ sender_id, receiver_id, contenu });
     const saved = await this.messageRepo.save(msg);
-    if (!saved || !saved.id) {
-      throw new BadRequestException('Erreur lors de l’envoi du message');
-    }
-    this.logger.log(`Message envoyé de ${sender_id} à ${receiver_id}`);
+    this.logger.log(`✅ Message envoyé de ${sender_id} à ${receiver_id} (id=${saved.id})`);
     return saved;
   }
 
   async getMyMessages(userId: number) {
-    return this.messageRepo.find({
+    const messages = await this.messageRepo.find({
       where: [{ sender_id: userId }, { receiver_id: userId }],
       relations: ['sender', 'receiver'],
       order: { createdAt: 'DESC' },
     });
-  }
-
-  async getExpertMessages(userId: number) {
-    return this.messageRepo.find({
-      where: [{ sender_id: userId }, { receiver_id: userId }],
-      relations: ['sender', 'receiver'],
-      order: { createdAt: 'DESC' },
-    });
+    this.logger.log(`📦 getMyMessages: ${messages.length} messages pour l'utilisateur ${userId}`);
+    return messages;
   }
 
   async getConversation(user1_id: number, user2_id: number) {
-    if (!user1_id || !user2_id) throw new NotFoundException('Utilisateurs invalides');
-    return this.messageRepo.find({
+    this.logger.log(`🔍 getConversation: user1=${user1_id}, user2=${user2_id}`);
+    if (!user1_id || !user2_id) {
+      throw new NotFoundException('IDs utilisateurs invalides');
+    }
+    const messages = await this.messageRepo.find({
       where: [
         { sender_id: user1_id, receiver_id: user2_id },
         { sender_id: user2_id, receiver_id: user1_id },
@@ -54,6 +47,8 @@ export class MessagesService {
       relations: ['sender', 'receiver'],
       order: { createdAt: 'ASC' },
     });
+    this.logger.log(`📦 ${messages.length} message(s) trouvé(s) entre ${user1_id} et ${user2_id}`);
+    return messages;
   }
 
   async markAsRead(userId: number, senderId: number) {
@@ -61,11 +56,7 @@ export class MessagesService {
       { receiver_id: userId, sender_id: senderId, lu: false },
       { lu: true },
     );
-    if (result.affected === 0) {
-      this.logger.warn(`Aucun message non lu de ${senderId} pour ${userId}`);
-    } else {
-      this.logger.log(`${result.affected} message(s) marqués lus`);
-    }
+    this.logger.log(`${result.affected} message(s) marqués lus de ${senderId} vers ${userId}`);
     return { message: 'Messages marqués comme lus' };
   }
 
@@ -82,10 +73,7 @@ export class MessagesService {
     if (!isAdmin && message.sender_id !== userId) {
       throw new ForbiddenException('Vous ne pouvez supprimer que vos propres messages');
     }
-    const deleteResult = await this.messageRepo.delete(id);
-    if (deleteResult.affected === 0) {
-      throw new BadRequestException('Impossible de supprimer le message');
-    }
+    await this.messageRepo.delete(id);
     this.logger.log(`Message ${id} supprimé par ${isAdmin ? 'admin' : `utilisateur ${userId}`}`);
     return { success: true };
   }

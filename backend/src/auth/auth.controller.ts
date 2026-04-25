@@ -1,4 +1,15 @@
-import { Controller, Post, Body, Get, Query, UseInterceptors, UploadedFiles, BadRequestException } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  Get,
+  Query,
+  UseInterceptors,
+  UploadedFiles,
+  BadRequestException,
+  UseGuards,
+  Request,
+} from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { RegisterExpertDto } from './dto/register-expert.dto';
 import { RegisterStartupDto } from './dto/register-startup.dto';
@@ -7,41 +18,50 @@ import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { v4 as uuidv4 } from 'uuid';
 import * as path from 'path';
+import { JwtAuthGuard } from './jwt-auth.guard'; // note le 's' (fichier jwt-auth.guards.ts)
 
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post('register/expert')
-  @UseInterceptors(FileFieldsInterceptor([
-    { name: 'photo', maxCount: 1 },
-    { name: 'cv', maxCount: 1 },
-    { name: 'portfolio', maxCount: 1 },
-  ], {
-    storage: diskStorage({
-      destination: (req, file, cb) => {
-        let folder = './uploads';
-        if (file.fieldname === 'photo') folder = './uploads/photos';
-        else if (file.fieldname === 'cv') folder = './uploads/cv';
-        else if (file.fieldname === 'portfolio') folder = './uploads/portfolio';
-        cb(null, folder);
+  @UseInterceptors(
+    FileFieldsInterceptor(
+      [
+        { name: 'photo', maxCount: 1 },
+        { name: 'cv', maxCount: 1 },
+        { name: 'portfolio', maxCount: 1 },
+      ],
+      {
+        storage: diskStorage({
+          destination: (req, file, cb) => {
+            let folder = './uploads';
+            if (file.fieldname === 'photo') folder = './uploads/photos';
+            else if (file.fieldname === 'cv') folder = './uploads/cv';
+            else if (file.fieldname === 'portfolio') folder = './uploads/portfolio';
+            cb(null, folder);
+          },
+          filename: (req, file, cb) => {
+            const ext = path.extname(file.originalname);
+            const filename = `${uuidv4()}${ext}`;
+            cb(null, filename);
+          },
+        }),
       },
-      filename: (req, file, cb) => {
-        const ext = path.extname(file.originalname);
-        const filename = `${uuidv4()}${ext}`;
-        cb(null, filename);
-      },
-    }),
-  }))
+    ),
+  )
   async registerExpert(
     @Body() dto: RegisterExpertDto,
-    @UploadedFiles() files: { photo?: Express.Multer.File[]; cv?: Express.Multer.File[]; portfolio?: Express.Multer.File[] },
+    @UploadedFiles()
+    files: {
+      photo?: Express.Multer.File[];
+      cv?: Express.Multer.File[];
+      portfolio?: Express.Multer.File[];
+    },
   ) {
-    // Les fichiers sont optionnels
     const photoPath = files.photo?.[0]?.path;
     const cvPath = files.cv?.[0]?.path;
     const portfolioPath = files.portfolio?.[0]?.path;
-
     return this.authService.registerExpert(dto, photoPath, cvPath, portfolioPath);
   }
 
@@ -79,5 +99,23 @@ export class AuthController {
   @Get('confirm')
   async confirmEmail(@Query('token') token: string) {
     return this.authService.confirmEmail(token);
+  }
+
+  // ========== ROUTE SÉCURISÉE ==========
+  @UseGuards(JwtAuthGuard)
+  @Get('me')
+  async getMe(@Request() req) {
+    const user = await this.authService.getUserById(req.user.id);
+    if (!user) {
+      throw new BadRequestException('Utilisateur non trouvé');
+    }
+    return {
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      prenom: user.prenom,
+      nom: user.nom,
+      telephone: user.telephone,
+    };
   }
 }

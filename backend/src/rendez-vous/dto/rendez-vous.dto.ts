@@ -1,4 +1,4 @@
-import { IsInt, IsDateString, IsString, IsNotEmpty, MinLength } from 'class-validator';
+import { IsInt, IsDateString, IsString, IsNotEmpty, MinLength, IsOptional } from 'class-validator';
 
 export class CreateRendezVousDto {
   @IsInt()
@@ -20,8 +20,15 @@ export class UpdateRendezVousDto {
   @IsNotEmpty()
   date_rdv: string;
 
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
   @MinLength(3)
-  sujet: string;
+  sujet?: string;
+}
+
+// Classe spéciale pour l'acceptation d'une proposition
+export class AccepterPropositionDto {
+  @IsDateString()
+  @IsNotEmpty()
+  nouvelle_date: string;
 }

@@ -1,4 +1,3 @@
-// backend/src/auth/auth.service.ts
 import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -28,6 +27,11 @@ export class AuthService {
   private extractFileName(filePath?: string): string | undefined {
     if (!filePath) return undefined;
     return path.basename(filePath);
+  }
+
+  // === NOUVELLE MÉTHODE POUR /me ===
+  async getUserById(id: number): Promise<User | null> {
+    return this.userRepo.findOne({ where: { id } });
   }
 
   async registerExpert(

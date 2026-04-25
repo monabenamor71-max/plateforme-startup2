@@ -13,7 +13,7 @@ import {
 } from '@nestjs/common';
 import { RendezVousService } from './rendez-vous.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { CreateRendezVousDto, UpdateRendezVousDto } from './dto/rendez-vous.dto';
+import { CreateRendezVousDto, UpdateRendezVousDto, AccepterPropositionDto } from './dto/rendez-vous.dto';
 
 @Controller('rendez-vous')
 export class RendezVousController {
@@ -63,5 +63,16 @@ export class RendezVousController {
   @UseGuards(JwtAuthGuard)
   async delete(@Param('id', ParseIntPipe) id: number, @Request() req: any) {
     return this.rdvService.deleteRdv(id, req.user.id);
+  }
+
+  // ========== NOUVELLE ROUTE POUR ACCEPTER UNE PROPOSITION ==========
+  @Put(':id/accepter-proposition')
+  @UseGuards(JwtAuthGuard)
+  async accepterProposition(
+    @Param('id', ParseIntPipe) id: number,
+    @Body(ValidationPipe) dto: AccepterPropositionDto,
+    @Request() req: any,
+  ) {
+    return this.rdvService.accepterProposition(id, dto.nouvelle_date, req.user.id);
   }
 }

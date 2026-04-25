@@ -1,10 +1,9 @@
-// src/rendez-vous/rendez-vous.service.ts
 import { Injectable, NotFoundException, ForbiddenException, BadRequestException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Rendezvous } from './rendezvous.entity';
 import { Expert } from '../user/expert.entity';
-import { CreateRendezVousDto, UpdateRendezVousDto } from './dto/rendez-vous.dto';
+import { CreateRendezVousDto, UpdateRendezVousDto, AccepterPropositionDto } from './dto/rendez-vous.dto';
 
 @Injectable()
 export class RendezVousService {
@@ -51,21 +50,21 @@ export class RendezVousService {
     return { success: true };
   }
 
-  async getById(id: number): Promise<Rendezvous | null> {
-    return this.rdvRepo.findOne({ where: { id } });
-  }
-
   async updateRdv(id: number, updateDto: UpdateRendezVousDto, client_id: number) {
     const rdv = await this.rdvRepo.findOne({ where: { id } });
     if (!rdv) throw new NotFoundException(`Rendez-vous ${id} introuvable`);
     if (rdv.client_id !== client_id) throw new ForbiddenException('Vous ne pouvez modifier que vos propres rendez-vous');
     if (rdv.statut !== 'en_attente') throw new BadRequestException('Seuls les rendez-vous en attente peuvent être modifiés');
 
-    await this.rdvRepo.update(id, {
+    const updateData: any = {
       date_rdv: new Date(updateDto.date_rdv),
-      sujet: updateDto.sujet,
       statut: 'en_attente',
-    });
+    };
+    if (updateDto.sujet !== undefined) {
+      updateData.sujet = updateDto.sujet;
+    }
+
+    await this.rdvRepo.update(id, updateData);
     const updated = await this.rdvRepo.findOne({ where: { id } });
     if (!updated) throw new NotFoundException(`Rendez-vous ${id} introuvable après mise à jour`);
     this.logger.log(`Rendez-vous ${id} mis à jour`);
@@ -108,5 +107,23 @@ export class RendezVousService {
     }
     this.logger.log(`Rendez-vous ${id} annulé`);
     return { message: 'Annulé' };
+  }
+
+  // ========== NOUVELLE MÉTHODE POUR ACCEPTER UNE PROPOSITION ==========
+  async accepterProposition(rdvId: number, nouvelle_date: string, client_id: number) {
+    this.logger.log(`🔥 Acceptation proposition pour RDV ${rdvId} par client ${client_id}`);
+    const rdv = await this.rdvRepo.findOne({ where: { id: rdvId } });
+    if (!rdv) throw new NotFoundException(`Rendez-vous ${rdvId} introuvable`);
+    if (rdv.client_id !== client_id) throw new ForbiddenException('Vous ne pouvez modifier que vos propres rendez-vous');
+
+    const updateResult = await this.rdvRepo.update(rdvId, {
+      date_rdv: new Date(nouvelle_date),
+      statut: 'confirme', // Optionnel : vous pouvez garder 'en_attente' si vous préférez
+    });
+    if (updateResult.affected === 0) {
+      throw new BadRequestException('Aucune modification effectuée');
+    }
+    this.logger.log(`✅ RDV ${rdvId} mis à jour avec la nouvelle date ${nouvelle_date}`);
+    return { message: 'Créneau accepté et rendez-vous mis à jour' };
   }
 }
