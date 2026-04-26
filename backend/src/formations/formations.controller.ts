@@ -1,3 +1,4 @@
+// src/formations/formations.controller.ts
 import {
   Controller, Get, Post, Put, Patch, Delete,
   Body, Param, UseInterceptors, UploadedFile,
@@ -6,7 +7,10 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
-import { FormationsService, CreateFormationDto, UpdateFormationDto, UpdateStatutDto } from './formations.service';
+import { FormationsService } from './formations.service';
+import { CreateFormationDto } from './dto/create-formation.dto';
+import { UpdateFormationDto } from './dto/update-formation.dto';
+import { UpdateStatutDto } from './dto/update-statut.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 const imageStorage = diskStorage({
@@ -20,8 +24,6 @@ const imageStorage = diskStorage({
 @Controller('formations')
 export class FormationsController {
   constructor(private readonly formationsService: FormationsService) {}
-
-  // ─── EXPERTS ─────────────────────────────────────────────────────────────
 
   @Post('expert/proposer')
   @UseGuards(JwtAuthGuard)
@@ -40,8 +42,6 @@ export class FormationsController {
   async getMesFormations(@Request() req: any) {
     return this.formationsService.findByExpert(req.user.id);
   }
-
-  // ─── ADMIN ────────────────────────────────────────────────────────────────
 
   @Post('admin/create')
   @UseInterceptors(FileInterceptor('image', { storage: imageStorage }))
@@ -76,8 +76,6 @@ export class FormationsController {
   async delete(@Param('id', ParseIntPipe) id: number) {
     return this.formationsService.delete(id);
   }
-
-  // ─── PUBLIQUES ────────────────────────────────────────────────────────────
 
   @Get('public')
   async findPublished() {

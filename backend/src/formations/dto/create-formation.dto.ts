@@ -1,4 +1,6 @@
+// src/formations/dto/create-formation.dto.ts
 import { IsString, IsOptional, IsBoolean, IsInt, Min, IsDateString, IsEnum, IsUrl } from 'class-validator';
+import { Transform } from 'class-transformer';
 
 export class CreateFormationDto {
   @IsString()
@@ -20,15 +22,29 @@ export class CreateFormationDto {
   @IsOptional()
   type?: string;
 
+  @Transform(({ value }) => {
+    if (value === undefined || value === null || value === '') return undefined;
+    const num = parseInt(value, 10);
+    return isNaN(num) ? undefined : num;
+  })
   @IsInt()
   @Min(0)
   @IsOptional()
   prix?: number;
 
+  @Transform(({ value }) => {
+    if (value === undefined || value === null || value === '') return undefined;
+    return value === 'true' || value === true;
+  })
   @IsBoolean()
   @IsOptional()
   places_limitees?: boolean;
 
+  @Transform(({ value }) => {
+    if (value === undefined || value === null || value === '') return undefined;
+    const num = parseInt(value, 10);
+    return isNaN(num) ? undefined : num;
+  })
   @IsInt()
   @Min(0)
   @IsOptional()
@@ -46,10 +62,18 @@ export class CreateFormationDto {
   @IsOptional()
   localisation?: string;
 
+  @Transform(({ value }) => {
+    if (value === undefined || value === null || value === '') return undefined;
+    return value === 'true' || value === true;
+  })
   @IsBoolean()
   @IsOptional()
   certifiante?: boolean;
 
+  @Transform(({ value }) => {
+    if (value === undefined || value === null || value === '') return undefined;
+    return value === 'true' || value === true;
+  })
   @IsBoolean()
   @IsOptional()
   a_la_une?: boolean;
@@ -66,6 +90,10 @@ export class CreateFormationDto {
   @IsOptional()
   lien_formation?: string;
 
+  @Transform(({ value }) => {
+    if (value === undefined || value === null || value === '') return undefined;
+    return value === 'true' || value === true;
+  })
   @IsBoolean()
   @IsOptional()
   gratuit?: boolean;

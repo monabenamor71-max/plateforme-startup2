@@ -29,11 +29,6 @@ const DOMAINES_LIST = [
   "Management", "Communication", "Juridique", "Autre",
 ];
 
-const CATEGORIES_LIST = [
-  "Développement", "Intelligence artificielle", "Business", "Sécurité",
-  "Design", "Marketing", "Finance", "RH", "Management", "Autre",
-];
-
 const NIVEAUX_LIST = ["Débutant", "Intermédiaire", "Avancé", "Tous niveaux"];
 
 const MODES_LIST = [
@@ -66,7 +61,7 @@ function Reveal({ children, delay = 0 }: { children: React.ReactNode; delay?: nu
   );
 }
 
-// ─── MODAL PROPOSER FORMATION ─────────────────────────────────────
+// ─── MODAL PROPOSER FORMATION (CORRIGÉE) ─────────────────────────────────────
 function ProposerFormationModal({
   onClose, onSuccess, expertData, user, tk
 }: {
@@ -85,7 +80,6 @@ function ProposerFormationModal({
     titre: "",
     description: "",
     domaine: expertData?.domaine || "",
-    categorie: "",
     formateur: user ? `${user.prenom || ""} ${user.nom || ""}`.trim() : "",
     mode: "en_ligne",
     duree: "",
@@ -94,7 +88,7 @@ function ProposerFormationModal({
     lien_formation: "",
     dateDebut: "",
     dateFin: "",
-    type: "payant",
+    type: "payant", // "gratuit" ou "payant"
     gratuit: false,
     prix: "",
     places_limitees: false,
@@ -117,10 +111,11 @@ function ProposerFormationModal({
     setSubmitting(true);
     try {
       const fd = new FormData();
+
+      // Champs texte obligatoires
       fd.append("titre", form.titre.trim());
       fd.append("description", form.description.trim());
       fd.append("domaine", form.domaine);
-      fd.append("categorie", form.categorie);
       fd.append("formateur", form.formateur.trim());
       fd.append("mode", form.mode);
       fd.append("duree", form.duree);
@@ -129,14 +124,15 @@ function ProposerFormationModal({
       fd.append("lien_formation", form.lien_formation);
       fd.append("dateDebut", form.dateDebut);
       fd.append("dateFin", form.dateFin);
-      const isGratuit = form.type === "gratuit" || form.gratuit;
-      fd.append("gratuit", String(isGratuit));
       fd.append("type", form.type);
-      fd.append("prix", isGratuit ? "0" : (form.prix || "0"));
+      fd.append("gratuit", String(form.gratuit));
+      if (!form.gratuit && form.prix) fd.append("prix", form.prix);
       fd.append("places_limitees", String(form.places_limitees));
-      fd.append("places_disponibles", form.places_limitees ? (form.places_disponibles || "0") : "");
+      if (form.places_limitees && form.places_disponibles) fd.append("places_disponibles", form.places_disponibles);
       fd.append("certifiante", String(form.certifiante));
+      fd.append("a_la_une", "false"); // valeur par défaut
       fd.append("statut", "en_attente");
+
       if (imageFile) fd.append("image", imageFile);
 
       const res = await fetch(`${BASE}/formations/expert/proposer`, {
@@ -228,19 +224,12 @@ function ProposerFormationModal({
                     </select>
                   </div>
                   <div>
-                    <label className="lbl">Catégorie</label>
-                    <select className="inp" value={form.categorie} onChange={e => upd("categorie", e.target.value)}>
-                      <option value="">Sélectionner...</option>
-                      {CATEGORIES_LIST.map(c => <option key={c} value={c}>{c}</option>)}
-                    </select>
+                    <label className="lbl">Nom du formateur</label>
+                    <input className="inp" placeholder="Votre nom ou un intervenant" value={form.formateur} onChange={e => upd("formateur", e.target.value)} />
                   </div>
                 </div>
 
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 16 }}>
-                  <div>
-                    <label className="lbl">Nom du formateur</label>
-                    <input className="inp" placeholder="Votre nom ou un intervenant" value={form.formateur} onChange={e => upd("formateur", e.target.value)} />
-                  </div>
                   <div>
                     <label className="lbl">Niveau requis</label>
                     <select className="inp" value={form.niveau} onChange={e => upd("niveau", e.target.value)}>
@@ -417,7 +406,6 @@ function ProposerFormationModal({
                     {[
                       { label: "Titre", val: form.titre || "—" },
                       { label: "Domaine", val: form.domaine || "—" },
-                      { label: "Catégorie", val: form.categorie || "—" },
                       { label: "Mode", val: MODES_LIST.find(m => m.value === form.mode)?.label || "—" },
                       { label: "Durée", val: form.duree || "—" },
                       { label: "Niveau", val: form.niveau || "—" },
@@ -477,7 +465,7 @@ function ProposerFormationModal({
   );
 }
 
-// ─── MODAL PODCAST DETAIL ─────────────────────────────────────────
+// ─── MODAL PODCAST DETAIL (inchangé) ─────────────────────────────────────────
 function PodcastDetailModal({ podcast, onClose }: { podcast: any; onClose: () => void }) {
   const audioRef = useRef<HTMLAudioElement>(null);
   useEffect(() => { if (audioRef.current) audioRef.current.load(); }, [podcast]);
@@ -501,6 +489,7 @@ function PodcastDetailModal({ podcast, onClose }: { podcast: any; onClose: () =>
   );
 }
 
+// ─── MODAL CREATE PODCAST ─────────────────────────────────────────
 function CreatePodcastModal({ onClose, onSuccess, expertData }: { onClose: () => void; onSuccess: () => void; expertData: any }) {
   const [titre, setTitre] = useState("");
   const [description, setDescription] = useState("");
@@ -525,7 +514,11 @@ function CreatePodcastModal({ onClose, onSuccess, expertData }: { onClose: () =>
     if (!titre || !audioFile) { alert("Titre et fichier audio requis"); return; }
     setLoading(true);
     const fd = new FormData();
-    fd.append("titre", titre); fd.append("description", description); fd.append("auteur", auteur); fd.append("domaine", domaine); fd.append("audio_file", audioFile);
+    fd.append("titre", titre);
+    fd.append("description", description);
+    fd.append("auteur", auteur);
+    fd.append("domaine", domaine);
+    fd.append("audio_file", audioFile);
     if (imageFile) fd.append("image_file", imageFile);
     try {
       const res = await fetch(`${BASE}/podcasts/expert/proposer`, { method: "POST", headers: { Authorization: `Bearer ${localStorage.getItem("access_token")}` }, body: fd });
@@ -557,6 +550,7 @@ function CreatePodcastModal({ onClose, onSuccess, expertData }: { onClose: () =>
   );
 }
 
+// ─── MODAL EDIT PODCAST ─────────────────────────────────────────
 function EditPodcastModal({ podcast, onClose, onSuccess }: { podcast: any; onClose: () => void; onSuccess: () => void }) {
   const [titre, setTitre] = useState(podcast.titre || "");
   const [description, setDescription] = useState(podcast.description || "");
@@ -573,7 +567,10 @@ function EditPodcastModal({ podcast, onClose, onSuccess }: { podcast: any; onClo
     if (!titre) { alert("Le titre est requis"); return; }
     setLoading(true);
     const fd = new FormData();
-    fd.append("titre", titre); fd.append("description", description); fd.append("auteur", auteur); fd.append("domaine", domaine);
+    fd.append("titre", titre);
+    fd.append("description", description);
+    fd.append("auteur", auteur);
+    fd.append("domaine", domaine);
     if (audioFile) fd.append("audio_file", audioFile);
     if (imageFile) fd.append("image_file", imageFile);
     try {
@@ -606,6 +603,7 @@ function EditPodcastModal({ podcast, onClose, onSuccess }: { podcast: any; onClo
   );
 }
 
+// ─── MODAL RESCHEDULE ─────────────────────────────────────────
 function RescheduleModal({ rdv, onClose, onSuccess, hdrJ }: { rdv: any; onClose: () => void; onSuccess: () => void; hdrJ: () => Record<string, string>; }) {
   const [newDate, setNewDate] = useState("");
   const [reason, setReason] = useState("");
@@ -690,7 +688,6 @@ export default function DashboardExpert() {
   const [showRescheduleModal, setShowRescheduleModal] = useState(false);
   const [selectedRdv, setSelectedRdv] = useState<any>(null);
 
-  // ← NOUVEAU : modale formulaire formation
   const [showFormationModal, setShowFormationModal] = useState(false);
 
   const [photoFile, setPhotoFile] = useState<File | null>(null);
@@ -710,7 +707,6 @@ export default function DashboardExpert() {
   function notify(text: string, ok = true) { setToast({ text, ok }); setTimeout(() => setToast({ text: "", ok: true }), 3200); }
   const forceLogout = useCallback(() => { localStorage.clear(); window.location.href = "/connexion"; }, []);
 
-  // Badges
   const [seenTabs, setSeenTabs] = useState<Set<Tab>>(new Set(["accueil"]));
   const handleTabChange = useCallback((newTab: Tab) => {
     setTab(newTab);
@@ -912,7 +908,7 @@ export default function DashboardExpert() {
         .msg-me{background:linear-gradient(135deg,#0A2540,#1a4080);color:#fff;border-radius:18px 18px 4px 18px;padding:10px 15px;max-width:72%;font-size:13.5px;line-height:1.65;}
         .msg-other{background:#F0F4FA;color:#0A2540;border-radius:18px 18px 18px 4px;padding:10px 15px;max-width:72%;font-size:13.5px;line-height:1.65;}
         .modal-bg{position:fixed;inset:0;background:rgba(10,37,64,.6);z-index:300;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(5px);}
-        .modal-box{background:#fff;border-radius:24px;width:100%;max-width:660px;max-height:92vh;overflow-y:auto;box-shadow:0 28px 80px rgba(10,37,64,.25);}
+        .modal-box{background:#fff;border-radius:24px;width:100%;max-width:720px;max-height:92vh;overflow-y:auto;box-shadow:0 28px 80px rgba(10,37,64,.25);}
         .upload-zone{display:block;border:2px dashed #D1D5DB;border-radius:10px;padding:16px;background:#F8FAFC;cursor:pointer;text-align:center;transition:border-color .2s;}
         .upload-zone:hover{border-color:#F7B500;}
         @keyframes spin{to{transform:rotate(360deg)}}
@@ -930,7 +926,6 @@ export default function DashboardExpert() {
         </div>
       )}
 
-      {/* ── MODALES ── */}
       {showFormationModal && (
         <ProposerFormationModal
           onClose={() => setShowFormationModal(false)}
@@ -1094,7 +1089,7 @@ export default function DashboardExpert() {
           </div>
         )}
 
-        {/* ══ FORMATIONS ══ */}
+        {/* FORMATIONS */}
         {tab === "formations" && (
           <div>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, flexWrap: "wrap", gap: 12 }}>
@@ -1102,7 +1097,6 @@ export default function DashboardExpert() {
                 <h2 style={{ fontWeight: 800, fontSize: 20, color: "#0A2540" }}>📚 Mes formations proposées</h2>
                 <div style={{ fontSize: 13, color: "#8A9AB5", marginTop: 2 }}>{formations.length} formation{formations.length !== 1 ? "s" : ""}</div>
               </div>
-              {/* ← BOUTON QUI OUVRE LA MODALE INLINE */}
               <button className="btn btn-gold" onClick={() => setShowFormationModal(true)}>
                 <FaPlus size={12} /> Proposer une formation
               </button>
@@ -1344,7 +1338,7 @@ export default function DashboardExpert() {
           </div>
         )}
 
-        {/* TEMOIGNAGES */}
+        {/* TÉMOIGNAGES */}
         {tab === "temoignages" && (
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
             <div className="card">

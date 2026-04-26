@@ -3,58 +3,9 @@ import { Injectable, NotFoundException, BadRequestException, Logger } from '@nes
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Formation } from './formation.entity';
-
-export class CreateFormationDto {
-  titre: string;
-  description?: string;
-  domaine?: string;
-  formateur?: string;
-  type?: string;
-  prix?: number;
-  places_limitees?: boolean;
-  places_disponibles?: number;
-  duree?: string;
-  mode?: string;
-  localisation?: string;
-  certifiante?: boolean;
-  a_la_une?: boolean;
-  dateDebut?: string;
-  dateFin?: string;
-  lien_formation?: string;
-  gratuit?: boolean;
-  niveau?: string;
-  categorie?: string;
-  statut?: string;
-}
-
-export class UpdateFormationDto {
-  titre?: string;
-  description?: string;
-  domaine?: string;
-  formateur?: string;
-  type?: string;
-  prix?: number;
-  places_limitees?: boolean;
-  places_disponibles?: number;
-  duree?: string;
-  mode?: string;
-  localisation?: string;
-  certifiante?: boolean;
-  a_la_une?: boolean;
-  dateDebut?: string;
-  dateFin?: string;
-  lien_formation?: string;
-  gratuit?: boolean;
-  niveau?: string;
-  categorie?: string;
-  statut?: string;
-  image?: string;
-}
-
-export class UpdateStatutDto {
-  statut: string;
-  commentaire?: string;
-}
+import { CreateFormationDto } from './dto/create-formation.dto';
+import { UpdateFormationDto } from './dto/update-formation.dto';
+import { UpdateStatutDto } from './dto/update-statut.dto';
 
 @Injectable()
 export class FormationsService {
@@ -87,7 +38,7 @@ export class FormationsService {
       mode: dto.mode,
       localisation: dto.localisation,
       certifiante: dto.certifiante,
-      a_la_une: dto.a_la_une,
+      a_la_une: dto.a_la_une ?? false,
       dateDebut: dto.dateDebut ? new Date(dto.dateDebut) : undefined,
       dateFin: dto.dateFin ? new Date(dto.dateFin) : undefined,
       lien_formation: dto.lien_formation,
@@ -129,7 +80,7 @@ export class FormationsService {
       mode: dto.mode,
       localisation: dto.localisation,
       certifiante: dto.certifiante,
-      a_la_une: dto.a_la_une,
+      a_la_une: dto.a_la_une ?? false,
       dateDebut: dto.dateDebut ? new Date(dto.dateDebut) : undefined,
       dateFin: dto.dateFin ? new Date(dto.dateFin) : undefined,
       lien_formation: dto.lien_formation,
