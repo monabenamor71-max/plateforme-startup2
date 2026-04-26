@@ -191,8 +191,6 @@ function EditPodcastModal({ podcast, onClose, onSuccess }: { podcast: any; onClo
 }
 
 // ─── MODAL PROPOSITION NOUVEAU CRÉNEAU ────────────────────────────
-// Envoie une proposition structurée via l'API /rendez-vous/:id/proposer-creneau
-// Le backend stocke la proposition et notifie la startup
 function RescheduleModal({ rdv, onClose, onSuccess, hdrJ }: {
   rdv: any;
   onClose: () => void;
@@ -208,18 +206,15 @@ function RescheduleModal({ rdv, onClose, onSuccess, hdrJ }: {
     if (!newDate) return;
     setLoading(true);
     try {
-      // Tentative via endpoint dédié (proposition structurée stockée en BDD)
       const res = await fetch(`${BASE}/rendez-vous/${rdv.id}/proposer-creneau`, {
         method: "POST",
         headers: hdrJ(),
         body: JSON.stringify({ nouvelle_date: newDate, raison: reason }),
       });
-
       if (res.ok) {
         onSuccess();
         onClose();
       } else if (res.status === 404) {
-        // Fallback : endpoint non implémenté, on envoie via message
         const formattedDate = new Date(newDate).toLocaleString("fr-FR", {
           day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit",
         });
@@ -233,7 +228,6 @@ function RescheduleModal({ rdv, onClose, onSuccess, hdrJ }: {
           `📅 Proposition de nouveau créneau pour le RDV du ${new Date(rdv.date_rdv).toLocaleString("fr-FR")} :\n` +
           `Nouveau créneau proposé : **${formattedDate}**` +
           (reason ? `\nRaison : ${reason}` : "");
-
         const msgRes = await fetch(`${BASE}/messages`, {
           method: "POST",
           headers: hdrJ(),
@@ -262,39 +256,20 @@ function RescheduleModal({ rdv, onClose, onSuccess, hdrJ }: {
           <button onClick={onClose} style={{ background: "rgba(255,255,255,.1)", border: "none", borderRadius: 10, width: 34, height: 34, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#fff", fontSize: 16 }}>✕</button>
         </div>
         <div style={{ padding: "20px 24px", background: "#FFFBEB", borderBottom: "1px solid #FDE68A" }}>
-          <div style={{ fontSize: 13, color: "#92400E" }}>
-            <strong>RDV actuel :</strong> {new Date(rdv.date_rdv).toLocaleString("fr-FR", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" })}
-          </div>
+          <div style={{ fontSize: 13, color: "#92400E" }}><strong>RDV actuel :</strong> {new Date(rdv.date_rdv).toLocaleString("fr-FR", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" })}</div>
           {rdv.sujet && <div style={{ fontSize: 12, color: "#B45309", marginTop: 4 }}>📌 {rdv.sujet}</div>}
-          <div style={{ fontSize: 12, color: "#B45309", marginTop: 4 }}>
-            Client : {rdv.client?.prenom} {rdv.client?.nom}
-          </div>
+          <div style={{ fontSize: 12, color: "#B45309", marginTop: 4 }}>Client : {rdv.client?.prenom} {rdv.client?.nom}</div>
         </div>
         <form onSubmit={handleSubmit} style={{ padding: "24px" }}>
           <div style={{ marginBottom: 16 }}>
             <label className="lbl">Nouvelle date & heure proposée *</label>
-            <input
-              className="inp"
-              type="datetime-local"
-              required
-              value={newDate}
-              onChange={e => setNewDate(e.target.value)}
-              min={new Date().toISOString().slice(0, 16)}
-            />
+            <input className="inp" type="datetime-local" required value={newDate} onChange={e => setNewDate(e.target.value)} min={new Date().toISOString().slice(0, 16)} />
           </div>
           <div style={{ marginBottom: 20 }}>
             <label className="lbl">Raison du changement (optionnelle)</label>
-            <textarea
-              className="inp"
-              rows={3}
-              placeholder="Ex: Conflit d'agenda, indisponibilité..."
-              value={reason}
-              onChange={e => setReason(e.target.value)}
-            />
+            <textarea className="inp" rows={3} placeholder="Ex: Conflit d'agenda, indisponibilité..." value={reason} onChange={e => setReason(e.target.value)} />
           </div>
-          <div style={{ background: "#F0F9FF", border: "1px solid #BAE6FD", borderRadius: 10, padding: "10px 14px", marginBottom: 20, fontSize: 12, color: "#0369A1" }}>
-            📨 La startup recevra une notification et pourra accepter ou refuser ce nouveau créneau.
-          </div>
+          <div style={{ background: "#F0F9FF", border: "1px solid #BAE6FD", borderRadius: 10, padding: "10px 14px", marginBottom: 20, fontSize: 12, color: "#0369A1" }}>📨 La startup recevra une notification et pourra accepter ou refuser ce nouveau créneau.</div>
           <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
             <button type="button" className="btn btn-gray" onClick={onClose}>Annuler</button>
             <button type="submit" className="btn btn-gold" disabled={loading || !newDate}>
@@ -318,12 +293,13 @@ export default function DashboardExpert() {
   const [loading, setLoading] = useState(false);
   const [tab, setTab] = useState<Tab>("accueil");
 
-  // Badge notifications — lus quand on entre dans l'onglet
-  const [seenTabs, setSeenTabs] = useState<Set<Tab>>(new Set(["accueil"]));
+  // Notifications de mission (demandes où l'expert a été notifié mais pas encore assigné)
+  const [notifications, setNotifications] = useState<any[]>([]);
+  // Demandes assignées par l'admin
+  const [demandesAssignees, setDemandesAssignees] = useState<any[]>([]);
 
   const [formations, setFormations] = useState<any[]>([]);
   const [podcasts, setPodcasts] = useState<any[]>([]);
-  const [demandesAssignees, setDemandesAssignees] = useState<any[]>([]);
   const [mesDevis, setMesDevis] = useState<any[]>([]);
   const [temoignages, setTemoignages] = useState<any[]>([]);
   const [pubTemos, setPubTemos] = useState<any[]>([]);
@@ -334,10 +310,6 @@ export default function DashboardExpert() {
   const [contacts, setContacts] = useState<any[]>([]);
   const [newMsg, setNewMsg] = useState("");
   const msgEndRef = useRef<HTMLDivElement>(null);
-
-  // Snapshot des compteurs au moment où on a vu l'onglet
-  const [rdvCountAtSeen, setRdvCountAtSeen] = useState(0);
-  const [msgCountAtSeen, setMsgCountAtSeen] = useState(0);
 
   const [tIdx, setTIdx] = useState(0);
   const [tAnim, setTAnim] = useState(false);
@@ -365,34 +337,22 @@ export default function DashboardExpert() {
   function notify(text: string, ok = true) { setToast({ text, ok }); setTimeout(() => setToast({ text: "", ok: true }), 3200); }
   const forceLogout = useCallback(() => { localStorage.clear(); window.location.href = "/connexion"; }, []);
 
-  // ── Marquer un onglet comme vu (efface le badge) ──────────────────
+  // ─── GESTION DES BADGES ──────────────────────────────────────
+  const [seenTabs, setSeenTabs] = useState<Set<Tab>>(new Set(["accueil"]));
+
   const handleTabChange = useCallback((newTab: Tab) => {
     setTab(newTab);
-    setSeenTabs(prev => {
-      const next = new Set(prev);
-      next.add(newTab);
-      return next;
-    });
-    if (newTab === "messages") {
-      setMsgCountAtSeen(prev => {
-        // sera recalculé après le prochain refresh
-        return 0;
-      });
-    }
-    if (newTab === "rdv") {
-      setRdvCountAtSeen(0);
-    }
+    setSeenTabs(prev => { const next = new Set(prev); next.add(newTab); return next; });
   }, []);
 
-  // Compteurs non lus pour badges
   const unreadMsgCount = allMessages.filter(m => m.receiver_id === user?.id && !m.lu).length;
   const pendingRdvCount = rdvs.filter(r => r.statut === "en_attente").length;
-  // Propositions de créneau reçues (depuis messages structurés ou endpoint dédié)
   const rdvProposalCount = rdvs.filter(r => r.proposition_en_attente).length;
+  const notificationsCount = notifications.length;
 
-  // Badge visible uniquement si l'onglet n'a pas encore été vu depuis la dernière nouveauté
   const showMsgBadge = tab !== "messages" && unreadMsgCount > 0;
   const showRdvBadge = tab !== "rdv" && (pendingRdvCount > 0 || rdvProposalCount > 0);
+  const showDemandesBadge = tab !== "demandes" && notificationsCount > 0;
 
   // ─── AUTHENTIFICATION ─────────────────────────────────────────────
   useEffect(() => {
@@ -416,15 +376,16 @@ export default function DashboardExpert() {
   const loadExpertData = useCallback(async (userId: number) => {
     setLoading(true);
     try {
-      const [expertRes, formationsRes, podcastsRes, demandesRes, devisRes, temoignagesRes, pubTemosRes, rdvsRes] = await Promise.all([
+      const [expertRes, formationsRes, podcastsRes, demandesRes, devisRes, temoignagesRes, pubTemosRes, rdvsRes, notifsRes] = await Promise.all([
         fetch(`${BASE}/experts/moi`, { headers: hdr() }),
         fetch(`${BASE}/formations/expert/mes-formations`, { headers: hdr() }),
         fetch(`${BASE}/podcasts/expert/mes-podcasts`, { headers: hdr() }),
-        fetch(`${BASE}/demandes-service/expert/assignees`, { headers: hdr() }),
+        fetch(`${BASE}/demandes-service/expert/assignees`, { headers: hdr() }), // demandes assignées
         fetch(`${BASE}/devis/expert/mes-devis`, { headers: hdr() }),
         fetch(`${BASE}/temoignages/mes-temoignages`, { headers: hdr() }),
         fetch(`${BASE}/temoignages/publics`),
         fetch(`${BASE}/rendez-vous/expert`, { headers: hdr() }),
+        fetch(`${BASE}/demandes-service/expert/notifications`, { headers: hdr() }), // notifications
       ]);
 
       if (!expertRes.ok) throw new Error("Erreur chargement expert");
@@ -445,6 +406,7 @@ export default function DashboardExpert() {
       setTemoignages(temoignagesRes.ok ? await temoignagesRes.json() : []);
       setPubTemos(pubTemosRes.ok ? await pubTemosRes.json() : []);
       setRdvs(rdvsRes.ok ? await rdvsRes.json() : []);
+      if (notifsRes.ok) setNotifications(await notifsRes.json());
       await refreshAllMessages();
     } catch (err: any) {
       notify("Erreur chargement des données", false);
@@ -453,13 +415,62 @@ export default function DashboardExpert() {
     }
   }, [hdr]);
 
+  // ─── NOTIFICATIONS DE MISSION : ACCEPTER / REFUSER ──────────────────
+  const accepterNotification = async (demandeId: number) => {
+    try {
+      const res = await fetch(`${BASE}/demandes-service/${demandeId}/accepter`, {
+        method: "PUT",
+        headers: hdrJ(),
+      });
+      if (res.ok) {
+        notify("✅ Mission acceptée, en attente de validation de l'administrateur.");
+        await loadExpertData(user?.id);
+      } else {
+        const err = await res.text();
+        notify(`Erreur : ${err}`, false);
+      }
+    } catch {
+      notify("Erreur réseau", false);
+    }
+  };
+
+  const refuserNotification = async (demandeId: number) => {
+    if (!confirm("Refuser cette mission ?")) return;
+    try {
+      const res = await fetch(`${BASE}/demandes-service/${demandeId}/refuser`, {
+        method: "PUT",
+        headers: hdrJ(),
+      });
+      if (res.ok) {
+        notify("❌ Mission refusée.");
+        await loadExpertData(user?.id);
+      } else {
+        const err = await res.text();
+        notify(`Erreur : ${err}`, false);
+      }
+    } catch {
+      notify("Erreur réseau", false);
+    }
+  };
+
+  // ─── MISSIONS ASSIGNÉES : DÉMARRER / TERMINER ─────────────────────
+  const updateMissionStatus = async (demandeId: number, statut: string) => {
+    const r = await fetch(`${BASE}/demandes-service/${demandeId}/statut-expert`, {
+      method: "PATCH",
+      headers: hdrJ(),
+      body: JSON.stringify({ statut }),
+    });
+    if (r.ok) { notify(`✅ Mission ${statut === "en_cours" ? "en cours" : "terminée"}`); await loadExpertData(user?.id); }
+    else notify("Erreur", false);
+  };
+
+  // ─── AUTRES FONCTIONS (messagerie, RDV, etc.) ─────────────────────
   const refreshAllMessages = useCallback(async () => {
     try {
       const res = await fetch(`${BASE}/messages/mes-messages`, { headers: hdr() });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const messages = await res.json();
       setAllMessages(messages);
-
       const contactsMap = new Map();
       for (const m of messages) {
         const otherId = m.sender_id === user?.id ? m.receiver_id : m.sender_id;
@@ -481,7 +492,6 @@ export default function DashboardExpert() {
         }
       });
       setContacts(Array.from(contactsMap.values()));
-
       if (selectedContact) {
         const filtered = messages.filter((m: any) =>
           (m.sender_id === selectedContact.id && m.receiver_id === user?.id) ||
@@ -501,12 +511,10 @@ export default function DashboardExpert() {
       (m.sender_id === user?.id && m.receiver_id === contactUserId)
     );
     setConversation(filtered.sort((a: any, b: any) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()));
-
-    // Marquer les messages comme lus
     try {
       await fetch(`${BASE}/messages/mark-read/${contactUserId}`, { method: "PATCH", headers: hdr() });
       setAllMessages(prev => prev.map(m => m.sender_id === contactUserId ? { ...m, lu: true } : m));
-    } catch { /* silencieux */ }
+    } catch {}
   }, [contacts, allMessages, user?.id, hdr]);
 
   async function sendMessage() {
@@ -575,12 +583,6 @@ export default function DashboardExpert() {
     else notify("Erreur envoi devis", false);
   }
 
-  async function updateMissionStatus(demandeId: number, statut: string) {
-    const r = await fetch(`${BASE}/demandes-service/${demandeId}/statut-expert`, { method: "PATCH", headers: hdrJ(), body: JSON.stringify({ statut }) });
-    if (r.ok) { notify(`✅ Mission ${statut === "en_cours" ? "en cours" : "terminée"}`); await loadExpertData(user?.id); }
-    else notify("Erreur", false);
-  }
-
   async function envoyerTemoignage() {
     if (!newTemo.trim()) { notify("Écrivez votre témoignage", false); return; }
     const r = await fetch(`${BASE}/temoignages`, { method: "POST", headers: hdrJ(), body: JSON.stringify({ texte: newTemo, note: newTemoNote }) });
@@ -595,7 +597,7 @@ export default function DashboardExpert() {
     else notify("Erreur", false);
   }
 
-  // Polling messages quand onglet messages actif
+  // Polling
   useEffect(() => {
     if (tab === "messages") {
       refreshAllMessages();
@@ -604,17 +606,17 @@ export default function DashboardExpert() {
     }
   }, [tab, refreshAllMessages]);
 
-  // Polling RDV toutes les 30s pour détecter nouvelles propositions
   useEffect(() => {
     const interval = setInterval(async () => {
       const res = await fetch(`${BASE}/rendez-vous/expert`, { headers: hdr() });
       if (res.ok) setRdvs(await res.json());
+      const notifsRes = await fetch(`${BASE}/demandes-service/expert/notifications`, { headers: hdr() });
+      if (notifsRes.ok) setNotifications(await notifsRes.json());
     }, 30000);
     return () => clearInterval(interval);
   }, [hdr]);
 
   useEffect(() => { msgEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [conversation]);
-
   useEffect(() => {
     if (!pubTemos.length) return;
     const t = setInterval(() => { if (!tAnim) setTIdx(p => (p + 1) % pubTemos.length); }, 5000);
@@ -697,6 +699,7 @@ export default function DashboardExpert() {
         .bo{background:#ECFDF5;color:#059669;border:1px solid #A7F3D0;border-radius:99px;padding:4px 12px;font-size:12px;font-weight:700;}
         .bn{background:#FEF2F2;color:#DC2626;border:1px solid #FECACA;border-radius:99px;padding:4px 12px;font-size:12px;font-weight:700;}
         .bw{background:#FFFBEB;color:#B45309;border:1px solid #FDE68A;border-radius:99px;padding:4px 12px;font-size:12px;font-weight:700;}
+        .notification-card{border:1.5px solid #FDE68A;margin-bottom:14px;border-left:4px solid #F7B500;}
       `}</style>
 
       {toast.text && (
@@ -708,8 +711,6 @@ export default function DashboardExpert() {
       {selectedPodcast && <PodcastDetailModal podcast={selectedPodcast} onClose={() => setSelectedPodcast(null)} />}
       {showCreatePodcastModal && expert && <CreatePodcastModal onClose={() => setShowCreatePodcastModal(false)} onSuccess={() => loadExpertData(user?.id)} expertData={expert} />}
       {showEditPodcastModal && editingPodcast && <EditPodcastModal podcast={editingPodcast} onClose={() => { setShowEditPodcastModal(false); setEditingPodcast(null); }} onSuccess={() => loadExpertData(user?.id)} />}
-
-      {/* Modal devis */}
       {showDevisModal && devisMission && (
         <div className="modal-bg" onClick={() => setShowDevisModal(false)}>
           <div className="modal-box" style={{ maxWidth: 550 }} onClick={e => e.stopPropagation()}>
@@ -726,18 +727,8 @@ export default function DashboardExpert() {
           </div>
         </div>
       )}
-
-      {/* Modal proposition créneau */}
       {showRescheduleModal && selectedRdv && (
-        <RescheduleModal
-          rdv={selectedRdv}
-          onClose={() => { setShowRescheduleModal(false); setSelectedRdv(null); }}
-          hdrJ={hdrJ}
-          onSuccess={() => {
-            notify("✅ Proposition de créneau envoyée à la startup !");
-            loadExpertData(user?.id);
-          }}
-        />
+        <RescheduleModal rdv={selectedRdv} onClose={() => { setShowRescheduleModal(false); setSelectedRdv(null); }} hdrJ={hdrJ} onSuccess={() => { notify("✅ Proposition de créneau envoyée à la startup !"); loadExpertData(user?.id); }} />
       )}
 
       {/* HEADER */}
@@ -749,24 +740,19 @@ export default function DashboardExpert() {
         <button onClick={forceLogout} style={{ background: "rgba(255,255,255,.08)", border: "1px solid rgba(255,255,255,.12)", color: "rgba(255,255,255,.7)", borderRadius: 9, padding: "7px 16px", cursor: "pointer" }}>Déconnexion</button>
       </header>
 
-      {/* ONGLETS avec badges intelligents */}
+      {/* ONGLETS avec badges */}
       <div style={{ background: "#fff", borderBottom: "1px solid #E8EEF6", position: "sticky", top: 62, zIndex: 90, overflowX: "auto" }}>
         <div style={{ maxWidth: 1300, margin: "0 auto", padding: "0 24px", display: "flex", gap: 4 }}>
           {TABS.map(t => {
             let badge: number | null = null;
             if (t.id === "messages" && showMsgBadge) badge = unreadMsgCount;
             if (t.id === "rdv" && showRdvBadge) badge = pendingRdvCount + rdvProposalCount;
+            if (t.id === "demandes" && showDemandesBadge) badge = notificationsCount;
             return (
-              <button
-                key={t.id}
-                className={`tab-btn${tab === t.id ? " on" : ""}`}
-                onClick={() => handleTabChange(t.id)}
-              >
+              <button key={t.id} className={`tab-btn${tab === t.id ? " on" : ""}`} onClick={() => handleTabChange(t.id)}>
                 {t.icon} {t.label}
                 {badge !== null && badge > 0 && (
-                  <span style={{ background: "#EF4444", color: "#fff", borderRadius: 99, padding: "1px 6px", fontSize: 10, fontWeight: 800, marginLeft: 2 }}>
-                    {badge}
-                  </span>
+                  <span style={{ background: "#EF4444", color: "#fff", borderRadius: 99, padding: "1px 6px", fontSize: 10, fontWeight: 800, marginLeft: 2 }}>{badge}</span>
                 )}
               </button>
             );
@@ -776,14 +762,11 @@ export default function DashboardExpert() {
 
       <div style={{ maxWidth: 1300, margin: "0 auto", padding: "32px 24px" }}>
 
-        {/* ══ ACCUEIL ══ */}
+        {/* ══ ACCUEIL (inchangé) ══ */}
         {tab === "accueil" && (
           <div>
             <section style={{ position: "relative", overflow: "hidden", minHeight: 380, borderRadius: 20 }}>
-              <div style={{ position: "absolute", inset: 0 }}>
-                <Image src="/image.png" alt="" fill priority style={{ objectFit: "cover" }} />
-                <div style={{ position: "absolute", inset: 0, background: "linear-gradient(108deg,rgba(6,14,26,.95) 0%,rgba(10,30,60,.78) 44%,rgba(10,37,64,.18) 100%)" }} />
-              </div>
+              <div style={{ position: "absolute", inset: 0 }}><Image src="/image.png" alt="" fill priority style={{ objectFit: "cover" }} /><div style={{ position: "absolute", inset: 0, background: "linear-gradient(108deg,rgba(6,14,26,.95) 0%,rgba(10,30,60,.78) 44%,rgba(10,37,64,.18) 100%)" }} /></div>
               <div style={{ position: "relative", zIndex: 10, maxWidth: 1280, margin: "0 auto", padding: "60px 32px 70px" }}>
                 <div style={{ display: "inline-flex", alignItems: "center", gap: 8, marginBottom: 20, background: "rgba(247,181,0,.1)", border: "1px solid rgba(247,181,0,.22)", borderRadius: 99, padding: "5px 16px 5px 10px" }}>
                   <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#F7B500", animation: "pulse 2s infinite", display: "inline-block" }} />
@@ -842,7 +825,7 @@ export default function DashboardExpert() {
           </div>
         )}
 
-        {/* ══ PROFIL ══ */}
+        {/* ══ PROFIL (inchangé) ══ */}
         {tab === "profil" && (
           <div style={{ maxWidth: 720, margin: "0 auto" }}>
             <div className="card" style={{ padding: "24px", marginBottom: 20, display: "flex", alignItems: "center", gap: 20 }}>
@@ -881,7 +864,7 @@ export default function DashboardExpert() {
           </div>
         )}
 
-        {/* ══ FORMATIONS ══ */}
+        {/* ══ FORMATIONS (inchangé) ══ */}
         {tab === "formations" && (
           <div>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, flexWrap: "wrap", gap: 12 }}>
@@ -907,7 +890,7 @@ export default function DashboardExpert() {
           </div>
         )}
 
-        {/* ══ PODCASTS ══ */}
+        {/* ══ PODCASTS (inchangé) ══ */}
         {tab === "podcasts" && (
           <div>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, flexWrap: "wrap", gap: 12 }}>
@@ -939,38 +922,82 @@ export default function DashboardExpert() {
           </div>
         )}
 
-        {/* ══ MISSIONS ══ */}
+        {/* ══ MISSIONS (avec notifications + assignées) ══ */}
         {tab === "demandes" && (
           <div>
+            {/* NOTIFICATIONS (demandes non assignées) */}
+            {notifications.length > 0 && (
+              <div style={{ marginBottom: 32 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
+                  <div style={{ width: 36, height: 36, borderRadius: 10, background: "#FEF3C7", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>🔔</div>
+                  <div>
+                    <h3 style={{ fontWeight: 800, fontSize: 16, color: "#0A2540" }}>Notifications de mission</h3>
+                    <div style={{ fontSize: 12, color: "#8A9AB5" }}>Vous avez été notifié pour ces demandes. Acceptez-les pour que l'admin puisse vous assigner.</div>
+                  </div>
+                  <span style={{ background: "#F7B500", color: "#0A2540", borderRadius: 99, padding: "3px 10px", fontSize: 12, fontWeight: 800, marginLeft: "auto" }}>{notifications.length}</span>
+                </div>
+                {notifications.map(d => (
+                  <div key={d.id} className="card notification-card" style={{ marginBottom: 14, borderLeft: "4px solid #F7B500" }}>
+                    <div style={{ padding: "18px 22px" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontWeight: 700, fontSize: 15, color: "#0A2540" }}>
+                            {d.user?.prenom} {d.user?.nom} – {d.service}
+                          </div>
+                          {d.description && <p style={{ fontSize: 13, color: "#475569", marginTop: 8 }}>{d.description}</p>}
+                          {d.objectif && <div style={{ fontSize: 13, color: "#7C3AED", marginTop: 6 }}>🎯 {d.objectif}</div>}
+                          {d.delai && <div style={{ fontSize: 12, color: "#64748B", marginTop: 6 }}>⏱ Délai souhaité : {d.delai}</div>}
+                          {d.telephone && <div style={{ fontSize: 12, color: "#64748B", marginTop: 4 }}>📞 {d.telephone}</div>}
+                        </div>
+                        <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                          <button className="btn btn-green" style={{ fontSize: 12, padding: "6px 12px" }} onClick={() => accepterNotification(d.id)}>✅ Accepter</button>
+                          <button className="btn btn-red" style={{ fontSize: 12, padding: "6px 12px" }} onClick={() => refuserNotification(d.id)}>❌ Refuser</button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                <div style={{ height: 1, background: "#E8EEF6", margin: "8px 0 24px" }} />
+              </div>
+            )}
+
+            {/* MISSIONS DÉJÀ ASSIGNÉES */}
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20, flexWrap: "wrap", gap: 12 }}>
-              <div><h2 style={{ fontWeight: 700, fontSize: 17, color: "#0A2540" }}>📋 Mes missions assignées</h2><div style={{ fontSize: 13, color: "#8A9AB5", marginTop: 2 }}>{demandesAssignees.length} mission{demandesAssignees.length !== 1 ? "s" : ""}</div></div>
+              <div>
+                <h2 style={{ fontWeight: 700, fontSize: 17, color: "#0A2540" }}>📋 Mes missions assignées</h2>
+                <div style={{ fontSize: 13, color: "#8A9AB5", marginTop: 2 }}>{demandesAssignees.length} mission{demandesAssignees.length !== 1 ? "s" : ""}</div>
+              </div>
               <button className="btn btn-gray" onClick={() => loadExpertData(user?.id)}>🔄 Rafraîchir</button>
             </div>
             {demandesAssignees.length === 0 ? (
-              <div className="card" style={{ padding: "52px 0", textAlign: "center" }}><div style={{ fontSize: 48, marginBottom: 14 }}>📋</div><div style={{ fontWeight: 700, color: "#0A2540", fontSize: 16, marginBottom: 6 }}>Aucune mission assignée</div><div style={{ fontSize: 13, color: "#8A9AB5" }}>L'admin vous assignera des demandes clients adaptées à votre expertise.</div></div>
+              <div className="card" style={{ padding: "52px 0", textAlign: "center" }}>
+                <div style={{ fontSize: 48, marginBottom: 14 }}>📋</div>
+                <div style={{ fontWeight: 700, color: "#0A2540", fontSize: 16, marginBottom: 6 }}>Aucune mission assignée</div>
+                <div style={{ fontSize: 13, color: "#8A9AB5" }}>Les missions vous seront assignées après acceptation par l'administrateur.</div>
+              </div>
             ) : demandesAssignees.map(d => (
-              <div key={d.id} className="card" style={{ padding: "18px 22px", marginBottom: 14, borderLeft: `4px solid ${d.statut === "en_cours" ? "#3B82F6" : d.statut === "terminee" ? "#8B5CF6" : "#F7B500"}` }}>
-                <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
-                      <div style={{ width: 40, height: 40, borderRadius: "50%", background: "#0A2540", color: "#F7B500", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 14, flexShrink: 0 }}>{d.user?.prenom?.[0]}{d.user?.nom?.[0]}</div>
-                      <div><div style={{ fontWeight: 700, fontSize: 15, color: "#0A2540" }}>{d.user?.prenom} {d.user?.nom}</div><div style={{ fontSize: 11, color: "#8A9AB5" }}>{d.user?.email}</div></div>
+              <div key={d.id} className="card" style={{ marginBottom: 14, borderLeft: `4px solid ${d.statut === "en_cours" ? "#3B82F6" : d.statut === "terminee" ? "#8B5CF6" : "#F7B500"}` }}>
+                <div style={{ padding: "18px 22px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 700, fontSize: 15 }}>{d.user?.prenom} {d.user?.nom} – {d.service}</div>
+                      {d.description && <p style={{ fontSize: 13, marginTop: 8 }}>{d.description}</p>}
+                      {d.objectif && <div style={{ fontSize: 13, color: "#7C3AED", marginTop: 6 }}>🎯 {d.objectif}</div>}
                     </div>
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: 7, marginBottom: 8 }}>
-                      <span className="badge" style={{ background: "#EFF6FF", color: "#1D4ED8" }}>🛠️ {d.service}</span>
-                      {d.delai && <span className="badge" style={{ background: "#FFF8E1", color: "#B45309" }}>⏱ {d.delai}</span>}
-                      {d.telephone && <span className="badge" style={{ background: "#F1F5F9", color: "#374151" }}>📞 {d.telephone}</span>}
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-end" }}>
+                      <span className={`badge ${d.statut === 'en_attente' ? 'bw' : d.statut === 'en_cours' ? 'bo' : d.statut === 'terminee' ? 'bo' : 'bn'}`}>
+                        {d.statut === 'en_attente' ? '⏳ En attente' : d.statut === 'en_cours' ? '🔄 En cours' : d.statut === 'terminee' ? '✅ Terminée' : '❌ Refusée'}
+                      </span>
+                      {d.statut === 'en_attente' && (
+                        <button className="btn btn-green" style={{ fontSize: 12 }} onClick={() => updateMissionStatus(d.id, "en_cours")}>🚀 Démarrer</button>
+                      )}
+                      {d.statut === 'en_cours' && (
+                        <button className="btn btn-purple" style={{ fontSize: 12 }} onClick={() => updateMissionStatus(d.id, "terminee")}>✔️ Terminer</button>
+                      )}
+                      {d.statut !== 'terminee' && d.statut !== 'refusee' && (
+                        <button className="btn btn-bl" style={{ fontSize: 12 }} onClick={() => { setDevisMission(d); setShowDevisModal(true); }}>📄 Créer un devis</button>
+                      )}
                     </div>
-                    {d.description && <p style={{ fontSize: 13.5, color: "#475569", lineHeight: 1.75, margin: "0 0 8px", background: "#F8FAFC", padding: "10px 12px", borderRadius: 8 }}>{d.description}</p>}
-                    {d.objectif && <p style={{ fontSize: 13, color: "#7C3AED", margin: 0, fontWeight: 600 }}>🎯 Objectif : {d.objectif}</p>}
-                  </div>
-                  <div style={{ flexShrink: 0, display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-                    <button className="btn btn-bl" style={{ fontSize: 12, padding: "6px 12px" }} onClick={() => { setDevisMission(d); setDevisForm({ montant: "", description: "", delai: "" }); setShowDevisModal(true); }}>📄 Créer un devis</button>
-                    {d.statut === "en_attente" && <button className="btn btn-green" style={{ fontSize: 12 }} onClick={() => updateMissionStatus(d.id, "en_cours")}>🔄 Démarrer</button>}
-                    {d.statut === "en_cours" && <button className="btn btn-purple" style={{ fontSize: 12 }} onClick={() => updateMissionStatus(d.id, "terminee")}>✔️ Terminer</button>}
-                    <span className="badge" style={{ background: d.statut === "en_cours" ? "#EFF6FF" : d.statut === "terminee" ? "#F3F0FF" : "#FFF8E1", color: d.statut === "en_cours" ? "#1D4ED8" : d.statut === "terminee" ? "#7C3AED" : "#B45309" }}>
-                      {d.statut === "en_cours" ? "🔄 En cours" : d.statut === "terminee" ? "✔️ Terminée" : "⏳ En attente"}
-                    </span>
                   </div>
                 </div>
               </div>
@@ -978,7 +1005,7 @@ export default function DashboardExpert() {
           </div>
         )}
 
-        {/* ══ DEVIS ══ */}
+        {/* ══ DEVIS (inchangé) ══ */}
         {tab === "devis" && (
           <div>
             <div style={{ fontWeight: 700, fontSize: 17, color: "#0A2540", marginBottom: 6 }}>📄 Mes devis envoyés</div>
@@ -986,24 +1013,26 @@ export default function DashboardExpert() {
             {mesDevis.length === 0 ? (
               <div className="card" style={{ padding: "52px 0", textAlign: "center" }}><div style={{ fontSize: 48, marginBottom: 14 }}>📄</div><div style={{ fontWeight: 700, color: "#0A2540", fontSize: 16, marginBottom: 6 }}>Aucun devis</div><div style={{ fontSize: 13, color: "#8A9AB5" }}>Créez des devis depuis vos missions assignées.</div></div>
             ) : mesDevis.map(d => (
-              <div key={d.id} className="card" style={{ padding: "18px 22px", marginBottom: 14, borderLeft: `4px solid ${d.statut === "accepte" ? "#22C55E" : d.statut === "refuse" ? "#EF4444" : "#F7B500"}` }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 10 }}>
-                  <div>
-                    <div style={{ fontWeight: 700, fontSize: 15, color: "#0A2540" }}>Devis #{d.id} — {d.demande?.service || "Mission"}</div>
-                    <div style={{ fontSize: 13, color: "#64748B", marginTop: 4 }}>Client : {d.demande?.user?.prenom} {d.demande?.user?.nom}</div>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: "#F7B500", marginTop: 6 }}>💰 {d.montant} DT</div>
-                    {d.description && <p style={{ fontSize: 13, color: "#475569", marginTop: 8, background: "#F8FAFC", padding: "8px 12px", borderRadius: 8 }}>{d.description}</p>}
-                    {d.delai && <div style={{ fontSize: 12, color: "#6B7280", marginTop: 6 }}>⏱ Délai : {d.delai}</div>}
-                    <div style={{ fontSize: 11, color: "#8A9AB5", marginTop: 8 }}>Envoyé le {new Date(d.createdAt).toLocaleDateString("fr-FR")}</div>
+              <div key={d.id} className="card" style={{ marginBottom: 14, borderLeft: `4px solid ${d.statut === "accepte" ? "#22C55E" : d.statut === "refuse" ? "#EF4444" : "#F7B500"}` }}>
+                <div style={{ padding: "18px 22px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 10 }}>
+                    <div>
+                      <div style={{ fontWeight: 700, fontSize: 15, color: "#0A2540" }}>Devis #{d.id} — {d.demande?.service || "Mission"}</div>
+                      <div style={{ fontSize: 13, color: "#64748B", marginTop: 4 }}>Client : {d.demande?.user?.prenom} {d.demande?.user?.nom}</div>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: "#F7B500", marginTop: 6 }}>💰 {d.montant} DT</div>
+                      {d.description && <p style={{ fontSize: 13, color: "#475569", marginTop: 8, background: "#F8FAFC", padding: "8px 12px", borderRadius: 8 }}>{d.description}</p>}
+                      {d.delai && <div style={{ fontSize: 12, color: "#6B7280", marginTop: 6 }}>⏱ Délai : {d.delai}</div>}
+                      <div style={{ fontSize: 11, color: "#8A9AB5", marginTop: 8 }}>Envoyé le {new Date(d.createdAt).toLocaleDateString("fr-FR")}</div>
+                    </div>
+                    <span className={d.statut === "accepte" ? "bo" : d.statut === "refuse" ? "bn" : "bw"}>{d.statut === "accepte" ? "✅ Accepté" : d.statut === "refuse" ? "❌ Refusé" : "⏳ En attente"}</span>
                   </div>
-                  <span className={d.statut === "accepte" ? "bo" : d.statut === "refuse" ? "bn" : "bw"}>{d.statut === "accepte" ? "✅ Accepté" : d.statut === "refuse" ? "❌ Refusé" : "⏳ En attente"}</span>
                 </div>
               </div>
             ))}
           </div>
         )}
 
-        {/* ══ MESSAGES ══ */}
+        {/* ══ MESSAGES (inchangé) ══ */}
         {tab === "messages" && (
           <div style={{ display: "grid", gridTemplateColumns: "260px 1fr", gap: 16, height: "calc(100vh - 200px)" }}>
             <div className="card" style={{ display: "flex", flexDirection: "column" }}>
@@ -1083,7 +1112,7 @@ export default function DashboardExpert() {
           </div>
         )}
 
-        {/* ══ TÉMOIGNAGES ══ */}
+        {/* ══ TÉMOIGNAGES (inchangé) ══ */}
         {tab === "temoignages" && (
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
             <div className="card">
@@ -1114,7 +1143,7 @@ export default function DashboardExpert() {
           </div>
         )}
 
-        {/* ══ RENDEZ-VOUS ══ */}
+        {/* ══ RENDEZ-VOUS (inchangé) ══ */}
         {tab === "rdv" && (
           <div>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20, flexWrap: "wrap", gap: 12 }}>
@@ -1157,13 +1186,7 @@ export default function DashboardExpert() {
                             <div style={{ display: "flex", gap: 6, flexWrap: "wrap", justifyContent: "flex-end" }}>
                               <button className="btn btn-green" style={{ fontSize: 12, padding: "6px 12px" }} onClick={() => confirmerRdv(rdv.id)}>✅ Confirmer</button>
                               <button className="btn btn-red" style={{ fontSize: 12, padding: "6px 12px" }} onClick={() => annulerRdv(rdv.id)}>❌ Annuler</button>
-                              <button
-                                className="btn btn-purple"
-                                style={{ fontSize: 12, padding: "6px 12px" }}
-                                onClick={() => { setSelectedRdv(rdv); setShowRescheduleModal(true); }}
-                              >
-                                📅 Autre créneau
-                              </button>
+                              <button className="btn btn-purple" style={{ fontSize: 12, padding: "6px 12px" }} onClick={() => { setSelectedRdv(rdv); setShowRescheduleModal(true); }}>📅 Autre créneau</button>
                             </div>
                           )}
                         </div>

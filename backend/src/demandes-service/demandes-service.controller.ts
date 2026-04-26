@@ -2,17 +2,21 @@ import {
   Controller, Get, Post, Patch, Put, Delete,
   Body, Param, UseGuards, Req, ValidationPipe, ParseIntPipe, BadRequestException,
 } from '@nestjs/common';
-import { DemandesServiceService, CreateDemandeDto, UpdateDemandeDto, UpdateStatutDto, NotifierExpertsDto, AssignerExpertDto } from './demandes-service.service';
+import { DemandesServiceService } from './demandes-service.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
+import { CreateDemandeDto } from './dto/create-demande.dto';
+import { UpdateDemandeDto } from './dto/update-demande.dto';
+import { UpdateStatutDto } from './dto/update-statut.dto';
+import { NotifierExpertsDto } from './dto/notifier-experts.dto';
+import { AssignerExpertDto } from './dto/assigner-expert.dto';
 
 @Controller('demandes-service')
 export class DemandesServiceController {
   constructor(private readonly service: DemandesServiceService) {}
 
   // ==================== ADMIN ====================
-
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
   @Get('all')
@@ -66,10 +70,14 @@ export class DemandesServiceController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
   @Patch(':id/assigner')
-  assignerExpert(
+  async assignerExpert(
     @Param('id', ParseIntPipe) id: number,
-    @Body(ValidationPipe) dto: AssignerExpertDto,
+    @Body() body: any,
   ) {
+    const dto: AssignerExpertDto = {
+      expert_id: body.expert_id,
+      commentaire: body.commentaire,
+    };
     return this.service.assignerExpert(id, dto);
   }
 
@@ -88,7 +96,6 @@ export class DemandesServiceController {
   }
 
   // ==================== STARTUPS ====================
-
   @UseGuards(JwtAuthGuard)
   @Get('mes-demandes')
   getMesDemandes(@Req() req: any) {
@@ -97,16 +104,7 @@ export class DemandesServiceController {
 
   @UseGuards(JwtAuthGuard)
   @Post()
-  async create(@Body() body: any, @Req() req: any) {
-    const dto: CreateDemandeDto = {
-      service: body.service,
-      description: body.description,
-      delai: body.delai,
-      objectif: body.objectif,
-      telephone: body.telephone,
-      type_application: body.type_application,
-      domaine: body.domaine,
-    };
+  async create(@Body(ValidationPipe) dto: CreateDemandeDto, @Req() req: any) {
     return this.service.create(req.user.id, dto);
   }
 
@@ -136,7 +134,6 @@ export class DemandesServiceController {
   }
 
   // ==================== EXPERTS ====================
-
   @UseGuards(JwtAuthGuard)
   @Get('expert/assignees')
   async getDemandesAssignees(@Req() req: any) {
@@ -150,14 +147,14 @@ export class DemandesServiceController {
   }
 
   @UseGuards(JwtAuthGuard)
-  @Patch(':id/accepter-mission')
-  accepterMission(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
+  @Put(':id/accepter')
+  async accepterMission(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
     return this.service.accepterMission(id, req.user.id);
   }
 
   @UseGuards(JwtAuthGuard)
-  @Patch(':id/refuser-mission')
-  refuserMission(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
+  @Put(':id/refuser')
+  async refuserMission(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
     return this.service.refuserMission(id, req.user.id);
   }
 }
