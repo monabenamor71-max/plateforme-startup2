@@ -9,6 +9,7 @@ import {
   BadRequestException,
   UseGuards,
   Request,
+  Res,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { RegisterExpertDto } from './dto/register-expert.dto';
@@ -18,7 +19,8 @@ import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { v4 as uuidv4 } from 'uuid';
 import * as path from 'path';
-import { JwtAuthGuard } from './jwt-auth.guard'; // note le 's' (fichier jwt-auth.guards.ts)
+import { JwtAuthGuard } from './jwt-auth.guard';
+import type { Response } from 'express'; // ← correction : import type uniquement
 
 @Controller('auth')
 export class AuthController {
@@ -97,11 +99,18 @@ export class AuthController {
   }
 
   @Get('confirm')
-  async confirmEmail(@Query('token') token: string) {
-    return this.authService.confirmEmail(token);
+  async confirmEmail(@Query('token') token: string, @Res() res: Response) {
+    try {
+      const result = await this.authService.confirmEmail(token);
+      const redirectUrl = `http://localhost:3000/confirmation?status=success&message=${encodeURIComponent(result.message)}`;
+      return res.redirect(redirectUrl);
+    } catch (error) {
+      const errorMessage = error.message || 'Lien de confirmation invalide ou expiré';
+      const redirectUrl = `http://localhost:3000/confirmation?status=error&message=${encodeURIComponent(errorMessage)}`;
+      return res.redirect(redirectUrl);
+    }
   }
 
-  // ========== ROUTE SÉCURISÉE ==========
   @UseGuards(JwtAuthGuard)
   @Get('me')
   async getMe(@Request() req) {
