@@ -61,7 +61,7 @@ function Reveal({ children, delay = 0 }: { children: React.ReactNode; delay?: nu
   );
 }
 
-// ─── MODAL PROPOSER FORMATION (CORRIGÉE) ─────────────────────────────────────
+// ─── MODAL PROPOSER FORMATION ─────────────────────────────────────
 function ProposerFormationModal({
   onClose, onSuccess, expertData, user, tk
 }: {
@@ -88,7 +88,7 @@ function ProposerFormationModal({
     lien_formation: "",
     dateDebut: "",
     dateFin: "",
-    type: "payant", // "gratuit" ou "payant"
+    type: "payant",
     gratuit: false,
     prix: "",
     places_limitees: false,
@@ -111,8 +111,6 @@ function ProposerFormationModal({
     setSubmitting(true);
     try {
       const fd = new FormData();
-
-      // Champs texte obligatoires
       fd.append("titre", form.titre.trim());
       fd.append("description", form.description.trim());
       fd.append("domaine", form.domaine);
@@ -130,9 +128,8 @@ function ProposerFormationModal({
       fd.append("places_limitees", String(form.places_limitees));
       if (form.places_limitees && form.places_disponibles) fd.append("places_disponibles", form.places_disponibles);
       fd.append("certifiante", String(form.certifiante));
-      fd.append("a_la_une", "false"); // valeur par défaut
+      fd.append("a_la_une", "false");
       fd.append("statut", "en_attente");
-
       if (imageFile) fd.append("image", imageFile);
 
       const res = await fetch(`${BASE}/formations/expert/proposer`, {
@@ -165,8 +162,6 @@ function ProposerFormationModal({
   return (
     <div className="modal-bg" onClick={onClose}>
       <div className="modal-box" style={{ maxWidth: 720 }} onClick={e => e.stopPropagation()}>
-
-        {/* Header */}
         <div style={{ background: "linear-gradient(135deg,#0A2540,#1a3f6f)", padding: "20px 28px 0", borderRadius: "24px 24px 0 0", position: "relative", overflow: "hidden" }}>
           <div style={{ position: "absolute", inset: 0, backgroundImage: "radial-gradient(rgba(255,255,255,.03) 1px,transparent 1px)", backgroundSize: "28px 28px" }} />
           <div style={{ position: "relative", zIndex: 2 }}>
@@ -180,8 +175,6 @@ function ProposerFormationModal({
               </div>
               <button onClick={onClose} style={{ background: "rgba(255,255,255,.1)", border: "none", borderRadius: 10, width: 34, height: 34, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#fff", fontSize: 16 }}><FaTimes /></button>
             </div>
-
-            {/* Stepper */}
             <div style={{ display: "flex", alignItems: "center", paddingBottom: 0 }}>
               {steps.map((s, i) => (
                 <div key={s.num} style={{ display: "flex", alignItems: "center", flex: 1 }}>
@@ -197,11 +190,8 @@ function ProposerFormationModal({
             </div>
           </div>
         </div>
-
         <form onSubmit={handleSubmit}>
           <div style={{ padding: "24px 28px", maxHeight: "58vh", overflowY: "auto" }}>
-
-            {/* ── ÉTAPE 1 : INFORMATIONS ── */}
             {step === 1 && (
               <div>
                 <div style={{ marginBottom: 16 }}>
@@ -209,12 +199,10 @@ function ProposerFormationModal({
                   <input className="inp" placeholder="Ex: Maîtriser le Marketing Digital en 2026" value={form.titre} onChange={e => upd("titre", e.target.value)} maxLength={150} required />
                   <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 3, textAlign: "right" }}>{form.titre.length}/150</div>
                 </div>
-
                 <div style={{ marginBottom: 16 }}>
                   <label className="lbl">Description complète *</label>
-                  <textarea className="inp" rows={4} placeholder="Décrivez le contenu, les objectifs, ce que les participants vont apprendre..." value={form.description} onChange={e => upd("description", e.target.value)} required />
+                  <textarea className="inp" rows={4} placeholder="Décrivez le contenu, les objectifs..." value={form.description} onChange={e => upd("description", e.target.value)} required />
                 </div>
-
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 16 }}>
                   <div>
                     <label className="lbl">Domaine d'expertise *</label>
@@ -228,7 +216,6 @@ function ProposerFormationModal({
                     <input className="inp" placeholder="Votre nom ou un intervenant" value={form.formateur} onChange={e => upd("formateur", e.target.value)} />
                   </div>
                 </div>
-
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 16 }}>
                   <div>
                     <label className="lbl">Niveau requis</label>
@@ -238,8 +225,6 @@ function ProposerFormationModal({
                     </select>
                   </div>
                 </div>
-
-                {/* Option certifiante */}
                 <div style={{ display: "flex", alignItems: "center", gap: 12, background: "#F8FAFC", border: "1.5px solid #E2E8F0", borderRadius: 12, padding: "14px 16px" }}>
                   <div onClick={() => upd("certifiante", !form.certifiante)} style={{ width: 44, height: 24, background: form.certifiante ? "#F7B500" : "#D1D5DB", borderRadius: 99, position: "relative", cursor: "pointer", transition: "background .2s", flexShrink: 0 }}>
                     <div style={{ position: "absolute", top: 2, left: form.certifiante ? 22 : 2, width: 20, height: 20, background: "#fff", borderRadius: "50%", transition: "left .2s", boxShadow: "0 1px 3px rgba(0,0,0,.2)" }} />
@@ -254,8 +239,6 @@ function ProposerFormationModal({
                 </div>
               </div>
             )}
-
-            {/* ── ÉTAPE 2 : MODALITÉS ── */}
             {step === 2 && (
               <div>
                 <div style={{ marginBottom: 18 }}>
@@ -269,7 +252,6 @@ function ProposerFormationModal({
                     ))}
                   </div>
                 </div>
-
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 16 }}>
                   <div>
                     <label className="lbl">Durée</label>
@@ -284,10 +266,8 @@ function ProposerFormationModal({
                       <FaMapMarkerAlt style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#94A3B8", fontSize: 13 }} />
                       <input className="inp" style={{ paddingLeft: 34 }} placeholder="Ex: Tunis, Paris..." value={form.localisation} onChange={e => upd("localisation", e.target.value)} required={form.mode === "presentiel"} disabled={form.mode === "en_ligne"} />
                     </div>
-                    {form.mode === "en_ligne" && <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 3 }}>Non requis pour le mode en ligne</div>}
                   </div>
                 </div>
-
                 <div style={{ marginBottom: 16 }}>
                   <label className="lbl">Lien de la formation (optionnel)</label>
                   <div style={{ position: "relative" }}>
@@ -295,7 +275,6 @@ function ProposerFormationModal({
                     <input className="inp" style={{ paddingLeft: 34 }} placeholder="https://..." type="url" value={form.lien_formation} onChange={e => upd("lien_formation", e.target.value)} />
                   </div>
                 </div>
-
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 8 }}>
                   <div>
                     <label className="lbl">Date de début</label>
@@ -306,15 +285,12 @@ function ProposerFormationModal({
                     <input className="inp" type="date" value={form.dateFin} onChange={e => upd("dateFin", e.target.value)} min={form.dateDebut || new Date().toISOString().split("T")[0]} />
                   </div>
                 </div>
-
                 <div style={{ background: "#F0F9FF", border: "1px solid #BAE6FD", borderRadius: 10, padding: "10px 14px", fontSize: 12, color: "#0369A1", display: "flex", gap: 7, alignItems: "flex-start", marginTop: 6 }}>
                   <FaInfoCircle style={{ flexShrink: 0, marginTop: 1 }} />
-                  <span>Si les dates ne sont pas encore définies, laissez-les vides. Vous pourrez les mettre à jour après publication.</span>
+                  <span>Si les dates ne sont pas encore définies, laissez-les vides.</span>
                 </div>
               </div>
             )}
-
-            {/* ── ÉTAPE 3 : TARIF & PLACES ── */}
             {step === 3 && (
               <div>
                 <div style={{ marginBottom: 18 }}>
@@ -332,7 +308,6 @@ function ProposerFormationModal({
                     ))}
                   </div>
                 </div>
-
                 {form.type === "payant" && (
                   <div style={{ marginBottom: 18 }}>
                     <label className="lbl">Prix (DT) *</label>
@@ -342,8 +317,6 @@ function ProposerFormationModal({
                     </div>
                   </div>
                 )}
-
-                {/* Places limitées */}
                 <div style={{ marginBottom: 14 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 12, background: "#F8FAFC", border: "1.5px solid #E2E8F0", borderRadius: 12, padding: "14px 16px" }}>
                     <div onClick={() => upd("places_limitees", !form.places_limitees)} style={{ width: 44, height: 24, background: form.places_limitees ? "#F7B500" : "#D1D5DB", borderRadius: 99, position: "relative", cursor: "pointer", transition: "background .2s", flexShrink: 0 }}>
@@ -357,7 +330,6 @@ function ProposerFormationModal({
                     </div>
                   </div>
                 </div>
-
                 {form.places_limitees && (
                   <div style={{ background: "#FFFBEB", border: "1.5px solid #FDE68A", borderRadius: 12, padding: "14px 16px", marginBottom: 14 }}>
                     <label className="lbl">Nombre de places disponibles *</label>
@@ -365,16 +337,13 @@ function ProposerFormationModal({
                     <div style={{ fontSize: 11, color: "#B45309", marginTop: 6 }}>ℹ️ Décrémentée automatiquement à chaque inscription acceptée.</div>
                   </div>
                 )}
-
                 {!form.places_limitees && (
                   <div style={{ background: "#ECFDF5", border: "1px solid #A7F3D0", borderRadius: 10, padding: "10px 14px", fontSize: 13, color: "#065F46", display: "flex", gap: 7 }}>
-                    ♾️ Places illimitées — Aucune restriction sur le nombre de participants.
+                    ♾️ Places illimitées
                   </div>
                 )}
               </div>
             )}
-
-            {/* ── ÉTAPE 4 : IMAGE ── */}
             {step === 4 && (
               <div>
                 <label className="lbl">Image de couverture (optionnel)</label>
@@ -398,8 +367,6 @@ function ProposerFormationModal({
                     🗑 Supprimer l'image
                   </button>
                 )}
-
-                {/* Récapitulatif */}
                 <div style={{ marginTop: 22, background: "#F8FAFC", border: "1.5px solid #E8EEF6", borderRadius: 14, padding: "16px 18px" }}>
                   <div style={{ fontWeight: 800, fontSize: 14, color: "#0A2540", marginBottom: 14 }}>📋 Récapitulatif</div>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
@@ -421,16 +388,13 @@ function ProposerFormationModal({
                     ))}
                   </div>
                 </div>
-
                 <div style={{ background: "#F0F9FF", border: "1px solid #BAE6FD", borderRadius: 10, padding: "10px 14px", marginTop: 14, fontSize: 12.5, color: "#0369A1", display: "flex", gap: 7, alignItems: "flex-start" }}>
                   <FaInfoCircle style={{ flexShrink: 0, marginTop: 1 }} />
-                  <span>Votre formation sera soumise en <strong>statut "En attente"</strong>. L'administrateur l'examinera et la publiera ou vous demandera des modifications.</span>
+                  <span>Votre formation sera soumise en <strong>statut "En attente"</strong>.</span>
                 </div>
               </div>
             )}
           </div>
-
-          {/* Footer navigation */}
           <div style={{ padding: "14px 28px 22px", display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px solid #F1F5F9" }}>
             <div style={{ fontSize: 12, color: "#94A3B8" }}>Étape {step} sur {steps.length}</div>
             <div style={{ display: "flex", gap: 10 }}>
@@ -440,18 +404,7 @@ function ProposerFormationModal({
                 </button>
               )}
               {step < steps.length ? (
-                <button
-                  type="button"
-                  className="btn btn-gold"
-                  style={{ padding: "10px 24px" }}
-                  onClick={() => {
-                    if (step === 1 && !step1Valid) { alert("Remplissez le titre, la description et le domaine"); return; }
-                    if (step === 2 && !step2Valid) { alert("La localisation est requise pour le présentiel"); return; }
-                    setStep(s => s + 1);
-                  }}
-                >
-                  Suivant →
-                </button>
+                <button type="button" className="btn btn-gold" style={{ padding: "10px 24px" }} onClick={() => { if (step === 1 && !step1Valid) { alert("Remplissez le titre, la description et le domaine"); return; } if (step === 2 && !step2Valid) { alert("La localisation est requise pour le présentiel"); return; } setStep(s => s + 1); }}>Suivant →</button>
               ) : (
                 <button type="submit" className="btn btn-gold" disabled={submitting} style={{ padding: "11px 28px", fontSize: 14 }}>
                   {submitting ? <><FaSpinner style={{ animation: "spin .8s linear infinite" }} /> Envoi...</> : <><FaCheck /> Soumettre la formation</>}
@@ -465,7 +418,7 @@ function ProposerFormationModal({
   );
 }
 
-// ─── MODAL PODCAST DETAIL (inchangé) ─────────────────────────────────────────
+// ─── MODAL PODCAST DETAIL ─────────────────────────────────────────
 function PodcastDetailModal({ podcast, onClose }: { podcast: any; onClose: () => void }) {
   const audioRef = useRef<HTMLAudioElement>(null);
   useEffect(() => { if (audioRef.current) audioRef.current.load(); }, [podcast]);
@@ -699,12 +652,17 @@ export default function DashboardExpert() {
   const [showDevisModal, setShowDevisModal] = useState(false);
   const [newTemo, setNewTemo] = useState("");
   const [newTemoNote, setNewTemoNote] = useState(5);
+  const [sendingTemo, setSendingTemo] = useState(false);
 
   const tk = useCallback(() => localStorage.getItem("access_token") || "", []);
   const hdr = useCallback(() => ({ Authorization: `Bearer ${tk()}` }), [tk]);
   const hdrJ = useCallback(() => ({ Authorization: `Bearer ${tk()}`, "Content-Type": "application/json" }), [tk]);
 
-  function notify(text: string, ok = true) { setToast({ text, ok }); setTimeout(() => setToast({ text: "", ok: true }), 3200); }
+  function notify(text: string, ok = true) {
+    setToast({ text, ok });
+    setTimeout(() => setToast({ text: "", ok: true }), 5000);
+  }
+
   const forceLogout = useCallback(() => { localStorage.clear(); window.location.href = "/connexion"; }, []);
 
   const [seenTabs, setSeenTabs] = useState<Set<Tab>>(new Set(["accueil"]));
@@ -853,7 +811,36 @@ export default function DashboardExpert() {
   async function updatePhoto() { if (!photoFile) return; const fd = new FormData(); fd.append("photo", photoFile); const r = await fetch(`${BASE}/experts/photo`, { method: "POST", headers: { Authorization: `Bearer ${tk()}` }, body: fd }); if (r.ok) { notify("✅ Photo mise à jour"); await loadExpertData(user?.id); setPhotoFile(null); setPhotoPreview(""); } else notify("Erreur upload", false); }
   async function updateProfile() { const payload: any = {}; if (editProfil.domaine !== (expert?.domaine || "")) payload.domaine = editProfil.domaine; if (editProfil.description !== (expert?.description || "")) payload.description = editProfil.description; if (editProfil.localisation !== (expert?.localisation || "")) payload.localisation = editProfil.localisation; if (editProfil.telephone !== (expert?.user?.telephone || "")) payload.telephone = editProfil.telephone; const anneeNum = parseInt(editProfil.annee_debut_experience); if (!isNaN(anneeNum) && anneeNum !== expert?.annee_debut_experience) payload.annee_debut_experience = anneeNum; else if (editProfil.annee_debut_experience === "" && expert?.annee_debut_experience !== null) payload.annee_debut_experience = null; if (Object.keys(payload).length === 0) { notify("Aucune modification", false); return; } const res = await fetch(`${BASE}/experts/profil`, { method: "PUT", headers: hdrJ(), body: JSON.stringify(payload) }); if (res.ok) { notify("✅ Modification envoyée à l'admin"); await loadExpertData(user?.id); } else { const err = await res.text(); notify(`Erreur: ${err}`, false); } }
   async function createDevis(e: React.FormEvent) { e.preventDefault(); if (!devisMission) return; const r = await fetch(`${BASE}/devis`, { method: "POST", headers: hdrJ(), body: JSON.stringify({ demande_id: devisMission.id, montant: parseInt(devisForm.montant), description: devisForm.description, delai: devisForm.delai }) }); if (r.ok) { notify("✅ Devis envoyé"); setShowDevisModal(false); setDevisMission(null); await loadExpertData(user?.id); } else notify("Erreur envoi devis", false); }
-  async function envoyerTemoignage() { if (!newTemo.trim()) { notify("Écrivez votre témoignage", false); return; } const r = await fetch(`${BASE}/temoignages`, { method: "POST", headers: hdrJ(), body: JSON.stringify({ texte: newTemo, note: newTemoNote }) }); if (r.ok) { notify("✅ Témoignage envoyé"); setNewTemo(""); setNewTemoNote(5); await loadExpertData(user?.id); } else notify("Erreur", false); }
+
+  async function envoyerTemoignage() {
+    if (!newTemo.trim()) {
+      notify("✍️ Écrivez votre témoignage d'abord", false);
+      return;
+    }
+    setSendingTemo(true);
+    try {
+      const r = await fetch(`${BASE}/temoignages`, {
+        method: "POST",
+        headers: hdrJ(),
+        body: JSON.stringify({ texte: newTemo, note: newTemoNote })
+      });
+      if (r.ok) {
+        notify("✅ Témoignage envoyé ! Il sera publié après validation par un administrateur.", true);
+        setNewTemo("");
+        setNewTemoNote(5);
+        await loadExpertData(user?.id);
+        document.getElementById("mes-temoignages")?.scrollIntoView({ behavior: "smooth" });
+      } else {
+        const err = await r.text();
+        notify(`❌ Erreur : ${err}`, false);
+      }
+    } catch {
+      notify("❌ Erreur réseau", false);
+    } finally {
+      setSendingTemo(false);
+    }
+  }
+
   async function handleDeletePodcast(id: number) { if (!confirm("Supprimer ce podcast ?")) return; const res = await fetch(`${BASE}/podcasts/expert/supprimer/${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${tk()}` } }); if (res.ok) { notify("✅ Podcast supprimé"); await loadExpertData(user?.id); } else notify("Erreur", false); }
 
   useEffect(() => { if (tab === "messages") { refreshAllMessages(); const interval = setInterval(() => refreshAllMessages(), 5000); return () => clearInterval(interval); } }, [tab, refreshAllMessages]);
@@ -1342,18 +1329,36 @@ export default function DashboardExpert() {
         {tab === "temoignages" && (
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
             <div className="card">
-              <div style={{ padding: "18px 24px", borderBottom: "1px solid #F1F5F9", background: "#FAFBFE" }}><div style={{ fontWeight: 700, fontSize: 16, color: "#0A2540" }}>✍️ Partager mon expérience</div></div>
+              <div style={{ padding: "18px 24px", borderBottom: "1px solid #F1F5F9", background: "#FAFBFE" }}>
+                <div style={{ fontWeight: 700, fontSize: 16, color: "#0A2540" }}>✍️ Partager mon expérience</div>
+              </div>
               <div style={{ padding: "24px" }}>
-                <div style={{ background: "#F0F9FF", border: "1px solid #BAE6FD", borderRadius: 12, padding: "12px 16px", marginBottom: 16, fontSize: 13, color: "#0369A1" }}>💡 Votre témoignage sera examiné avant d'être publié.</div>
+                <div style={{ background: "#F0F9FF", border: "1px solid #BAE6FD", borderRadius: 12, padding: "12px 16px", marginBottom: 16, fontSize: 13, color: "#0369A1" }}>
+                  💡 Votre témoignage sera examiné avant d'être publié.
+                </div>
                 <label className="lbl">Votre note</label>
-                <div style={{ display: "flex", gap: 4, marginBottom: 16, alignItems: "center" }}>{[1,2,3,4,5].map(s => <span key={s} onClick={() => setNewTemoNote(s)} style={{ fontSize: 30, cursor: "pointer", color: s <= newTemoNote ? "#F7B500" : "#E2E8F0" }}>★</span>)}<span style={{ fontSize: 13, color: "#F7B500", fontWeight: 600, marginLeft: 8 }}>{newTemoNote}/5</span></div>
+                <div style={{ display: "flex", gap: 4, marginBottom: 16, alignItems: "center" }}>
+                  {[1,2,3,4,5].map(s => (
+                    <span key={s} onClick={() => setNewTemoNote(s)} style={{ fontSize: 30, cursor: "pointer", color: s <= newTemoNote ? "#F7B500" : "#E2E8F0" }}>★</span>
+                  ))}
+                  <span style={{ fontSize: 13, color: "#F7B500", fontWeight: 600, marginLeft: 8 }}>{newTemoNote}/5</span>
+                </div>
                 <label className="lbl">Votre témoignage</label>
                 <textarea className="inp" rows={5} placeholder="Partagez votre expérience avec BEH..." value={newTemo} onChange={e => setNewTemo(e.target.value)} style={{ marginBottom: 16 }} />
-                <button className="btn btn-gold" style={{ width: "100%", justifyContent: "center" }} onClick={envoyerTemoignage}><FaPaperPlane /> Envoyer</button>
+                {toast.text?.includes("Témoignage envoyé") && toast.ok && (
+                  <div style={{ background: "#ECFDF5", border: "1px solid #A7F3D0", borderRadius: 10, padding: "8px 12px", marginBottom: 16, fontSize: 13, color: "#059669", display: "flex", gap: 8, alignItems: "center" }}>
+                    <FaCheckCircle /> {toast.text}
+                  </div>
+                )}
+                <button className="btn btn-gold" style={{ width: "100%", justifyContent: "center" }} onClick={envoyerTemoignage} disabled={sendingTemo}>
+                  {sendingTemo ? <><FaSpinner style={{ animation: "spin .8s linear infinite" }} /> Envoi en cours...</> : <><FaPaperPlane /> Envoyer mon témoignage</>}
+                </button>
               </div>
             </div>
-            <div className="card">
-              <div style={{ padding: "18px 24px", borderBottom: "1px solid #F1F5F9", background: "#FAFBFE" }}><div style={{ fontWeight: 700, fontSize: 16, color: "#0A2540" }}>Mes témoignages ({temoignages.length})</div></div>
+            <div className="card" id="mes-temoignages">
+              <div style={{ padding: "18px 24px", borderBottom: "1px solid #F1F5F9", background: "#FAFBFE" }}>
+                <div style={{ fontWeight: 700, fontSize: 16, color: "#0A2540" }}>Mes témoignages ({temoignages.length})</div>
+              </div>
               <div style={{ padding: "16px", maxHeight: 460, overflowY: "auto" }}>
                 {temoignages.length === 0 ? <div style={{ padding: 40, textAlign: "center", color: "#8A9AB5" }}>Aucun témoignage</div> : temoignages.map(t => (
                   <div key={t.id} style={{ background: "#F8FAFC", borderRadius: 12, padding: "14px 16px", marginBottom: 10, border: "1px solid #E8EEF6" }}>
