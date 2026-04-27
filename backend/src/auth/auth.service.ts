@@ -29,7 +29,6 @@ export class AuthService {
     return path.basename(filePath);
   }
 
-  // === NOUVELLE MÉTHODE POUR /me ===
   async getUserById(id: number): Promise<User | null> {
     return this.userRepo.findOne({ where: { id } });
   }
@@ -43,13 +42,17 @@ export class AuthService {
     const { email, password, nom, prenom, telephone, domaine, annee_debut_experience, localisation, description } = dto;
     this.logger.log(`Tentative d'inscription expert: ${email}`);
 
+    // Vérifier si l'email existe déjà
     const existing = await this.userRepo.findOne({ where: { email } });
     if (existing) {
       this.logger.warn(`Tentative d'inscription avec email déjà existant: ${email}`);
       throw new BadRequestException('Email déjà utilisé');
     }
 
+    // Hachage du mot de passe
     const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Création de l'utilisateur
     const user = this.userRepo.create({
       email,
       password: hashedPassword,
@@ -59,47 +62,38 @@ export class AuthService {
       role: 'expert',
       statut: 'en_attente',
       photo: this.extractFileName(photoPath),
+      email_verified: false,
     });
     const savedUser = await this.userRepo.save(user);
     if (!savedUser || !savedUser.id) {
       this.logger.error(`Échec sauvegarde utilisateur expert: ${email}`);
-      throw new BadRequestException('Erreur lors de la création de l’utilisateur (aucun ID retourné)');
+      throw new BadRequestException('Erreur lors de la création de l’utilisateur');
     }
 
-    let anneeDebut: number | null = null;
-    if (annee_debut_experience !== undefined && annee_debut_experience !== null) {
-      anneeDebut = Number(annee_debut_experience);
-      if (isNaN(anneeDebut)) anneeDebut = null;
-    }
-
+    // Création du profil expert
     const expert = this.expertRepo.create({
       user_id: savedUser.id,
       domaine: domaine || '',
-      annee_debut_experience: anneeDebut,
+      annee_debut_experience: annee_debut_experience, // déjà un nombre grâce au DTO
       localisation: localisation || '',
       description: description || '',
       statut: 'en_attente',
       cv: this.extractFileName(cvPath),
       portfolio: this.extractFileName(portfolioPath),
+      // photo de l'expert ? elle est déjà dans user.photo (mais on peut aussi la mettre dans expert.photo si besoin)
     });
-    const savedExpert = await this.expertRepo.save(expert);
-    if (!savedExpert) {
-      this.logger.error(`Échec création profil expert pour user ${savedUser.id}`);
-      throw new BadRequestException('Erreur lors de la création du profil expert');
-    }
+    await this.expertRepo.save(expert);
 
+    // Génération du token de confirmation
     const confirmationToken = this.jwtService.sign(
       { id: savedUser.id, email },
       { expiresIn: '24h' }
     );
     savedUser.reset_code = confirmationToken;
     savedUser.email_verified = false;
-    const updatedUser = await this.userRepo.save(savedUser);
-    if (!updatedUser) {
-      this.logger.error(`Échec mise à jour token confirmation pour user ${savedUser.id}`);
-      throw new BadRequestException('Erreur lors de la mise à jour du token de confirmation');
-    }
+    await this.userRepo.save(savedUser);
 
+    // Envoi des emails
     await this.mailService.sendConfirmationEmail(email, confirmationToken);
     await this.mailService.sendAdminNotification(`${prenom} ${nom}`, 'expert', email);
 
@@ -126,11 +120,12 @@ export class AuthService {
       telephone: telephone || '',
       role: 'startup',
       statut: 'en_attente',
+      email_verified: false,
     });
     const savedUser = await this.userRepo.save(user);
     if (!savedUser || !savedUser.id) {
       this.logger.error(`Échec sauvegarde utilisateur startup: ${email}`);
-      throw new BadRequestException('Erreur lors de la création de l’utilisateur startup (aucun ID retourné)');
+      throw new BadRequestException('Erreur lors de la création de l’utilisateur');
     }
 
     const startup = this.startupRepo.create({
@@ -144,11 +139,7 @@ export class AuthService {
       description,
       statut: 'en_attente',
     });
-    const savedStartup = await this.startupRepo.save(startup);
-    if (!savedStartup) {
-      this.logger.error(`Échec création profil startup pour user ${savedUser.id}`);
-      throw new BadRequestException('Erreur lors de la création du profil startup');
-    }
+    await this.startupRepo.save(startup);
 
     const confirmationToken = this.jwtService.sign(
       { id: savedUser.id, email },
@@ -156,11 +147,7 @@ export class AuthService {
     );
     savedUser.reset_code = confirmationToken;
     savedUser.email_verified = false;
-    const updatedUser = await this.userRepo.save(savedUser);
-    if (!updatedUser) {
-      this.logger.error(`Échec mise à jour token confirmation pour user ${savedUser.id}`);
-      throw new BadRequestException('Erreur lors de la mise à jour du token de confirmation');
-    }
+    await this.userRepo.save(savedUser);
 
     await this.mailService.sendConfirmationEmail(email, confirmationToken);
     await this.mailService.sendAdminNotification(`${prenom} ${nom} (${nom_startup})`, 'startup', email);
@@ -190,9 +177,19 @@ export class AuthService {
       this.logger.warn(`Échec connexion: email non confirmé ${email}`);
       throw new BadRequestException('Veuillez confirmer votre adresse email avant de vous connecter');
     }
+
     const token = this.jwtService.sign({ id: user.id, email: user.email, role: user.role });
     this.logger.log(`Connexion réussie: ${email} (rôle ${user.role})`);
-    return { access_token: token, user: { id: user.id, email: user.email, role: user.role, prenom: user.prenom, nom: user.nom } };
+    return {
+      access_token: token,
+      user: {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        prenom: user.prenom,
+        nom: user.nom,
+      },
+    };
   }
 
   async confirmEmail(token: string) {
@@ -210,11 +207,7 @@ export class AuthService {
       }
       user.email_verified = true;
       user.reset_code = '';
-      const updatedUser = await this.userRepo.save(user);
-      if (!updatedUser) {
-        this.logger.error(`Échec sauvegarde confirmation email pour user ${user.id}`);
-        throw new BadRequestException('Erreur lors de la mise à jour de la confirmation email');
-      }
+      await this.userRepo.save(user);
       this.logger.log(`Email confirmé avec succès pour user ${user.id}`);
       return { message: 'Email confirmé avec succès. Vous pouvez maintenant vous connecter.' };
     } catch (err) {
@@ -237,11 +230,7 @@ export class AuthService {
 
     user.reset_code = resetCode;
     user.reset_code_expires = expires;
-    const updatedUser = await this.userRepo.save(user);
-    if (!updatedUser) {
-      this.logger.error(`Échec sauvegarde code reset pour user ${user.id}`);
-      throw new BadRequestException('Erreur lors de l’enregistrement du code de réinitialisation');
-    }
+    await this.userRepo.save(user);
 
     await this.mailService.sendResetCodeEmail(email, resetCode);
     this.logger.log(`Code de réinitialisation envoyé pour ${email}`);
@@ -274,16 +263,13 @@ export class AuthService {
     user.password = hashedPassword;
     user.reset_code = '';
     user.reset_code_expires = new Date(0);
-    const updatedUser = await this.userRepo.save(user);
-    if (!updatedUser) {
-      this.logger.error(`Échec sauvegarde nouveau mot de passe pour user ${user.id}`);
-      throw new BadRequestException('Erreur lors de la réinitialisation du mot de passe');
-    }
+    await this.userRepo.save(user);
 
     this.logger.log(`Mot de passe réinitialisé avec succès pour ${email}`);
     return { message: 'Mot de passe réinitialisé avec succès.' };
   }
 
+  // Méthode obsolète conservée pour compatibilité (non utilisée)
   async resetPassword(token: string, newPassword: string) {
     this.logger.warn(`Appel de la méthode obsolète resetPassword`);
     throw new BadRequestException('Utilisez la méthode avec code à 6 chiffres');

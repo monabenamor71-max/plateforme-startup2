@@ -60,13 +60,11 @@ export default function RegisterPage() {
     prenom: "",
     nom: "",
     telephone: "",
-    // startup
     nom_startup: "",
     secteur: "",
     secteur_precision: "",
     fonction: "",
     taille: "",
-    // expert
     domaine: "",
     domaine_precision: "",
     annee_debut_experience: "",
@@ -83,6 +81,10 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const [showPass, setShowPass] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+
+  // ========== VALIDATIONS FRONTEND ==========
+  const validateName = (name: string) => /^[A-Za-zÀ-ÖØ-öø-ÿ\s\-']+$/.test(name);
+  const validatePhone = (phone: string) => /^[+\d\s\-()]{8,20}$/.test(phone);
 
   const handleAnneeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const value = e.target.value;
@@ -107,7 +109,6 @@ export default function RegisterPage() {
       secteur: value,
       secteur_precision: value === "Autre" ? prev.secteur_precision : "",
     }));
-    if (value === "Autre") setFormData(prev => ({ ...prev, secteur_precision: "" }));
   };
 
   const handleDomaineChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -132,14 +133,36 @@ export default function RegisterPage() {
     setLoading(true);
     setError("");
 
+    // Validations frontend
+    if (!validateName(formData.prenom)) {
+      setError("Prénom invalide : lettres, espaces, tirets ou apostrophes uniquement");
+      setLoading(false);
+      return;
+    }
+    if (!validateName(formData.nom)) {
+      setError("Nom invalide : lettres, espaces, tirets ou apostrophes uniquement");
+      setLoading(false);
+      return;
+    }
+    if (formData.telephone && !validatePhone(formData.telephone)) {
+      setError("Numéro de téléphone invalide (ex: +216 12 345 678)");
+      setLoading(false);
+      return;
+    }
+    if (formData.password !== formData.confirmPassword) {
+      setError("Les mots de passe ne correspondent pas");
+      setLoading(false);
+      return;
+    }
+    if (formData.password.length < 6) {
+      setError("Le mot de passe doit contenir au moins 6 caractères");
+      setLoading(false);
+      return;
+    }
+
     const csrfToken = getCsrfToken();
 
     try {
-      if (formData.password !== formData.confirmPassword)
-        throw new Error("Les mots de passe ne correspondent pas");
-      if (formData.password.length < 6)
-        throw new Error("Le mot de passe doit contenir au moins 6 caractères");
-
       let url = "";
       let options: RequestInit = { method: "POST" };
 
@@ -196,7 +219,7 @@ export default function RegisterPage() {
         fd.append("nom", nomVal);
         if (formData.telephone.trim()) fd.append("telephone", formData.telephone.trim());
         fd.append("domaine", domaineVal);
-        fd.append("annee_debut_experience", parseInt(anneeVal, 10).toString());
+        fd.append("annee_debut_experience", anneeVal); // sera converti en nombre par le backend
         fd.append("localisation", localisationVal);
         if (formData.description.trim()) fd.append("description", formData.description.trim());
         if (photoFile) fd.append("photo", photoFile);
@@ -217,7 +240,7 @@ export default function RegisterPage() {
         throw new Error(errorMsg);
       }
 
-      // Newsletter
+      // Newsletter (optionnel)
       try {
         await fetch("http://localhost:3001/newsletter/subscribe", {
           method: "POST",
@@ -238,6 +261,8 @@ export default function RegisterPage() {
   const passStrength = formData.password.length === 0 ? 0 : formData.password.length < 6 ? 1 : formData.password.length < 10 ? 2 : 3;
   const passColors = ["", "#EF4444", "#F59E0B", "#10B981"];
   const passLabels = ["", "Trop court", "Moyen", "Fort"];
+
+  const requiredStar = <span style={{ color: '#EF4444' }}>*</span>;
 
   return (
     <>
@@ -270,7 +295,7 @@ export default function RegisterPage() {
         .role-select { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
         .role-opt { border: 1.5px solid #DDE4EF; border-radius: 14px; padding: 16px 18px; cursor: pointer; background: #F7F9FC; display: flex; align-items: center; gap: 12px; transition: 0.2s; }
         .role-opt.active { border-color: #F7B500; background: rgba(247,181,0,0.05); box-shadow: 0 0 0 3px rgba(247,181,0,0.12); }
-        .role-icon { width: 40px; height: 40px; border-radius: 10px; background: #EDF1F7; display: flex; align-items: center; justifyContent: center; font-size: 18px; }
+        .role-icon { width: 40px; height: 40px; border-radius: 10px; background: #EDF1F7; display: flex; align-items: center; justify-content: center; font-size: 18px; }
         .role-opt.active .role-icon { background: rgba(247,181,0,0.2); }
         .role-lbl { font-size: 14.5px; font-weight: 700; color: #0A2540; }
         .role-sub { font-size: 11.5px; color: #8A9AB5; margin-top: 2px; }
@@ -321,16 +346,16 @@ export default function RegisterPage() {
 
           <form onSubmit={handleSubmit}>
             <div className="grid2">
-              <div className="fg"><label className="lbl">Prénom *</label><input className="inp" type="text" name="prenom" value={formData.prenom} onChange={handleChange} required /></div>
-              <div className="fg"><label className="lbl">Nom *</label><input className="inp" type="text" name="nom" value={formData.nom} onChange={handleChange} required /></div>
+              <div className="fg"><label className="lbl">Prénom {requiredStar}</label><input className="inp" type="text" name="prenom" value={formData.prenom} onChange={handleChange} required /></div>
+              <div className="fg"><label className="lbl">Nom {requiredStar}</label><input className="inp" type="text" name="nom" value={formData.nom} onChange={handleChange} required /></div>
             </div>
 
-            <div className="fg"><label className="lbl">Email *</label><input className="inp" type="email" name="email" value={formData.email} onChange={handleChange} required /></div>
+            <div className="fg"><label className="lbl">Email {requiredStar}</label><input className="inp" type="email" name="email" value={formData.email} onChange={handleChange} required /></div>
             <div className="fg"><label className="lbl">Téléphone</label><input className="inp" type="tel" name="telephone" value={formData.telephone} onChange={handleChange} placeholder="+216 00 000 000" /></div>
 
             <div className="grid2">
               <div className="fg">
-                <label className="lbl">Mot de passe *</label>
+                <label className="lbl">Mot de passe {requiredStar}</label>
                 <div className="inp-wrap">
                   <input className="inp" type={showPass ? "text" : "password"} name="password" value={formData.password} onChange={handleChange} required style={{ paddingRight: 44 }} />
                   <button type="button" className="eye-btn" onClick={() => setShowPass(!showPass)}>
@@ -356,7 +381,7 @@ export default function RegisterPage() {
                 )}
               </div>
               <div className="fg">
-                <label className="lbl">Confirmer *</label>
+                <label className="lbl">Confirmer {requiredStar}</label>
                 <div className="inp-wrap">
                   <input className="inp" type={showConfirm ? "text" : "password"} name="confirmPassword" value={formData.confirmPassword} onChange={handleChange} required style={{ paddingRight: 44, borderColor: formData.confirmPassword && formData.confirmPassword !== formData.password ? "#EF4444" : undefined }} />
                   <button type="button" className="eye-btn" onClick={() => setShowConfirm(!showConfirm)}>
@@ -377,7 +402,7 @@ export default function RegisterPage() {
             </div>
 
             <div className="fg">
-              <label className="lbl" style={{ marginBottom: 10 }}>Vous êtes *</label>
+              <label className="lbl" style={{ marginBottom: 10 }}>Vous êtes {requiredStar}</label>
               <div className="role-select">
                 <div className={`role-opt ${formData.role === "startup" ? "active" : ""}`} onClick={() => setFormData(prev => ({ ...prev, role: "startup" }))}>
                   <div className="role-icon">🚀</div>
@@ -393,8 +418,8 @@ export default function RegisterPage() {
             {formData.role === "startup" && (
               <>
                 <div className="section-title">Informations startup</div>
-                <div className="fg"><label className="lbl">Nom de la startup *</label><input className="inp" type="text" name="nom_startup" value={formData.nom_startup} onChange={handleChange} required /></div>
-                <div className="fg"><label className="lbl">Votre fonction *</label>
+                <div className="fg"><label className="lbl">Nom de la startup {requiredStar}</label><input className="inp" type="text" name="nom_startup" value={formData.nom_startup} onChange={handleChange} required /></div>
+                <div className="fg"><label className="lbl">Votre fonction {requiredStar}</label>
                   <select className="inp" name="fonction" value={formData.fonction} onChange={handleChange} required>
                     <option value="">Sélectionner</option>
                     {FONCTIONS.map(f => <option key={f} value={f}>{f}</option>)}
@@ -402,7 +427,7 @@ export default function RegisterPage() {
                 </div>
                 <div className="grid2">
                   <div className="fg">
-                    <label className="lbl">Secteur d'activité *</label>
+                    <label className="lbl">Secteur d'activité {requiredStar}</label>
                     <select className="inp" name="secteur" value={formData.secteur} onChange={handleSecteurChange} required>
                       <option value="">Sélectionnez</option>
                       {SECTEURS_STARTUP.map(s => <option key={s} value={s}>{s}</option>)}
@@ -441,7 +466,7 @@ export default function RegisterPage() {
 
                 <div className="section-title">Profil expert</div>
                 <div className="fg">
-                  <label className="lbl">Domaine d'expertise *</label>
+                  <label className="lbl">Domaine d'expertise {requiredStar}</label>
                   <select className="inp" name="domaine" value={formData.domaine} onChange={handleDomaineChange} required>
                     <option value="">Sélectionnez</option>
                     {DOMAINES_EXPERT.map(d => <option key={d} value={d}>{d}</option>)}
@@ -454,7 +479,7 @@ export default function RegisterPage() {
                 </div>
                 <div className="grid2">
                   <div className="fg">
-                    <label className="lbl">Année de début d'expérience *</label>
+                    <label className="lbl">Année de début d'expérience {requiredStar}</label>
                     <select className="inp" name="annee_debut_experience" value={formData.annee_debut_experience} onChange={handleAnneeChange} required>
                       <option value="">Sélectionnez l'année de début</option>
                       {ANNEE_DEBUT_EXPERIENCE.map(annee => (
@@ -468,7 +493,7 @@ export default function RegisterPage() {
                     )}
                   </div>
                   <div className="fg">
-                    <label className="lbl">Localisation *</label>
+                    <label className="lbl">Localisation {requiredStar}</label>
                     <input className="inp" type="text" name="localisation" value={formData.localisation} onChange={handleChange} required placeholder="Ex: Tunis, Sfax" />
                   </div>
                 </div>
@@ -476,7 +501,7 @@ export default function RegisterPage() {
 
                 <div className="section-title">Documents</div>
                 <div className="fg">
-                  <label className="lbl">CV (PDF) *</label>
+                  <label className="lbl">CV (PDF) {requiredStar}</label>
                   <div className={`file-zone ${cvFile ? "has-file" : ""}`}>
                     <input type="file" accept=".pdf" onChange={e => e.target.files?.[0] && setCvFile(e.target.files[0])} required />
                     <div style={{ fontSize: 28, marginBottom: 8 }}>📄</div>
