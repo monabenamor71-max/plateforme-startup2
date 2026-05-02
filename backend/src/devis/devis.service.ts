@@ -31,16 +31,25 @@ export class DevisService {
   ) {}
 
   async create(userId: number, dto: CreateDevisDto) {
+    // Récupérer l'expert via l'utilisateur
     const expert = await this.expertRepo.findOne({ where: { user_id: userId } });
     if (!expert) throw new NotFoundException('Expert non trouvé');
 
+    // Récupérer la demande
     const demande = await this.demandeRepo.findOne({ where: { id: dto.demande_id } });
     if (!demande) throw new NotFoundException(`Demande ${dto.demande_id} introuvable`);
 
-    if (demande.expert_assigne_id !== expert.id) {
-      throw new BadRequestException("Vous n'êtes pas l'expert assigné à cette mission");
+    // ✅ VÉRIFICATION MODIFIÉE : autoriser si l'expert a accepté OU est assigné
+    const aAccepte = demande.experts_acceptes?.includes(expert.id) ?? false;
+    const estAssigne = demande.expert_assigne_id === expert.id;
+
+    if (!aAccepte && !estAssigne) {
+      throw new BadRequestException(
+        "Vous n'êtes pas autorisé à créer un devis pour cette mission (vous n'avez pas accepté ou vous n'êtes pas l'expert assigné)."
+      );
     }
 
+    // Créer le devis
     const devis = this.devisRepo.create({
       demande_id: dto.demande_id,
       expert_id: expert.id,
@@ -52,25 +61,18 @@ export class DevisService {
     if (!saved || !saved.id) {
       throw new BadRequestException('Erreur lors de la création du devis');
     }
-    this.logger.log(`Devis créé pour demande ${dto.demande_id}`);
+    this.logger.log(`Devis créé pour demande ${dto.demande_id} par expert ${expert.id}`);
     return saved;
   }
 
   async findByExpert(userId: number) {
     const expert = await this.expertRepo.findOne({ where: { user_id: userId } });
-    if (!expert) {
-      this.logger.log(`❌ Aucun expert trouvé pour user_id ${userId}`);
-      return [];
-    }
-    this.logger.log(`✅ Expert trouvé : id=${expert.id}`);
-
-    const devis = await this.devisRepo.find({
+    if (!expert) return [];
+    return this.devisRepo.find({
       where: { expert_id: expert.id },
       relations: ['demande', 'demande.user'],
       order: { createdAt: 'DESC' },
     });
-    this.logger.log(`📋 Nombre de devis trouvés pour expert ${expert.id} : ${devis.length}`);
-    return devis;
   }
 
   async findByClient(userId: number) {
@@ -111,9 +113,7 @@ export class DevisService {
 
     devis.statut = dto.statut;
     const updated = await this.devisRepo.save(devis);
-    if (!updated) {
-      throw new BadRequestException('Erreur lors de la mise à jour du statut');
-    }
+    if (!updated) throw new BadRequestException('Erreur lors de la mise à jour du statut');
     this.logger.log(`Client ${userId} a ${dto.statut} le devis ${devisId}`);
     return updated;
   }
@@ -124,9 +124,7 @@ export class DevisService {
 
     devis.statut = dto.statut;
     const updated = await this.devisRepo.save(devis);
-    if (!updated) {
-      throw new BadRequestException('Erreur lors de la mise à jour du statut');
-    }
+    if (!updated) throw new BadRequestException('Erreur lors de la mise à jour du statut');
     this.logger.log(`Admin a changé le statut du devis ${devisId} en ${dto.statut}`);
     return updated;
   }

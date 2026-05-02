@@ -56,6 +56,7 @@ import { Podcast } from './podcast/podcast.entity';
         Message, Temoignage, Histoire, DemandeService,
         ServicePlateforme, ContactMessage, ContactConfig, Newsletter,
         Formation, Devis, Blog, Media, Podcast,
+        // Visit supprimée
       ],
       synchronize: false,
       logging: process.env.NODE_ENV !== 'production',
@@ -78,6 +79,7 @@ import { Podcast } from './podcast/podcast.entity';
     BlogModule,
     MediaModule,
     PodcastModule,
+    // StatsModule supprimé
   ],
   controllers: [AppController],
   providers: [AppService],

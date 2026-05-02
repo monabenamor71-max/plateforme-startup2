@@ -3,28 +3,75 @@ import { Injectable, NotFoundException, Logger, BadRequestException } from '@nes
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Blog } from './blog.entity';
+import { IsString, IsOptional, IsEnum, MinLength, MaxLength } from 'class-validator';
 
+// ========== DTO ==========
 export class CreateArticleDto {
+  @IsString()
+  @MinLength(3)
+  @MaxLength(200)
   titre: string;
+
+  @IsString()
+  @IsOptional()
   description?: string;
+
+  @IsString()
+  @IsOptional()
   contenu?: string;
+
+  @IsEnum(['article', 'conseil'])
+  @IsOptional()
   type?: string;
+
+  @IsString()
+  @IsOptional()
   categorie?: string;
+
+  @IsString()
+  @IsOptional()
   duree_lecture?: string;
+
+  // ✅ Correction : accepter les valeurs communes du frontend
+  @IsEnum(['brouillon', 'publié', 'archive', 'en_attente', 'publie'])
+  @IsOptional()
   statut?: string;
 }
 
 export class UpdateArticleDto {
+  @IsString()
+  @IsOptional()
+  @MinLength(3)
+  @MaxLength(200)
   titre?: string;
+
+  @IsString()
+  @IsOptional()
   description?: string;
+
+  @IsString()
+  @IsOptional()
   contenu?: string;
+
+  @IsEnum(['article', 'conseil'])
+  @IsOptional()
   type?: string;
+
+  @IsString()
+  @IsOptional()
   categorie?: string;
+
+  @IsString()
+  @IsOptional()
   duree_lecture?: string;
+
+  @IsEnum(['brouillon', 'publié', 'archive', 'en_attente', 'publie'])
+  @IsOptional()
   statut?: string;
 }
 
 export class UpdateStatutDto {
+  @IsEnum(['brouillon', 'publié', 'archive', 'en_attente', 'publie'])
   statut: string;
 }
 
@@ -43,7 +90,6 @@ export class BlogService {
     return article;
   }
 
-  // ADMIN
   async create(dto: CreateArticleDto, imageFile?: Express.Multer.File, pdfFile?: Express.Multer.File): Promise<Blog> {
     const articleData: Partial<Blog> = {
       titre: dto.titre,
@@ -133,7 +179,6 @@ export class BlogService {
     article.vues += 1;
     const saved = await this.blogRepo.save(article);
     if (!saved) {
-      // L'incrémentation a échoué mais on retourne l'article quand même (pas bloquant)
       this.logger.error(`Impossible d'incrémenter les vues pour l'article ${id}`);
     }
     return article;

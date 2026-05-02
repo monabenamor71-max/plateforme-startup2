@@ -1,3 +1,4 @@
+// src/blog/blog.controller.ts
 import {
   Controller, Get, Post, Put, Patch, Delete,
   Body, Param, UseInterceptors, UploadedFiles,
@@ -89,7 +90,6 @@ export class BlogController {
     return this.blogService.delete(id);
   }
 
-  // PUBLIQUES
   @Get('public')
   async findPublished(@Query('categorie') categorie?: string) {
     return this.blogService.findPublished(categorie);

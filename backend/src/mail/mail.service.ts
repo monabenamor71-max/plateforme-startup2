@@ -7,15 +7,23 @@ export class MailService {
   private transporter: nodemailer.Transporter;
   private readonly logger = new Logger(MailService.name);
   private readonly adminEmail = 'plateformebeh@gmail.com';
+  private readonly baseUrl: string;
 
   constructor() {
+    // Variable d'environnement obligatoire pour la production
+    // Par défaut, utilise localhost:3001 en développement
+    this.baseUrl = process.env.APP_BASE_URL || 'http://localhost:3001';
+    this.logger.log(`🌐 Base URL utilisée pour les liens dans les emails : ${this.baseUrl}`);
+
+    // Utiliser un mot de passe d'application Gmail depuis variable d'environnement (recommandé)
+    const emailPass = process.env.EMAIL_APP_PASS || 'eeby aygp htye hwvu';
     this.transporter = nodemailer.createTransport({
       host: 'smtp.gmail.com',
       port: 587,
-      secure: false, // true pour 465
+      secure: false,
       auth: {
         user: 'plateformebeh@gmail.com',
-        pass: 'eeby aygp htye hwvu', // ← REMPLACER PAR UN MOT DE PASSE D'APPLICATION GMAIL
+        pass: emailPass,
       },
       tls: { rejectUnauthorized: false },
     });
@@ -31,7 +39,7 @@ export class MailService {
     }
   }
 
-  // ==================== TEMPLATE CARTE DE BASE ====================
+  // ==================== TEMPLATE DE BASE ====================
   private getBaseHtml(content: string, button?: { url: string; text: string }) {
     const buttonHtml = button
       ? `<div style="text-align: center; margin: 30px 0;">
@@ -77,9 +85,9 @@ export class MailService {
     }
   }
 
-  // ==================== EMAIL DE CONFIRMATION ====================
+  // ==================== CONFIRMATION D'EMAIL ====================
   async sendConfirmationEmail(email: string, token: string) {
-    const confirmLink = `http://localhost:3001/auth/confirm?token=${token}`;
+    const confirmLink = `${this.baseUrl}/auth/confirm?token=${token}`;
     console.log(`\n📧 LIEN DE CONFIRMATION pour ${email} :\n${confirmLink}\n`);
     this.logger.log(`Lien : ${confirmLink}`);
 
@@ -107,35 +115,39 @@ export class MailService {
       <p style="color:#475569;">Connectez-vous à l’espace administration pour valider ou refuser ce compte.</p>
     `;
 
-    const html = this.getBaseHtml(content, { url: 'http://localhost:3000/dashboard/admin', text: '📊 Accéder à l’admin' });
+    const adminDashboardUrl = `${this.baseUrl}/dashboard/admin`;
+    const html = this.getBaseHtml(content, { url: adminDashboardUrl, text: '📊 Accéder à l’admin' });
     await this.sendEmail(this.adminEmail, `Nouvelle inscription ${role}`, html);
   }
 
   // ==================== VALIDATION DU COMPTE ====================
   async sendValidationEmail(nom: string, email: string) {
+    const loginUrl = `${this.baseUrl}/connexion`;
     const content = `
       <h2 style="color: #0A2540; font-size: 20px; margin-bottom: 12px;">Félicitations, ${nom} ! 🎉</h2>
       <p style="color: #475569; font-size: 15px; line-height: 1.6;">Votre compte a été validé par notre équipe. Vous pouvez désormais accéder à votre espace et profiter de toutes les fonctionnalités de BEH.</p>
     `;
 
-    const html = this.getBaseHtml(content, { url: 'http://localhost:3000/connexion', text: '🔑 Se connecter' });
+    const html = this.getBaseHtml(content, { url: loginUrl, text: '🔑 Se connecter' });
     await this.sendEmail(email, '✅ Votre compte BEH est activé', html);
   }
 
   // ==================== REFUS DU COMPTE ====================
   async sendRefusEmail(nom: string, email: string) {
+    const contactUrl = `${this.baseUrl}/contact`;
     const content = `
       <h2 style="color: #0A2540; font-size: 20px; margin-bottom: 12px;">Bonjour ${nom},</h2>
       <p style="color: #475569; font-size: 15px; line-height: 1.6;">Nous avons examiné votre inscription. Malheureusement, elle n’a pas été retenue à ce stade. N’hésitez pas à nous recontacter pour plus d’informations.</p>
       <p style="color: #64748B; font-size: 13px;">L’équipe BEH reste à votre disposition.</p>
     `;
 
-    const html = this.getBaseHtml(content, { url: 'http://localhost:3000/contact', text: '📞 Nous contacter' });
+    const html = this.getBaseHtml(content, { url: contactUrl, text: '📞 Nous contacter' });
     await this.sendEmail(email, 'Votre inscription BEH', html);
   }
 
   // ==================== NOTIFICATION CONTACT ADMIN ====================
   async sendContactNotification(nom: string, prenom: string, email: string, sujet: string, message: string) {
+    const adminContactsUrl = `${this.baseUrl}/dashboard/admin/contacts`;
     const content = `
       <h2 style="color: #0A2540; font-size: 20px; margin-bottom: 16px;">📩 Nouveau message de contact</h2>
       <div style="background: #F8FAFC; border-radius: 16px; padding: 20px; margin: 16px 0;">
@@ -148,7 +160,7 @@ export class MailService {
       <p style="color:#475569;">Connectez-vous à l’espace administration pour consulter l’historique complet.</p>
     `;
 
-    const html = this.getBaseHtml(content, { url: 'http://localhost:3000/dashboard/admin/contacts', text: '📋 Voir tous les messages' });
+    const html = this.getBaseHtml(content, { url: adminContactsUrl, text: '📋 Voir tous les messages' });
     await this.sendEmail(this.adminEmail, `📬 Nouveau message de contact - ${sujet}`, html);
   }
 
@@ -168,6 +180,7 @@ export class MailService {
 
   // ==================== MODIFICATION DE PROFIL (admin) ====================
   async sendModificationNotification(nom: string, email: string) {
+    const adminDashboardUrl = `${this.baseUrl}/dashboard/admin`;
     const content = `
       <h2 style="color: #0A2540; font-size: 20px;">✏️ Modification de profil demandée</h2>
       <div style="background: #F8FAFC; border-radius: 16px; padding: 20px; margin: 16px 0;">
@@ -177,7 +190,7 @@ export class MailService {
       <p>Connectez-vous à l’administration pour examiner et approuver ces modifications.</p>
     `;
 
-    const html = this.getBaseHtml(content, { url: 'http://localhost:3000/dashboard/admin', text: '🔧 Gérer la modification' });
+    const html = this.getBaseHtml(content, { url: adminDashboardUrl, text: '🔧 Gérer la modification' });
     await this.sendEmail(this.adminEmail, '🔔 Modification de profil expert en attente', html);
   }
 
@@ -196,7 +209,7 @@ export class MailService {
 
   // ==================== RÉINITIALISATION PAR LIEN ====================
   async sendResetPasswordEmail(email: string, token: string) {
-    const resetLink = `http://localhost:3000/reset-password?token=${token}`;
+    const resetLink = `${this.baseUrl}/reset-password?token=${token}`;
     const content = `
       <h2 style="color: #0A2540;">Réinitialisation de votre mot de passe</h2>
       <p>Cliquez sur le bouton ci-dessous pour choisir un nouveau mot de passe. Ce lien expire dans 1 heure.</p>

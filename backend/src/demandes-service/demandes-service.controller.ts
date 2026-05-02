@@ -1,3 +1,4 @@
+// src/demandes-service/demandes-service.controller.ts
 import {
   Controller, Get, Post, Patch, Put, Delete,
   Body, Param, UseGuards, Req, ValidationPipe, ParseIntPipe, BadRequestException,
@@ -49,13 +50,9 @@ export class DemandesServiceController {
     @Body() body: any,
   ) {
     let expertIds: number[];
-    if (Array.isArray(body)) {
-      expertIds = body;
-    } else if (body && body.expert_ids && Array.isArray(body.expert_ids)) {
-      expertIds = body.expert_ids;
-    } else {
-      throw new BadRequestException('Le tableau d\'IDs des experts est requis');
-    }
+    if (Array.isArray(body)) expertIds = body;
+    else if (body && body.expert_ids && Array.isArray(body.expert_ids)) expertIds = body.expert_ids;
+    else throw new BadRequestException('Le tableau d\'IDs des experts est requis');
     const dto: NotifierExpertsDto = { expert_ids: expertIds };
     return this.service.notifierExperts(id, dto);
   }
@@ -67,6 +64,8 @@ export class DemandesServiceController {
     return this.service.getExpertsAcceptes(id);
   }
 
+  // ⚠️ Cette route d'assignation directe par l'admin est conservée pour compatibilité,
+  // mais elle n'est plus utilisée dans le nouveau workflow (le client choisit l'expert).
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
   @Patch(':id/assigner')
@@ -95,6 +94,21 @@ export class DemandesServiceController {
     return this.service.rejectFormationDemande(demandeId);
   }
 
+  // ⚠️ Route de sélection d'un devis existant (gardée au cas où)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @Patch(':id/choisir-devis')
+  async choisirDevis(
+    @Param('id', ParseIntPipe) demandeId: number,
+    @Body() body: any,
+  ) {
+    const { devis_id, expert_id } = body;
+    if (!devis_id || !expert_id) {
+      throw new BadRequestException('devis_id et expert_id sont requis');
+    }
+    return this.service.choisirDevis(demandeId, devis_id, expert_id);
+  }
+
   // ==================== STARTUPS ====================
   @UseGuards(JwtAuthGuard)
   @Get('mes-demandes')
@@ -104,7 +118,7 @@ export class DemandesServiceController {
 
   @UseGuards(JwtAuthGuard)
   @Post()
-  async create(@Body(ValidationPipe) dto: CreateDemandeDto, @Req() req: any) {
+  create(@Body(ValidationPipe) dto: CreateDemandeDto, @Req() req: any) {
     return this.service.create(req.user.id, dto);
   }
 
@@ -131,6 +145,20 @@ export class DemandesServiceController {
   @Delete('client/:id')
   deleteDemande(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
     return this.service.deleteDemande(id, req.user.id);
+  }
+
+  // NOUVEAU : endpoint pour qu'une startup choisisse l'expert et le montant
+  @UseGuards(JwtAuthGuard)
+  @Patch(':id/choisir-expert')
+  async choisirExpert(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: { expert_id: number; montant: number },
+    @Req() req: any,
+  ) {
+    if (!body.expert_id || body.montant === undefined) {
+      throw new BadRequestException('expert_id et montant sont requis');
+    }
+    return this.service.choisirExpert(id, body.expert_id, body.montant, req.user.id);
   }
 
   // ==================== EXPERTS ====================

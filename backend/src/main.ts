@@ -1,3 +1,4 @@
+// src/main.ts
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { NestExpressApplication } from '@nestjs/platform-express';
@@ -12,7 +13,6 @@ import { mkdirSync, existsSync } from 'fs';
 import * as express from 'express';
 
 async function bootstrap() {
-  // Création des dossiers d'upload (inchangée)
   const uploadDirs = [
     './uploads', './uploads/articles-img', './uploads/articles-pdf',
     './uploads/videos-miniatures', './uploads/podcasts-audio', './uploads/podcasts-images',
@@ -20,10 +20,8 @@ async function bootstrap() {
   ];
   uploadDirs.forEach(dir => { if (!existsSync(dir)) mkdirSync(dir, { recursive: true }); });
 
-  // ========= CONFIGURATION DES LOGS WINSTON =========
   const winstonLogger = WinstonModule.createLogger({
     transports: [
-      // Console (colorée, lisible en dev)
       new winston.transports.Console({
         format: winston.format.combine(
           winston.format.timestamp(),
@@ -33,7 +31,6 @@ async function bootstrap() {
           }),
         ),
       }),
-      // Fichier combiné (tous les logs)
       new winston.transports.DailyRotateFile({
         filename: 'logs/combined-%DATE%.log',
         datePattern: 'YYYY-MM-DD',
@@ -41,7 +38,6 @@ async function bootstrap() {
         maxFiles: '14d',
         format: winston.format.combine(winston.format.timestamp(), winston.format.json()),
       }),
-      // Fichier des erreurs (uniquement error)
       new winston.transports.DailyRotateFile({
         filename: 'logs/error-%DATE%.log',
         datePattern: 'YYYY-MM-DD',
@@ -55,16 +51,14 @@ async function bootstrap() {
 
   const app = await NestFactory.create<NestExpressApplication>(AppModule, { logger: winstonLogger });
 
-  // Middlewares (inchangés)
   app.use(express.json({ limit: '50mb' }));
   app.use(express.urlencoded({ extended: true, limit: '50mb' }));
   app.enableCors({ origin: 'http://localhost:3000', credentials: true });
   app.use(cookieParser());
 
-  // Pipes et filtres
   app.useGlobalPipes(new ValidationPipe({
     whitelist: true,
-    forbidNonWhitelisted: true,
+    forbidNonWhitelisted: false,   // ← Tolérant
     transform: true,
     disableErrorMessages: process.env.NODE_ENV === 'production',
   }));

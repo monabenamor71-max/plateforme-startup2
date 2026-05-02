@@ -98,7 +98,7 @@ const ADN_ANCHORS=["vision","mission","valeurs"];
 const SERVICES=[{label:{fr:"Consulting",en:"Consulting"},slug:"consulting"},{label:{fr:"Audit sur site",en:"On-site Audit"},slug:"audit-sur-site"},{label:{fr:"Nos plateformes",en:"Our platforms"},slug:"nos-plateformes"},{label:{fr:"Formations",en:"Training"},slug:"formations"}];
 const LOGOS=["/logos/partenaire1.png","/logos/partenaire2.png","/logos/partenaire3.png","/logos/partenaire4.png","/logos/partenaire5.png","/logos/partenaire6.png","/logos/partenaire7.png"];
 
-// ── Sélecteur de langue globe+code ──
+// ── Sélecteur de langue ──
 function LangSwitcher({lang,setLang}:{lang:Lang;setLang:(l:Lang)=>void}){
   const[open,setOpen]=useState(false);const ref=useRef<HTMLDivElement>(null);
   useEffect(()=>{function h(e:MouseEvent){if(ref.current&&!ref.current.contains(e.target as Node))setOpen(false);}document.addEventListener("mousedown",h);return()=>document.removeEventListener("mousedown",h);},[]);
@@ -130,7 +130,7 @@ function LangSwitcher({lang,setLang}:{lang:Lang;setLang:(l:Lang)=>void}){
   );
 }
 
-// ══════════════════════ MODAL DÉMO VIDÉO ══════════════════════
+// ── Modal Démo ──
 function DemoModal({onClose,tr}:{onClose:()=>void;tr:Record<string,string>}){
   const videoRef=useRef<HTMLVideoElement>(null);
   useEffect(()=>{
@@ -139,16 +139,10 @@ function DemoModal({onClose,tr}:{onClose:()=>void;tr:Record<string,string>}){
     document.body.style.overflow="hidden";
     return()=>{document.removeEventListener("keydown",onKey);document.body.style.overflow="";};
   },[onClose]);
-
   return(
     <div style={{position:"fixed",inset:0,zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",padding:"20px"}} onClick={onClose}>
-      {/* Backdrop */}
       <div style={{position:"absolute",inset:0,background:"rgba(4,12,24,.92)",backdropFilter:"blur(18px)"}}/>
-
-      {/* Conteneur modal */}
       <div style={{position:"relative",zIndex:10,width:"100%",maxWidth:1000,animation:"demoIn .36s cubic-bezier(.22,1,.36,1)"}} onClick={e=>e.stopPropagation()}>
-
-        {/* Barre supérieure */}
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14,padding:"0 4px"}}>
           <div>
             <div style={{color:"#fff",fontWeight:800,fontSize:19,marginBottom:4,fontFamily:"'Outfit',sans-serif"}}>{tr.demo_title}</div>
@@ -159,42 +153,22 @@ function DemoModal({onClose,tr}:{onClose:()=>void;tr:Record<string,string>}){
               <span style={{width:7,height:7,borderRadius:"50%",background:"#F7B500",display:"inline-block",animation:"demoDot 2s ease-in-out infinite"}}/>
               <span style={{fontSize:12,color:"#F7B500",fontWeight:700}}>{tr.demo_duration}</span>
             </div>
-            <button onClick={onClose}
-              style={{width:42,height:42,borderRadius:"50%",background:"rgba(255,255,255,.1)",border:"1px solid rgba(255,255,255,.15)",color:"#fff",fontSize:16,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",transition:"all .2s",outline:"none"}}
-              onMouseEnter={e=>{e.currentTarget.style.background="rgba(255,255,255,.2)";e.currentTarget.style.transform="scale(1.08)";}}
-              onMouseLeave={e=>{e.currentTarget.style.background="rgba(255,255,255,.1)";e.currentTarget.style.transform="scale(1)";}}>
+            <button onClick={onClose} style={{width:42,height:42,borderRadius:"50%",background:"rgba(255,255,255,.1)",border:"1px solid rgba(255,255,255,.15)",color:"#fff",fontSize:16,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",transition:"all .2s",outline:"none"}} onMouseEnter={e=>{e.currentTarget.style.background="rgba(255,255,255,.2)";e.currentTarget.style.transform="scale(1.08)";}} onMouseLeave={e=>{e.currentTarget.style.background="rgba(255,255,255,.1)";e.currentTarget.style.transform="scale(1)";}}>
               <FaTimes/>
             </button>
           </div>
         </div>
-
-        {/* Player */}
         <div style={{borderRadius:22,overflow:"hidden",background:"#000",boxShadow:"0 48px 120px rgba(0,0,0,.85), 0 0 0 1px rgba(255,255,255,.07)",position:"relative"}}>
-          {/* Barre dorée déco */}
           <div style={{height:3,background:"linear-gradient(90deg,#F7B500,#e6a800 40%,rgba(247,181,0,.25) 100%)"}}/>
-
-          {/* Vidéo */}
-          <video
-            ref={videoRef}
-            src="/video/demo.mp4"
-            controls
-            autoPlay
-            playsInline
-            style={{width:"100%",display:"block",maxHeight:"68vh",background:"#000",objectFit:"contain"}}
-          />
+          <video ref={videoRef} src="/video/demo.mp4" controls autoPlay playsInline style={{width:"100%",display:"block",maxHeight:"68vh",background:"#000",objectFit:"contain"}}/>
         </div>
-
-        {/* Barre inférieure */}
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginTop:14,padding:"0 4px",flexWrap:"wrap",gap:12}}>
           <div style={{display:"flex",gap:20,flexWrap:"wrap"}}>
             {[tr.demo_feature1,tr.demo_feature2,tr.demo_feature3].map((feat,i)=>(
               <span key={i} style={{fontSize:13,color:"rgba(255,255,255,.45)",fontWeight:500,fontFamily:"'Outfit',sans-serif"}}>{feat}</span>
             ))}
           </div>
-          <Link href="/inscription" onClick={onClose}
-            style={{display:"inline-flex",alignItems:"center",gap:8,background:"#F7B500",color:"#0A2540",borderRadius:10,padding:"10px 24px",fontWeight:800,fontSize:14,textDecoration:"none",fontFamily:"'Outfit',sans-serif",transition:"all .22s",flexShrink:0}}
-            onMouseEnter={e=>{const el=e.currentTarget as HTMLAnchorElement;el.style.background="#e6a800";el.style.transform="translateY(-2px)";el.style.boxShadow="0 8px 24px rgba(247,181,0,.4)";}}
-            onMouseLeave={e=>{const el=e.currentTarget as HTMLAnchorElement;el.style.background="#F7B500";el.style.transform="none";el.style.boxShadow="none";}}>
+          <Link href="/inscription" onClick={onClose} style={{display:"inline-flex",alignItems:"center",gap:8,background:"#F7B500",color:"#0A2540",borderRadius:10,padding:"10px 24px",fontWeight:800,fontSize:14,textDecoration:"none",fontFamily:"'Outfit',sans-serif",transition:"all .22s",flexShrink:0}} onMouseEnter={e=>{const el=e.currentTarget as HTMLAnchorElement;el.style.background="#e6a800";el.style.transform="translateY(-2px)";el.style.boxShadow="0 8px 24px rgba(247,181,0,.4)";}} onMouseLeave={e=>{const el=e.currentTarget as HTMLAnchorElement;el.style.background="#F7B500";el.style.transform="none";el.style.boxShadow="none";}}>
             {tr.demo_cta} <FaArrowRight size={11}/>
           </Link>
         </div>
@@ -203,7 +177,7 @@ function DemoModal({onClose,tr}:{onClose:()=>void;tr:Record<string,string>}){
   );
 }
 
-// ══════════════════════ POPUP INSCRIPTION ══════════════════════
+// ── Popup Inscription ──
 function SignupPopup({onClose,t}:{onClose:()=>void;t:Record<string,string>}){
   const[email,setEmail]=useState("");const[pass,setPass]=useState("");const[showPass,setShowPass]=useState(false);const[step,setStep]=useState<"form"|"success">("form");
   const strength=pass.length===0?0:pass.length<6?1:pass.length<10?2:3;
@@ -255,13 +229,14 @@ export default function Home(){
   useEffect(()=>{if(typeof window==="undefined")return;const saved=localStorage.getItem("beh_lang") as Lang|null;if(saved==="fr"||saved==="en")setLang(saved);},[]);
   const tr=T[lang];
 
+  // Redirection si déjà connecté
   useEffect(()=>{if(typeof window==="undefined")return;const raw=localStorage.getItem("user");if(!raw)return;try{const user=JSON.parse(raw);const role=user?.role;if(role==="admin")router.replace("/dashboard/admin");else if(role==="expert")router.replace("/dashboard/expert");else if(role==="startup")router.replace("/dashboard/startup");else if(role==="client")router.replace("/dashboard/client");}catch{}},[router]);
 
   const[servOpen,setServOpen]=useState(false);
   const[tIdx,setTIdx]=useState(0);const[tAnim,setTAnim]=useState(false);
   const[mail,setMail]=useState("");const[sent,setSent]=useState(false);const[nlLoading,setNlLoading]=useState(false);
   const[modal,setModal]=useState(false);
-  const[showDemo,setShowDemo]=useState(false);       // ← état modal démo
+  const[showDemo,setShowDemo]=useState(false);
   const[experts,setExperts]=useState<ExpertAPI[]>([]);const[loading,setLoading]=useState(true);
   const[temos,setTemos]=useState<TemoAPI[]>([]);const[temoLoad,setTemoLoad]=useState(true);
   const[showPopup,setShowPopup]=useState(false);const popupShown=useRef(false);
@@ -292,15 +267,12 @@ export default function Home(){
         .bd:hover{background:#F7B500;color:#0A2540;transform:translateY(-3px);}
         .bol{display:inline-flex;align-items:center;gap:8px;background:transparent;color:#fff;border:1.5px solid rgba(255,255,255,.28);border-radius:10px;padding:13px 26px;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;transition:all .22s;text-decoration:none;}
         .bol:hover{border-color:#F7B500;color:#F7B500;transform:translateY(-3px);}
-
-        /* ── Bouton Démo ── */
         .btn-demo{display:inline-flex;align-items:center;gap:10px;background:transparent;color:rgba(255,255,255,.75);border:1.5px solid rgba(255,255,255,.25);border-radius:10px;padding:11px 22px;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;transition:all .25s;position:relative;overflow:hidden;}
         .btn-demo:hover{background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.5);color:#fff;transform:translateY(-3px);}
         .demo-play-ring{width:30px;height:30px;border-radius:50%;background:rgba(247,181,0,.9);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:transform .25s,background .25s;animation:demoRipple 2.6s ease-out infinite;}
         .btn-demo:hover .demo-play-ring{background:#F7B500;transform:scale(1.1);}
         @keyframes demoRipple{0%{box-shadow:0 0 0 0 rgba(247,181,0,.5);}70%{box-shadow:0 0 0 10px rgba(247,181,0,0);}100%{box-shadow:0 0 0 0 rgba(247,181,0,0);}}
         @keyframes demoDot{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.4;transform:scale(.7);}}
-
         .bno{border:2px solid #0A2540;color:#0A2540;background:transparent;padding:9px 22px;border-radius:9px;font-weight:700;font-size:13.5px;cursor:pointer;transition:all .22s;font-family:inherit;}
         .bno:hover{background:#F7B500;border-color:#F7B500;}
         .bns{background:#F7B500;color:#0A2540;border:none;padding:9px 22px;border-radius:9px;font-weight:800;font-size:13.5px;cursor:pointer;transition:all .22s;font-family:inherit;}
@@ -339,11 +311,9 @@ export default function Home(){
         .hc>*:nth-child(4){animation-delay:.46s}.hc>*:nth-child(5){animation-delay:.58s}
       `}</style>
 
-      {/* ── MODAL DÉMO ── */}
       {showDemo&&<DemoModal tr={tr} onClose={()=>setShowDemo(false)}/>}
       {showPopup&&<SignupPopup t={tr} onClose={()=>{localStorage.setItem("beh_popup_dismissed","1");setShowPopup(false);}}/>}
 
-      {/* Modal expert */}
       {modal&&(
         <div style={{position:"fixed",inset:0,zIndex:500,display:"flex",alignItems:"center",justifyContent:"center",padding:24,background:"rgba(6,14,26,.75)",backdropFilter:"blur(10px)"}} onClick={()=>setModal(false)}>
           <div style={{background:"#fff",borderRadius:28,padding:"52px 44px",maxWidth:440,width:"100%",textAlign:"center",position:"relative",boxShadow:"0 48px 120px rgba(10,37,64,.32)"}} onClick={e=>e.stopPropagation()}>
@@ -395,34 +365,19 @@ export default function Home(){
           <div style={{position:"absolute",inset:0,backgroundImage:"radial-gradient(rgba(255,255,255,.022) 1px,transparent 1px)",backgroundSize:"48px 48px",pointerEvents:"none"}}/>
         </div>
         <div className="hc" style={{position:"relative",zIndex:10,maxWidth:1280,margin:"0 auto",padding:"130px 32px 150px"}}>
-          {/* Badge */}
           <div style={{display:"inline-flex",alignItems:"center",gap:9,marginBottom:28,background:"rgba(247,181,0,.1)",border:"1px solid rgba(247,181,0,.22)",borderRadius:99,padding:"6px 16px 6px 10px"}}>
             <span style={{width:7,height:7,borderRadius:"50%",background:"#F7B500",display:"inline-block"}}/>
             <span style={{fontSize:11,fontWeight:700,letterSpacing:"2.5px",textTransform:"uppercase",color:"#F7B500"}}>{tr.hero_badge}</span>
           </div>
-
-          {/* H1 */}
           <h1 style={{fontSize:"clamp(36px,5vw,56px)",fontWeight:700,marginBottom:24,lineHeight:1.1}}>
             {tr.hero_h1_a} <span style={{color:"#F7B500"}}>{tr.hero_h1_b}</span><br/>{tr.hero_h1_c}
           </h1>
-
-          {/* Sous-titre */}
           <p style={{fontSize:16.5,color:"rgba(255,255,255,.7)",maxWidth:500,lineHeight:1.9,marginBottom:44}}>{tr.hero_p}</p>
-
-          {/* ── 3 CTA dont le bouton Démo ── */}
           <div style={{display:"flex",flexWrap:"wrap",gap:14,alignItems:"center"}}>
-
-            {/* CTA 1 — Découvrir nos services */}
             <Link href="/services" className="bg">{tr.hero_cta1} <FaArrowRight size={12}/></Link>
-
-            {/* CTA 2 — Contactez-nous */}
             <Link href="/contact" className="bol">{tr.hero_cta2} <FaArrowRight size={12}/></Link>
-
-            {/* CTA 3 — Voir la démo (ouvre modal vidéo) */}
             <button className="btn-demo" onClick={()=>setShowDemo(true)}>
-              <span className="demo-play-ring">
-                <FaPlay style={{color:"#0A2540",fontSize:11,marginLeft:2}}/>
-              </span>
+              <span className="demo-play-ring"><FaPlay style={{color:"#0A2540",fontSize:11,marginLeft:2}}/></span>
               {tr.hero_demo}
             </button>
           </div>

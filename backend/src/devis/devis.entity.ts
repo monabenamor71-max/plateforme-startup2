@@ -1,3 +1,4 @@
+// src/devis/devis.entity.ts
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, CreateDateColumn } from 'typeorm';
 import { DemandeService } from '../demandes-service/demande-service.entity';
 import { Expert } from '../user/expert.entity';

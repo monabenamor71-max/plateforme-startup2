@@ -1,4 +1,5 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
+// src/demandes-service/demande-service.entity.ts
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 import { User } from '../user/user.entity';
 import { Expert } from '../user/expert.entity';
 import { Formation } from '../formations/formation.entity';
@@ -8,63 +9,58 @@ export class DemandeService {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ name: 'user_id', nullable: true })
+  @Column()
   user_id: number;
-
-  @ManyToOne(() => User, { eager: true, nullable: true })
+  @ManyToOne(() => User)
   @JoinColumn({ name: 'user_id' })
   user: User;
 
-  @Column({ name: 'formation_id', nullable: true })
-  formation_id: number;
-
-  @ManyToOne(() => Formation, { eager: true, nullable: true })
-  @JoinColumn({ name: 'formation_id' })
-  formation: Formation;
-
-  @Column({ nullable: true })
+  @Column()
   service: string;
 
   @Column({ type: 'text', nullable: true })
   description: string;
 
   @Column({ nullable: true })
-  delai: string;
+  telephone: string;
 
   @Column({ nullable: true })
   objectif: string;
 
   @Column({ nullable: true })
-  telephone: string;
-
-  @Column({ name: 'type_application', nullable: true })
-  type_application: string;
-
- @Column({ nullable: true })
   domaine: string;
 
-  @Column({ default: 'en_attente' })
-  statut: string;
+  @Column({ type: 'json', nullable: true, default: [] })
+  experts_notifies: number[];
 
-  @Column({ name: 'commentaire_admin', type: 'text', nullable: true })
-  commentaire_admin: string;
+  @Column({ type: 'json', nullable: true, default: [] })
+  experts_acceptes: number[];
 
-  @Column({ name: 'expert_assigne_id', nullable: true })
+  @Column({ nullable: true })
+  formation_id: number;
+  @ManyToOne(() => Formation, { nullable: true })
+  @JoinColumn({ name: 'formation_id' })
+  formation: Formation;
+
+  @Column({ nullable: true })
   expert_assigne_id: number;
-
-  @ManyToOne(() => Expert, { eager: true, nullable: true })
+  @ManyToOne(() => Expert, { nullable: true })
   @JoinColumn({ name: 'expert_assigne_id' })
   expert_assigne: Expert;
 
-  @Column({ name: 'note_suivi', nullable: true })
-  note_suivi: string;
+  // ✅ NOUVEAU : montant du devis choisi par le client
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
+  devis_montant: number;
 
-  @Column({ type: 'json', nullable: true })
-  experts_notifies: number[];
+  @Column({ type: 'enum', enum: ['en_attente', 'acceptee', 'refusee', 'en_cours', 'terminee'], default: 'en_attente' })
+  statut: string;
 
-  @Column({ type: 'json', nullable: true })
-  experts_acceptes: number[];
+  @Column({ type: 'text', nullable: true })
+  commentaire_admin: string;
 
-  @CreateDateColumn({ name: 'createdAt' })
+  @CreateDateColumn()
   createdAt: Date;
+
+  @UpdateDateColumn()
+  updatedAt: Date;
 }

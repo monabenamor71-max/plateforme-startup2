@@ -11,7 +11,7 @@ import {
   FaUsers, FaClock, FaCertificate, FaExternalLinkAlt, FaTimes,
   FaMobile, FaLaptopCode, FaEdit, FaTrash, FaSave, FaHeadphones,
   FaMapMarkerAlt, FaPhone, FaEnvelope, FaLinkedin, FaGlobe,
-  FaBriefcase, FaShieldAlt, FaAward, FaCheckDouble,
+  FaBriefcase, FaShieldAlt, FaAward, FaCheckDouble, FaSpinner,
 } from "react-icons/fa";
 
 const BASE = "http://localhost:3001";
@@ -60,16 +60,29 @@ const ADN_ITEMS = [
   { title: "Nos Valeurs", body: "Excellence, transparence et engagement humain.", color: "#10B981", anchor: "valeurs" },
 ];
 
+// ─── STATUTS DEMANDES ─────────────────────────────────────────────────────────
 const S_COLOR: Record<string, string> = {
-  en_attente: "#F59E0B", valide: "#10B981", refuse: "#EF4444",
-  confirme: "#10B981", annule: "#EF4444", acceptee: "#10B981",
-  en_cours: "#3B82F6", terminee: "#10B981", refusee: "#EF4444",
+  en_attente: "#F59E0B",
+  valide: "#10B981",
+  refuse: "#EF4444",
+  confirme: "#10B981",
+  annule: "#EF4444",
+  acceptee: "#10B981",
+  en_cours: "#3B82F6",
+  terminee: "#10B981",
+  refusee: "#EF4444",
 };
 
 const S_LABEL: Record<string, string> = {
-  en_attente: "⏳ En attente", valide: "✅ Validé", refuse: "❌ Refusé",
-  confirme: "✅ Confirmé", annule: "❌ Annulé", acceptee: "✅ Acceptée",
-  en_cours: "🔄 En cours", terminee: "✅ Terminée", refusee: "❌ Refusée",
+  en_attente: "⏳ En attente",
+  valide: "✅ Validé",
+  refuse: "❌ Refusé",
+  confirme: "✅ Confirmé",
+  annule: "❌ Annulé",
+  acceptee: "✅ Acceptée",
+  en_cours: "🔄 Expert en cours de sélection",
+  terminee: "✅ Terminée",
+  refusee: "❌ Refusée",
 };
 
 const DOMAINES_LIST = [
@@ -193,14 +206,9 @@ function DevisCard({ devis, experts, onAccepter, onRefuser, onContactExpert, onR
       marginBottom: 18,
       transition: "all .3s",
     }}>
-      {/* Bandeau coloré en haut */}
       <div style={{ height: 4, background: isPending ? "linear-gradient(90deg,#F59E0B,#FCD34D)" : isAccepted ? "linear-gradient(90deg,#10B981,#6EE7B7)" : "linear-gradient(90deg,#EF4444,#FCA5A5)" }} />
-
       <div style={{ padding: "20px 24px" }}>
-        {/* Infos expert */}
         <ExpertMiniCard expert={expertFull} BASE={BASE} />
-
-        {/* Corps du devis */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 16 }}>
           <div style={{ background: "#F8FAFC", borderRadius: 12, padding: "14px 16px", border: "1px solid #E8EEF6" }}>
             <div style={{ fontSize: 10, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "1px", marginBottom: 6 }}>Montant proposé</div>
@@ -211,47 +219,25 @@ function DevisCard({ devis, experts, onAccepter, onRefuser, onContactExpert, onR
             <DevisStatusBadge statut={devis.statut} />
           </div>
         </div>
-
         {devis.description && (
           <div style={{ background: "#F8FAFC", borderRadius: 12, padding: "14px 16px", marginBottom: 14, border: "1px solid #E8EEF6" }}>
             <div style={{ fontSize: 10, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "1px", marginBottom: 6 }}>Description du devis</div>
             <p style={{ fontSize: 13.5, color: "#334155", lineHeight: 1.75, margin: 0 }}>{devis.description}</p>
           </div>
         )}
-
         {devis.delai && (
           <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "#EFF6FF", border: "1px solid #BFDBFE", borderRadius: 99, padding: "5px 12px", marginBottom: 14, fontSize: 12, color: "#1D4ED8", fontWeight: 600 }}>
             <FaClock style={{ fontSize: 10 }} /> Délai estimé : {devis.delai}
           </div>
         )}
-
         <div style={{ fontSize: 11, color: "#94A3B8", marginBottom: isPending ? 16 : 0 }}>
           Reçu le {new Date(devis.createdAt).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}
         </div>
-
-        {/* Actions dynamiques selon statut */}
         {isPending && (
           <div style={{ display: "flex", gap: 10 }}>
             <button
               onClick={() => onAccepter(devis.id)}
-              style={{
-                flex: 1,
-                background: "linear-gradient(135deg,#10B981,#059669)",
-                color: "#fff",
-                border: "none",
-                borderRadius: 12,
-                padding: "13px 20px",
-                fontWeight: 800,
-                fontSize: 14,
-                cursor: "pointer",
-                fontFamily: "inherit",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 8,
-                boxShadow: "0 4px 16px rgba(16,185,129,.35)",
-                transition: "all .2s",
-              }}
+              style={{ flex: 1, background: "linear-gradient(135deg,#10B981,#059669)", color: "#fff", border: "none", borderRadius: 12, padding: "13px 20px", fontWeight: 800, fontSize: 14, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, boxShadow: "0 4px 16px rgba(16,185,129,.35)", transition: "all .2s" }}
               onMouseOver={e => (e.currentTarget.style.transform = "translateY(-2px)")}
               onMouseOut={e => (e.currentTarget.style.transform = "none")}
             >
@@ -259,23 +245,7 @@ function DevisCard({ devis, experts, onAccepter, onRefuser, onContactExpert, onR
             </button>
             <button
               onClick={() => onRefuser(devis.id)}
-              style={{
-                flex: 1,
-                background: "#fff",
-                color: "#DC2626",
-                border: "1.5px solid #FECACA",
-                borderRadius: 12,
-                padding: "13px 20px",
-                fontWeight: 700,
-                fontSize: 14,
-                cursor: "pointer",
-                fontFamily: "inherit",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 8,
-                transition: "all .2s",
-              }}
+              style={{ flex: 1, background: "#fff", color: "#DC2626", border: "1.5px solid #FECACA", borderRadius: 12, padding: "13px 20px", fontWeight: 700, fontSize: 14, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, transition: "all .2s" }}
               onMouseOver={e => { e.currentTarget.style.background = "#FEF2F2"; e.currentTarget.style.transform = "translateY(-2px)"; }}
               onMouseOut={e => { e.currentTarget.style.background = "#fff"; e.currentTarget.style.transform = "none"; }}
             >
@@ -283,7 +253,6 @@ function DevisCard({ devis, experts, onAccepter, onRefuser, onContactExpert, onR
             </button>
           </div>
         )}
-
         {isAccepted && (
           <div style={{ background: "linear-gradient(135deg,#ECFDF5,#D1FAE5)", borderRadius: 14, padding: "16px 18px", border: "1px solid #6EE7B7" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
@@ -296,22 +265,15 @@ function DevisCard({ devis, experts, onAccepter, onRefuser, onContactExpert, onR
               </div>
             </div>
             <div style={{ display: "flex", gap: 8 }}>
-              <button
-                onClick={() => onContactExpert(expertFull)}
-                style={{ flex: 1, background: "#0A2540", color: "#fff", border: "none", borderRadius: 10, padding: "10px", fontWeight: 700, fontSize: 12.5, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}
-              >
+              <button onClick={() => onContactExpert(expertFull)} style={{ flex: 1, background: "#0A2540", color: "#fff", border: "none", borderRadius: 10, padding: "10px", fontWeight: 700, fontSize: 12.5, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
                 <FaComments /> Envoyer un message
               </button>
-              <button
-                onClick={() => onRdvExpert(expertFull)}
-                style={{ flex: 1, background: "#F59E0B", color: "#0A2540", border: "none", borderRadius: 10, padding: "10px", fontWeight: 700, fontSize: 12.5, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}
-              >
+              <button onClick={() => onRdvExpert(expertFull)} style={{ flex: 1, background: "#F59E0B", color: "#0A2540", border: "none", borderRadius: 10, padding: "10px", fontWeight: 700, fontSize: 12.5, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
                 <FaCalendar /> Prendre un RDV
               </button>
             </div>
           </div>
         )}
-
         {isRefused && (
           <div style={{ background: "#FEF2F2", borderRadius: 12, padding: "12px 16px", border: "1px solid #FECACA", display: "flex", alignItems: "center", gap: 10 }}>
             <FaTimes style={{ color: "#DC2626", fontSize: 16, flexShrink: 0 }} />
@@ -335,48 +297,26 @@ function RdvCard({ rdv, onModifier, onAnnuler }: {
   const isConfirmed = rdv.statut === "confirme";
   const isCancelled = rdv.statut === "annule" || rdv.statut === "refuse";
   const isPending = rdv.statut === "en_attente";
-
   const borderColor = isPending ? "#FDE68A" : isConfirmed ? "#6EE7B7" : "#FCA5A5";
   const accentColor = isPending ? "#F59E0B" : isConfirmed ? "#10B981" : "#EF4444";
-
   return (
-    <div style={{
-      background: "#fff",
-      borderRadius: 16,
-      border: `1.5px solid ${borderColor}`,
-      overflow: "hidden",
-      marginBottom: 12,
-      transition: "all .3s",
-    }}>
+    <div style={{ background: "#fff", borderRadius: 16, border: `1.5px solid ${borderColor}`, overflow: "hidden", marginBottom: 12, transition: "all .3s" }}>
       <div style={{ height: 3, background: `linear-gradient(90deg,${accentColor},${accentColor}66)` }} />
       <div style={{ padding: "16px 20px" }}>
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
           <div style={{ flex: 1 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
-              <div style={{
-                width: 40, height: 40, borderRadius: 10,
-                background: `${accentColor}18`, border: `1.5px solid ${accentColor}33`,
-                display: "flex", alignItems: "center", justifyContent: "center",
-                color: accentColor, flexShrink: 0,
-              }}>
+              <div style={{ width: 40, height: 40, borderRadius: 10, background: `${accentColor}18`, border: `1.5px solid ${accentColor}33`, display: "flex", alignItems: "center", justifyContent: "center", color: accentColor, flexShrink: 0 }}>
                 <FaCalendar style={{ fontSize: 15 }} />
               </div>
               <div>
-                <div style={{ fontWeight: 800, color: "#0A2540", fontSize: 14.5 }}>
-                  {rdv.expert?.user?.prenom} {rdv.expert?.user?.nom}
-                </div>
+                <div style={{ fontWeight: 800, color: "#0A2540", fontSize: 14.5 }}>{rdv.expert?.user?.prenom} {rdv.expert?.user?.nom}</div>
                 {rdv.expert?.domaine && (
-                  <div style={{ fontSize: 11, color: "#92400E", background: "#FEF3C7", borderRadius: 99, padding: "1px 8px", display: "inline-block", marginTop: 2, fontWeight: 700 }}>
-                    {rdv.expert.domaine}
-                  </div>
+                  <div style={{ fontSize: 11, color: "#92400E", background: "#FEF3C7", borderRadius: 99, padding: "1px 8px", display: "inline-block", marginTop: 2, fontWeight: 700 }}>{rdv.expert.domaine}</div>
                 )}
               </div>
             </div>
-            {rdv.sujet && (
-              <div style={{ fontSize: 13, color: "#475569", fontWeight: 600, marginBottom: 6, display: "flex", alignItems: "center", gap: 5 }}>
-                <span style={{ color: accentColor }}>📌</span> {rdv.sujet}
-              </div>
-            )}
+            {rdv.sujet && <div style={{ fontSize: 13, color: "#475569", fontWeight: 600, marginBottom: 6, display: "flex", alignItems: "center", gap: 5 }}><span style={{ color: accentColor }}>📌</span> {rdv.sujet}</div>}
             <div style={{ fontSize: 12.5, color: "#64748B", display: "flex", alignItems: "center", gap: 5 }}>
               <FaClock style={{ fontSize: 10, color: accentColor }} />
               {new Date(rdv.date_rdv).toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" })}
@@ -386,20 +326,10 @@ function RdvCard({ rdv, onModifier, onAnnuler }: {
             <RdvStatusBadge statut={rdv.statut} />
             {isPending && (
               <div style={{ display: "flex", gap: 6 }}>
-                <button
-                  onClick={() => onModifier(rdv)}
-                  style={{ background: "#EFF6FF", color: "#1D4ED8", border: "1px solid #BFDBFE", borderRadius: 8, padding: "6px 12px", fontSize: 11.5, cursor: "pointer", fontFamily: "inherit", fontWeight: 700, display: "flex", alignItems: "center", gap: 5, transition: "all .2s" }}
-                  onMouseOver={e => { e.currentTarget.style.background = "#DBEAFE"; }}
-                  onMouseOut={e => { e.currentTarget.style.background = "#EFF6FF"; }}
-                >
+                <button onClick={() => onModifier(rdv)} style={{ background: "#EFF6FF", color: "#1D4ED8", border: "1px solid #BFDBFE", borderRadius: 8, padding: "6px 12px", fontSize: 11.5, cursor: "pointer", fontFamily: "inherit", fontWeight: 700, display: "flex", alignItems: "center", gap: 5, transition: "all .2s" }} onMouseOver={e => { e.currentTarget.style.background = "#DBEAFE"; }} onMouseOut={e => { e.currentTarget.style.background = "#EFF6FF"; }}>
                   <FaEdit style={{ fontSize: 10 }} /> Modifier
                 </button>
-                <button
-                  onClick={() => onAnnuler(rdv.id)}
-                  style={{ background: "#FEF2F2", color: "#DC2626", border: "1px solid #FECACA", borderRadius: 8, padding: "6px 12px", fontSize: 11.5, cursor: "pointer", fontFamily: "inherit", fontWeight: 700, display: "flex", alignItems: "center", gap: 5, transition: "all .2s" }}
-                  onMouseOver={e => { e.currentTarget.style.background = "#FEE2E2"; }}
-                  onMouseOut={e => { e.currentTarget.style.background = "#FEF2F2"; }}
-                >
+                <button onClick={() => onAnnuler(rdv.id)} style={{ background: "#FEF2F2", color: "#DC2626", border: "1px solid #FECACA", borderRadius: 8, padding: "6px 12px", fontSize: 11.5, cursor: "pointer", fontFamily: "inherit", fontWeight: 700, display: "flex", alignItems: "center", gap: 5, transition: "all .2s" }} onMouseOver={e => { e.currentTarget.style.background = "#FEE2E2"; }} onMouseOut={e => { e.currentTarget.style.background = "#FEF2F2"; }}>
                   <FaTrash style={{ fontSize: 10 }} /> Annuler
                 </button>
               </div>
@@ -698,6 +628,25 @@ function ExpertCard({ e, isSectorMatch, onMessage, onRdv, BASE }: { e: any; isSe
   );
 }
 
+// ─── BADGE STATUT DEMANDE ENRICHI ────────────────────────────────────────────
+function DemandStatutBadge({ statut }: { statut: string }) {
+  const configs: Record<string, { bg: string; color: string; border: string; icon: string; label: string }> = {
+    en_attente: { bg: "#FFFBEB", color: "#B45309", border: "#FDE68A", icon: "⏳", label: "En attente" },
+    acceptee:   { bg: "#ECFDF5", color: "#065F46", border: "#A7F3D0", icon: "✅", label: "Acceptée" },
+    en_cours:   { bg: "#EFF6FF", color: "#1D4ED8", border: "#BFDBFE", icon: "🔄", label: "Expert en cours de sélection" },
+    terminee:   { bg: "#F0FDF4", color: "#15803D", border: "#BBF7D0", icon: "🏁", label: "Terminée" },
+    refusee:    { bg: "#FEF2F2", color: "#DC2626", border: "#FECACA", icon: "❌", label: "Refusée" },
+    refuse:     { bg: "#FEF2F2", color: "#DC2626", border: "#FECACA", icon: "❌", label: "Refusée" },
+    valide:     { bg: "#ECFDF5", color: "#065F46", border: "#A7F3D0", icon: "✅", label: "Validée" },
+  };
+  const c = configs[statut] || { bg: "#F1F5F9", color: "#475569", border: "#CBD5E1", icon: "•", label: statut };
+  return (
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 6, background: c.bg, color: c.color, border: `1px solid ${c.border}`, borderRadius: 99, padding: "5px 13px", fontSize: 12, fontWeight: 700, letterSpacing: "0.2px" }}>
+      <span>{c.icon}</span> {c.label}
+    </span>
+  );
+}
+
 // ─── COMPOSANT PRINCIPAL ──────────────────────────────────────────────────────
 export default function DashboardStartup() {
   const router = useRouter();
@@ -739,7 +688,7 @@ export default function DashboardStartup() {
   const [tAnim, setTAnim] = useState(false);
   const [newTemo, setNewTemo] = useState("");
   const [newTemoNote, setNewTemoNote] = useState(5);
-  const [sendingTemo, setSendingTemo] = useState(false); // ⭐ État de chargement pour témoignage
+  const [sendingTemo, setSendingTemo] = useState(false);
 
   const [selectedFormation, setSelectedFormation] = useState<any>(null);
   const [selectedPodcast, setSelectedPodcast] = useState<any>(null);
@@ -793,24 +742,12 @@ export default function DashboardStartup() {
         else throw new Error('Fallback failed');
       } else {
         const res = await fetch(`${BASE}/startups/experts-recommandes`, { headers: hdr() });
-        if (res.ok) {
-          list = await res.json();
-          if (!Array.isArray(list)) list = [];
-        } else {
-          throw new Error(`Primary failed with status ${res.status}`);
-        }
+        if (res.ok) { list = await res.json(); if (!Array.isArray(list)) list = []; }
+        else throw new Error(`Primary failed with status ${res.status}`);
       }
     } catch (err) {
-      console.error(err);
-      try {
-        const fb = await fetch(`${BASE}/experts/liste`);
-        if (fb.ok) list = await fb.json();
-        else throw new Error('Fallback also failed');
-      } catch (fallbackErr) {
-        setExpertsError('Impossible de charger la liste des experts.');
-        setLoadingExperts(false);
-        return;
-      }
+      try { const fb = await fetch(`${BASE}/experts/liste`); if (fb.ok) list = await fb.json(); else throw new Error('Fallback also failed'); }
+      catch (fallbackErr) { setExpertsError('Impossible de charger la liste des experts.'); setLoadingExperts(false); return; }
     }
     if (startup?.secteur && list.length) {
       const s = startup.secteur.toLowerCase().trim();
@@ -902,7 +839,9 @@ export default function DashboardStartup() {
   const unreadPropositions = propositions.filter(p => !propositionsVues.has(p.id)).length;
   const pendingRdvCount = rdvs.filter(r => r.statut === "en_attente").length;
   const demandesEnAttente = demandes.filter(d => d.statut === "en_attente").length;
-  const mesDevisEnAttente = mesDevis.filter(d => d.statut === "en_attente").length;
+  const demandesEnCours = demandes.filter(d => d.statut === "en_cours").length;
+  const mesDevisEnAttente = mesDevis.filter(d => d.statut === "en_attente").length; // ✅ AJOUT
+
   const showMsgBadge = tab !== "messages" && unreadMsgCount > 0;
   const showRdvBadge = tab !== "rdv" && (unreadPropositions > 0 || pendingRdvCount > 0);
 
@@ -911,45 +850,43 @@ export default function DashboardStartup() {
   const prendreRdv = async () => { if (!rdvForm.expert_id || !rdvForm.date_rdv || !rdvForm.sujet) { notify("Remplissez tous les champs", false); return; } const r = await fetch(`${BASE}/rendez-vous`, { method: "POST", headers: hdrJ(), body: JSON.stringify({ expert_id: Number(rdvForm.expert_id), date_rdv: rdvForm.date_rdv, sujet: rdvForm.sujet }) }); if (r.ok) { notify("✅ RDV demandé !"); setRdvForm({ expert_id: "", date_rdv: "", sujet: "" }); await loadStartupData(tk()); } else notify("❌ Erreur", false); };
   const modifierRdv = async (rdvId: number, data: { date_rdv: string; sujet: string }) => { const r = await fetch(`${BASE}/rendez-vous/${rdvId}`, { method: "PUT", headers: hdrJ(), body: JSON.stringify(data) }); if (r.ok) { notify("✅ RDV modifié !"); await loadStartupData(tk()); setEditingRdv(null); } else notify("❌ Erreur", false); };
   const annulerRdv = async (rdvId: number) => { if (!confirm("Annuler ce RDV ?")) return; const r = await fetch(`${BASE}/rendez-vous/${rdvId}`, { method: "DELETE", headers: hdr() }); if (r.ok) { notify("✅ RDV supprimé"); await loadStartupData(tk()); } else notify("❌ Erreur", false); };
-  
-  // ⭐⭐⭐ FONCTION ENVOYER TÉMOIGNAGE CORRIGÉE ⭐⭐⭐
+
   const envoyerTemoignage = async () => {
-    if (!newTemo.trim()) {
-      notify("Veuillez écrire votre témoignage", false);
-      return;
-    }
+    if (!newTemo.trim()) { notify("Veuillez écrire votre témoignage", false); return; }
     setSendingTemo(true);
     try {
-      const r = await fetch(`${BASE}/temoignages`, {
-        method: "POST",
-        headers: hdrJ(),
-        body: JSON.stringify({ texte: newTemo, note: newTemoNote })
-      });
+      const r = await fetch(`${BASE}/temoignages`, { method: "POST", headers: hdrJ(), body: JSON.stringify({ texte: newTemo, note: newTemoNote }) });
       if (r.ok) {
-        // ✅ Succès : toast clair indiquant l'attente de validation
         notify("⭐ Témoignage envoyé avec succès ! Il sera publié après validation par notre équipe.", true);
-        // Réinitialisation du formulaire
-        setNewTemo("");
-        setNewTemoNote(5);
-        // Recharger la liste des témoignages de l'utilisateur
+        setNewTemo(""); setNewTemoNote(5);
         await loadStartupData(tk());
-        // Optionnel : défilement vers la liste des témoignages
-        setTimeout(() => {
-          const el = document.getElementById("mes-temoignages");
-          if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
-        }, 300);
-      } else {
-        const err = await r.json();
-        notify(err.message || "❌ Erreur lors de l'envoi. Veuillez réessayer.", false);
-      }
-    } catch {
-      notify("❌ Erreur réseau. Vérifiez votre connexion.", false);
-    } finally {
-      setSendingTemo(false);
-    }
+        setTimeout(() => { const el = document.getElementById("mes-temoignages"); if (el) el.scrollIntoView({ behavior: "smooth", block: "start" }); }, 300);
+      } else { const err = await r.json(); notify(err.message || "❌ Erreur lors de l'envoi. Veuillez réessayer.", false); }
+    } catch { notify("❌ Erreur réseau. Vérifiez votre connexion.", false); }
+    finally { setSendingTemo(false); }
   };
 
-  const envoyerDemande = async (e: React.FormEvent) => { e.preventDefault(); if (!demandeForm.description) { notify("Décrivez votre besoin", false); return; } let svc = demandeForm.service; if (svc === "Autre service" && customService.trim()) svc = customService.trim(); setSendingDemande(true); try { const r = await fetch(`${BASE}/demandes-service`, { method: "POST", headers: hdrJ(), body: JSON.stringify({ service: svc, description: demandeForm.description, delai: demandeForm.delai, objectif: demandeForm.objectif, telephone: demandeForm.telephone, type_application: demandeForm.type_application, domaine: demandeForm.domaine }) }); if (r.ok) { notify("✅ Demande envoyée !"); setServiceModal(null); setShowPlateformesModal(false); setDemandeForm({ service: "", description: "", delai: "", objectif: "", telephone: "", type_application: "", domaine: "" }); setCustomService(""); setShowCustomInput(false); const nd = await fetch(`${BASE}/demandes-service/mes-demandes`, { headers: hdr() }); if (nd.ok) setDemandes(await nd.json()); setTimeout(() => setTab("mes-demandes"), 800); } else notify("❌ Erreur", false); } catch { notify("❌ Erreur réseau", false); } finally { setSendingDemande(false); } };
+  const envoyerDemande = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!demandeForm.description) { notify("Décrivez votre besoin", false); return; }
+    let svc = demandeForm.service;
+    if (svc === "Autre service" && customService.trim()) svc = customService.trim();
+    setSendingDemande(true);
+    try {
+      const r = await fetch(`${BASE}/demandes-service`, { method: "POST", headers: hdrJ(), body: JSON.stringify({ service: svc, description: demandeForm.description, delai: demandeForm.delai, objectif: demandeForm.objectif, telephone: demandeForm.telephone, type_application: demandeForm.type_application, domaine: demandeForm.domaine }) });
+      if (r.ok) {
+        notify("✅ Demande envoyée !");
+        setServiceModal(null); setShowPlateformesModal(false);
+        setDemandeForm({ service: "", description: "", delai: "", objectif: "", telephone: "", type_application: "", domaine: "" });
+        setCustomService(""); setShowCustomInput(false);
+        const nd = await fetch(`${BASE}/demandes-service/mes-demandes`, { headers: hdr() });
+        if (nd.ok) setDemandes(await nd.json());
+        setTimeout(() => setTab("mes-demandes"), 800);
+      } else notify("❌ Erreur", false);
+    } catch { notify("❌ Erreur réseau", false); }
+    finally { setSendingDemande(false); }
+  };
+
   const modifierDemande = async (id: number, data: any) => { const r = await fetch(`${BASE}/demandes-service/${id}`, { method: "PUT", headers: hdrJ(), body: JSON.stringify(data) }); if (r.ok) { notify("✅ Modifiée !"); const res = await fetch(`${BASE}/demandes-service/mes-demandes`, { headers: hdr() }); if (res.ok) setDemandes(await res.json()); setEditingDemande(null); } else notify("❌ Erreur", false); };
   const supprimerDemande = async (id: number) => { if (!confirm("Supprimer ?")) return; const r = await fetch(`${BASE}/demandes-service/client/${id}`, { method: "DELETE", headers: hdr() }); if (r.ok) { notify("✅ Supprimée"); const res = await fetch(`${BASE}/demandes-service/mes-demandes`, { headers: hdr() }); if (res.ok) setDemandes(await res.json()); } else notify("❌ Erreur", false); };
   const demandeExistePourFormation = (id: number) => demandes.some(d => d.service === "formation" && (d.formationId === id || d.formation?.id === id));
@@ -985,6 +922,17 @@ export default function DashboardStartup() {
   useEffect(() => { msgEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [conversation]);
   useEffect(() => { if (!pubTemos.length) return; const t = setInterval(() => { if (!tAnim) setTIdx(p => (p + 1) % pubTemos.length); }, 5000); return () => clearInterval(t); }, [pubTemos.length, tAnim]);
   function goT(i: number) { if (tAnim || !pubTemos.length) return; setTAnim(true); setTimeout(() => { setTIdx(i); setTAnim(false); }, 280); }
+
+  // Polling demandes toutes les 30s pour capter changement de statut
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch(`${BASE}/demandes-service/mes-demandes?_=${Date.now()}`, { headers: hdr() });
+        if (res.ok) setDemandes(await res.json());
+      } catch { /* silencieux */ }
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [hdr]);
 
   const photoUrl = startup?.photo ? `${BASE}/uploads/photos/${startup.photo}` : null;
   const initials = realUser ? (realUser.prenom?.[0] || "") + (realUser.nom?.[0] || "") : "?";
@@ -1067,9 +1015,12 @@ export default function DashboardStartup() {
         .modal-bg{position:fixed;inset:0;background:rgba(10,37,64,.65);z-index:300;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(6px);}
         .modal-box{background:#fff;border-radius:24px;width:100%;max-width:660px;max-height:92vh;overflow-y:auto;box-shadow:0 32px 80px rgba(10,37,64,.28);}
         .prop-card{background:#fff;border:1.5px solid #FDE68A;border-radius:16px;padding:18px 20px;margin-bottom:14px;border-left:4px solid #F59E0B;box-shadow:0 4px 16px rgba(245,158,11,.08);}
+        .en-cours-banner{background:linear-gradient(135deg,#EFF6FF,#DBEAFE);border:1.5px solid #93C5FD;border-radius:14px;padding:14px 18px;display:flex;align-items:center;gap:12px;animation:pulseBlue 2s infinite;}
         @keyframes spin{to{transform:rotate(360deg)}}
         @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+        @keyframes pulseBlue{0%,100%{box-shadow:0 0 0 0 rgba(59,130,246,.15)}50%{box-shadow:0 0 0 8px rgba(59,130,246,0)}}
         @keyframes fadeInUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+        @keyframes spin360{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
         .stat-card{background:linear-gradient(135deg,#0A2540,#1a3f6f);border-radius:16px;padding:18px 20px;color:#fff;position:relative;overflow:hidden;}
         .stat-card::before{content:'';position:absolute;top:-20px;right:-20px;width:80px;height:80px;background:rgba(245,158,11,.1);border-radius:50%;}
       `}</style>
@@ -1097,6 +1048,11 @@ export default function DashboardStartup() {
           </div>
         </div>
         <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+          {demandesEnCours > 0 && (
+            <button onClick={() => handleTabChange("mes-demandes")} style={{ background: "rgba(59,130,246,.15)", border: "1px solid rgba(59,130,246,.3)", color: "#93C5FD", borderRadius: 99, padding: "6px 14px", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 6, animation: "pulse 2s infinite" }}>
+              🔄 {demandesEnCours} expert{demandesEnCours > 1 ? "s" : ""} en cours de sélection
+            </button>
+          )}
           {demandesEnAttente > 0 && (
             <button onClick={() => handleTabChange("mes-demandes")} style={{ background: "rgba(245,158,11,.15)", border: "1px solid rgba(245,158,11,.3)", color: "#F59E0B", borderRadius: 99, padding: "6px 14px", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 6 }}>
               🔔 {demandesEnAttente} en attente
@@ -1115,13 +1071,13 @@ export default function DashboardStartup() {
             let badge: number | null = null;
             if (t.id === "messages" && showMsgBadge) badge = unreadMsgCount;
             if (t.id === "rdv" && showRdvBadge) badge = unreadPropositions + pendingRdvCount;
-            if (t.id === "mes-demandes" && tab !== "mes-demandes" && demandesEnAttente > 0) badge = demandesEnAttente;
+            if (t.id === "mes-demandes" && tab !== "mes-demandes" && (demandesEnAttente > 0 || demandesEnCours > 0)) badge = demandesEnAttente + demandesEnCours;
             if (t.id === "mes-devis" && tab !== "mes-devis" && mesDevisEnAttente > 0) badge = mesDevisEnAttente;
             return (
               <button key={t.id} className={`tab-btn${tab === t.id ? " on" : ""}`} onClick={() => handleTabChange(t.id)}>
                 {t.icon} {t.label}
                 {badge !== null && badge > 0 && (
-                  <span style={{ background: t.id === "mes-demandes" ? "#F59E0B" : "#EF4444", color: t.id === "mes-demandes" ? "#0A2540" : "#fff", borderRadius: 99, padding: "1px 6px", fontSize: 10, fontWeight: 800, marginLeft: 2 }}>{badge}</span>
+                  <span style={{ background: t.id === "mes-demandes" ? (demandesEnCours > 0 ? "#3B82F6" : "#F59E0B") : "#EF4444", color: "#fff", borderRadius: 99, padding: "1px 6px", fontSize: 10, fontWeight: 800, marginLeft: 2 }}>{badge}</span>
                 )}
               </button>
             );
@@ -1130,8 +1086,7 @@ export default function DashboardStartup() {
       </div>
 
       <div style={{ maxWidth: 1300, margin: "0 auto", padding: "32px 24px" }}>
-
-        {/* ══ ACCUEIL ══ */}
+        {/* ACCUEIL */}
         {tab === "accueil" && (
           <div>
             <section style={{ position: "relative", overflow: "hidden", minHeight: 440, borderRadius: 20 }}>
@@ -1253,7 +1208,7 @@ export default function DashboardStartup() {
           </div>
         )}
 
-        {/* ══ SERVICES ══ */}
+        {/* SERVICES */}
         {tab === "services" && (
           <div>
             <div style={{ background: "#fff", borderRadius: 16, border: "1px solid #E8EEF6", padding: "12px 18px", marginBottom: 24, display: "flex", gap: 6, overflowX: "auto", flexWrap: "wrap" }}>
@@ -1354,7 +1309,7 @@ export default function DashboardStartup() {
           </div>
         )}
 
-        {/* ══ PROFIL ══ */}
+        {/* PROFIL */}
         {tab === "profil" && (
           <div style={{ maxWidth: 720, margin: "0 auto" }}>
             <div className="card" style={{ marginBottom: 20 }}>
@@ -1394,7 +1349,7 @@ export default function DashboardStartup() {
           </div>
         )}
 
-        {/* ══ EXPERTS ══ */}
+        {/* EXPERTS */}
         {tab === "experts" && (
           <div>
             <div style={{ display: "flex", gap: 12, marginBottom: 20, alignItems: "center", flexWrap: "wrap" }}>
@@ -1416,17 +1371,14 @@ export default function DashboardStartup() {
           </div>
         )}
 
-        {/* ══ RENDEZ-VOUS ══ */}
+        {/* RENDEZ-VOUS */}
         {tab === "rdv" && (
           <div>
             {propositions.length > 0 && (
               <div style={{ marginBottom: 32 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
                   <div style={{ width: 36, height: 36, borderRadius: 10, background: "#FEF3C7", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>📅</div>
-                  <div>
-                    <h3 style={{ fontWeight: 800, fontSize: 16, color: "#0A2540" }}>Propositions de nouveau créneau</h3>
-                    <div style={{ fontSize: 12, color: "#8A9AB5" }}>Des experts ont proposé de nouveaux créneaux</div>
-                  </div>
+                  <div><h3 style={{ fontWeight: 800, fontSize: 16, color: "#0A2540" }}>Propositions de nouveau créneau</h3><div style={{ fontSize: 12, color: "#8A9AB5" }}>Des experts ont proposé de nouveaux créneaux</div></div>
                   <span style={{ background: "#F59E0B", color: "#0A2540", borderRadius: 99, padding: "3px 10px", fontSize: 12, fontWeight: 800, marginLeft: "auto" }}>{propositions.length}</span>
                 </div>
                 {propositions.map((prop, idx) => (
@@ -1435,10 +1387,7 @@ export default function DashboardStartup() {
                       <div style={{ flex: 1 }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
                           <div style={{ width: 38, height: 38, borderRadius: "50%", background: "#0A2540", color: "#F59E0B", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 14, flexShrink: 0 }}>{prop.expert_name?.[0] || "E"}</div>
-                          <div>
-                            <div style={{ fontWeight: 700, fontSize: 14, color: "#0A2540" }}>{prop.expert_name || "Expert"}</div>
-                            <div style={{ fontSize: 11, color: "#92400E" }}>Reçu le {new Date(prop.createdAt).toLocaleDateString("fr-FR", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" })}</div>
-                          </div>
+                          <div><div style={{ fontWeight: 700, fontSize: 14, color: "#0A2540" }}>{prop.expert_name || "Expert"}</div><div style={{ fontSize: 11, color: "#92400E" }}>Reçu le {new Date(prop.createdAt).toLocaleDateString("fr-FR", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" })}</div></div>
                         </div>
                         <div style={{ background: "#FFFBEB", borderRadius: 10, padding: "12px 14px", marginBottom: prop.raison ? 8 : 0, border: "1px solid #FDE68A" }}>
                           <div style={{ fontSize: 11, fontWeight: 700, color: "#92400E", marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.8px" }}>Nouveau créneau proposé</div>
@@ -1456,7 +1405,6 @@ export default function DashboardStartup() {
                 <div style={{ height: 1, background: "#E8EEF6", margin: "8px 0 24px" }} />
               </div>
             )}
-
             <div style={{ display: "grid", gridTemplateColumns: "360px 1fr", gap: 20 }}>
               <div className="card">
                 <div style={{ padding: "18px 24px", borderBottom: "1px solid #F1F5F9", background: "#FAFBFE" }}><div style={{ fontWeight: 700, fontSize: 16, color: "#0A2540" }}>📅 Prendre un rendez-vous</div></div>
@@ -1467,30 +1415,23 @@ export default function DashboardStartup() {
                   <button className="btn btn-gold" style={{ width: "100%", justifyContent: "center", padding: "13px" }} onClick={prendreRdv}><FaCalendar /> Confirmer le rendez-vous</button>
                 </div>
               </div>
-
               <div>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
                   <div style={{ fontWeight: 700, fontSize: 16, color: "#0A2540" }}>Mes rendez-vous ({rdvs.length})</div>
                   <div style={{ display: "flex", gap: 8 }}>
                     <span style={{ fontSize: 12, color: "#64748B", display: "flex", alignItems: "center", gap: 4 }}><span style={{ width: 8, height: 8, borderRadius: "50%", background: "#F59E0B", display: "inline-block" }} />En attente</span>
                     <span style={{ fontSize: 12, color: "#64748B", display: "flex", alignItems: "center", gap: 4 }}><span style={{ width: 8, height: 8, borderRadius: "50%", background: "#10B981", display: "inline-block" }} />Confirmé</span>
-                    <span style={{ fontSize: 12, color: "#64748B", display: "flex", alignItems: "center", gap: 4 }}><span style={{ width: 8, height: 8, borderRadius: "50%", background: "#EF4444", display: "inline-block" }} />Annulé</span>
                   </div>
                 </div>
                 {rdvs.length === 0 ? (
-                  <div className="card" style={{ padding: "40px 0", textAlign: "center" }}>
-                    <div style={{ fontSize: 40, marginBottom: 12 }}>📅</div>
-                    <div style={{ fontWeight: 600, color: "#8A9AB5", fontSize: 14 }}>Aucun rendez-vous planifié</div>
-                  </div>
-                ) : rdvs.map(r => (
-                  <RdvCard key={r.id} rdv={r} onModifier={setEditingRdv} onAnnuler={annulerRdv} />
-                ))}
+                  <div className="card" style={{ padding: "40px 0", textAlign: "center" }}><div style={{ fontSize: 40, marginBottom: 12 }}>📅</div><div style={{ fontWeight: 600, color: "#8A9AB5", fontSize: 14 }}>Aucun rendez-vous planifié</div></div>
+                ) : rdvs.map(r => <RdvCard key={r.id} rdv={r} onModifier={setEditingRdv} onAnnuler={annulerRdv} />)}
               </div>
             </div>
           </div>
         )}
 
-        {/* ══ MESSAGES ══ */}
+        {/* MESSAGES */}
         {tab === "messages" && (
           <div style={{ display: "grid", gridTemplateColumns: "250px 1fr", gap: 16, height: "calc(100vh - 200px)" }}>
             <div className="card" style={{ display: "flex", flexDirection: "column" }}>
@@ -1551,7 +1492,7 @@ export default function DashboardStartup() {
           </div>
         )}
 
-        {/* ══ TÉMOIGNAGES ══ */}
+        {/* TÉMOIGNAGES */}
         {tab === "temoignages" && (
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
             <div className="card">
@@ -1585,13 +1526,33 @@ export default function DashboardStartup() {
           </div>
         )}
 
-        {/* ══ MES DEMANDES ══ */}
+        {/* MES DEMANDES */}
         {tab === "mes-demandes" && (
           <div style={{ maxWidth: 1000, margin: "0 auto" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24, flexWrap: "wrap", gap: 12 }}>
-              <div><h2 style={{ fontWeight: 800, fontSize: 22, color: "#0A2540" }}>📋 Mes demandes de service</h2><div style={{ fontSize: 13, color: "#8A9AB5", marginTop: 3 }}>{demandes.length} demande{demandes.length > 1 ? "s" : ""}</div></div>
+              <div>
+                <h2 style={{ fontWeight: 800, fontSize: 22, color: "#0A2540" }}>📋 Mes demandes de service</h2>
+                <div style={{ fontSize: 13, color: "#8A9AB5", marginTop: 3 }}>{demandes.length} demande{demandes.length > 1 ? "s" : ""}</div>
+              </div>
               <button className="btn btn-gold" onClick={() => { setTab("services"); setServiceTab("catalogue"); }}><FaPaperPlane /> Nouvelle demande</button>
             </div>
+
+            {demandesEnCours > 0 && (
+              <div className="en-cours-banner" style={{ marginBottom: 20 }}>
+                <div style={{ width: 44, height: 44, borderRadius: 12, background: "#3B82F6", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <div style={{ width: 20, height: 20, border: "3px solid #fff", borderTopColor: "transparent", borderRadius: "50%", animation: "spin360 1s linear infinite" }} />
+                </div>
+                <div>
+                  <div style={{ fontWeight: 800, color: "#1D4ED8", fontSize: 14 }}>
+                    🔄 {demandesEnCours} demande{demandesEnCours > 1 ? "s" : ""} en cours de traitement
+                  </div>
+                  <div style={{ fontSize: 13, color: "#3B82F6", marginTop: 2 }}>
+                    Notre équipe est en train de sélectionner le meilleur expert pour votre demande. Vous serez notifié dès qu'un expert sera assigné.
+                  </div>
+                </div>
+              </div>
+            )}
+
             {demandes.length === 0 ? (
               <div className="card" style={{ padding: "80px 0", textAlign: "center" }}>
                 <div style={{ fontSize: 52, marginBottom: 16 }}>📋</div>
@@ -1599,33 +1560,64 @@ export default function DashboardStartup() {
                 <div style={{ color: "#8A9AB5", fontSize: 14, marginBottom: 24 }}>Explorez nos services et faites votre première demande</div>
                 <button className="btn btn-gold" onClick={() => setTab("services")} style={{ padding: "12px 24px", fontSize: 14 }}><FaRocket /> Voir les services</button>
               </div>
-            ) : demandes.map(d => (
-              <div key={d.id} className="card" style={{ marginBottom: 14, borderLeft: `4px solid ${S_COLOR[d.statut] || "#94A3B8"}` }}>
-                <div style={{ padding: "20px 24px" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 12 }}>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontWeight: 700, fontSize: 15, color: "#0A2540", marginBottom: 3 }}>{SERVICES_INFO[d.service]?.label || d.service}</div>
-                      <div style={{ fontSize: 12, color: "#64748B", marginBottom: 8 }}>{new Date(d.createdAt).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}</div>
-                      {d.domaine && <div style={{ marginBottom: 6 }}><span style={{ background: "#EFF6FF", color: "#1D4ED8", borderRadius: 99, padding: "3px 10px", fontSize: 11, fontWeight: 700 }}>🎯 {d.domaine}</span></div>}
-                      <p style={{ fontSize: 13.5, color: "#334155", lineHeight: 1.7, maxWidth: 600 }}>{d.description}</p>
-                    </div>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-end" }}>
-                      <span style={{ background: `${S_COLOR[d.statut] || "#6B7280"}18`, color: S_COLOR[d.statut] || "#6B7280", borderRadius: 99, padding: "5px 13px", fontSize: 12, fontWeight: 700, border: `1px solid ${S_COLOR[d.statut] || "#6B7280"}30` }}>{S_LABEL[d.statut] || d.statut}</span>
-                      {d.statut === "en_attente" && (
-                        <div style={{ display: "flex", gap: 6 }}>
-                          {d.service !== "formation" && <button className="btn btn-outline" style={{ padding: "5px 12px", fontSize: 11.5 }} onClick={() => setEditingDemande(d)}><FaEdit /> Modifier</button>}
-                          <button style={{ background: "#FEF2F2", color: "#DC2626", border: "1px solid #FECACA", borderRadius: 9, padding: "5px 12px", fontSize: 11.5, cursor: "pointer", display: "flex", alignItems: "center", gap: 4, fontFamily: "inherit", fontWeight: 700 }} onClick={() => supprimerDemande(d.id)}><FaTrash /> Supprimer</button>
-                        </div>
-                      )}
+            ) : demandes.map(d => {
+              const isEnCours = d.statut === "en_cours";
+              return (
+                <div key={d.id} className="card" style={{
+                  marginBottom: 14,
+                  borderLeft: `4px solid ${S_COLOR[d.statut] || "#94A3B8"}`,
+                  border: isEnCours ? "1.5px solid #93C5FD" : undefined,
+                  background: isEnCours ? "linear-gradient(135deg,#F0F9FF,#EFF6FF)" : "#fff",
+                  transition: "all .3s",
+                }}>
+                  <div style={{ padding: "20px 24px" }}>
+                    {isEnCours && (
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, background: "rgba(59,130,246,.1)", border: "1px solid #BFDBFE", borderRadius: 10, padding: "8px 14px", marginBottom: 14 }}>
+                        <div style={{ width: 14, height: 14, border: "2.5px solid #3B82F6", borderTopColor: "transparent", borderRadius: "50%", animation: "spin360 1s linear infinite", flexShrink: 0 }} />
+                        <span style={{ fontSize: 12.5, fontWeight: 700, color: "#1D4ED8" }}>Notre équipe recherche activement le meilleur expert pour vous</span>
+                      </div>
+                    )}
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 12 }}>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontWeight: 700, fontSize: 15, color: "#0A2540", marginBottom: 3 }}>{SERVICES_INFO[d.service]?.label || d.service}</div>
+                        <div style={{ fontSize: 12, color: "#64748B", marginBottom: 8 }}>{new Date(d.createdAt).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}</div>
+                        {d.domaine && (
+                          <div style={{ marginBottom: 6 }}>
+                            <span style={{ background: "#EFF6FF", color: "#1D4ED8", borderRadius: 99, padding: "3px 10px", fontSize: 11, fontWeight: 700 }}>🎯 {d.domaine}</span>
+                          </div>
+                        )}
+                        {d.expert_assigne && (
+                          <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "#ECFDF5", border: "1px solid #A7F3D0", borderRadius: 99, padding: "4px 12px", marginBottom: 8, fontSize: 12, color: "#065F46", fontWeight: 600 }}>
+                            <FaCheckCircle style={{ fontSize: 10 }} /> Expert assigné : {d.expert_assigne?.user?.prenom} {d.expert_assigne?.user?.nom}
+                          </div>
+                        )}
+                        <p style={{ fontSize: 13.5, color: "#334155", lineHeight: 1.7, maxWidth: 600 }}>{d.description}</p>
+                      </div>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-end" }}>
+                        <DemandStatutBadge statut={d.statut} />
+                        {d.statut === "en_attente" && (
+                          <div style={{ display: "flex", gap: 6 }}>
+                            {d.service !== "formation" && (
+                              <button className="btn btn-outline" style={{ padding: "5px 12px", fontSize: 11.5 }} onClick={() => setEditingDemande(d)}><FaEdit /> Modifier</button>
+                            )}
+                            <button style={{ background: "#FEF2F2", color: "#DC2626", border: "1px solid #FECACA", borderRadius: 9, padding: "5px 12px", fontSize: 11.5, cursor: "pointer", display: "flex", alignItems: "center", gap: 4, fontFamily: "inherit", fontWeight: 700 }} onClick={() => supprimerDemande(d.id)}><FaTrash /> Supprimer</button>
+                          </div>
+                        )}
+                        {isEnCours && (
+                          <div style={{ fontSize: 11, color: "#3B82F6", fontWeight: 600, textAlign: "right" }}>
+                            Mis à jour : {new Date(d.updatedAt || d.createdAt).toLocaleDateString("fr-FR")}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
 
-        {/* ══ MES DEVIS ══ */}
+        {/* MES DEVIS */}
         {tab === "mes-devis" && (
           <div style={{ maxWidth: 1000, margin: "0 auto" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
@@ -1637,7 +1629,6 @@ export default function DashboardStartup() {
               </div>
               <button className="btn btn-outline" onClick={loadMesDevis} style={{ fontSize: 13 }}>🔄 Actualiser</button>
             </div>
-
             {mesDevis.length === 0 ? (
               <div className="card" style={{ padding: "80px 0", textAlign: "center" }}>
                 <div style={{ fontSize: 52, marginBottom: 16 }}>📄</div>
@@ -1646,7 +1637,6 @@ export default function DashboardStartup() {
               </div>
             ) : (
               <>
-                {/* Devis en attente en premier */}
                 {mesDevis.filter(d => d.statut === "en_attente").length > 0 && (
                   <div style={{ marginBottom: 8 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
@@ -1659,8 +1649,6 @@ export default function DashboardStartup() {
                     ))}
                   </div>
                 )}
-
-                {/* Autres devis */}
                 {mesDevis.filter(d => d.statut !== "en_attente").length > 0 && (
                   <div>
                     {mesDevis.filter(d => d.statut === "en_attente").length > 0 && (

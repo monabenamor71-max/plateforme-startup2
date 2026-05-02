@@ -1,3 +1,4 @@
+// src/devis/devis.module.ts
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Devis } from './devis.entity';
